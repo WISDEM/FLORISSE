@@ -7,6 +7,9 @@ Copyright (c) NREL. All rights reserved.
 
 -This archive contains the c implementation of FLORIS, with python wrapper through CYTHON
 
+REQUIRED PYTHON LIBRARIES:
+  -Cython
+
 -For summary of the FLORIS model refer to:
 P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, “A Data-Driven Model for Wind Plant Power Optimization by Yaw Control,” in Proceedings of the American Control Conference, 2014, pp. 3128–3134.
 
