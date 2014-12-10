@@ -26,5 +26,7 @@ example.py: Example call to python-wrapped from python
 FLORISmodel.[c h]: c-implementation of FLORIS
 
 """
+
+
 Note: (Pieter)
 To set up FLORISSE standalone, set up python with numpy, cython and a compiler. On Windows 7, I used the Anaconda python package (32-bit version), which has the Cython and MinGW compiler included, and I used these instructions to set up the compler (http://docs.cython.org/src/tutorial/appendix.html, with the Anaconda installation path instead of standard Python path) and then the above installation line within the Anaconda Command Prompt. 64-bit has issues because MinGW does not support it yet, and Visual Studio / SDK does not work well.
