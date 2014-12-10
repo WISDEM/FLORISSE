@@ -11,7 +11,7 @@ REQUIRED PYTHON LIBRARIES:
   -Cython
 
 -For summary of the FLORIS model refer to:
-P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, ìA Data-Driven Model for Wind Plant Power Optimization by Yaw Control,î in Proceedings of the American Control Conference, 2014, pp. 3128ñ3134.
+P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, ‚ÄúA Data-Driven Model for Wind Plant Power Optimization by Yaw Control,‚Äù in Proceedings of the American Control Conference, 2014, pp. 3128‚Äì3134.
 
 -For full details refer to:
 Data-driven wind plant control, PhD Thesis, Pieter Gebraad 2014 [see: Chapter 4]
@@ -26,3 +26,5 @@ example.py: Example call to python-wrapped from python
 FLORISmodel.[c h]: c-implementation of FLORIS
 
 """
+Note: (Pieter)
+To set up FLORISSE standalone, set up python with numpy, cython and a compiler. On Windows 7, I used the Anaconda python package (32-bit version), which has the Cython and MinGW compiler included, and I used these instructions to set up the compler (http://docs.cython.org/src/tutorial/appendix.html, with the Anaconda installation path instead of standard Python path) and then the above installation line within the Anaconda Command Prompt. 64-bit has issues because MinGW does not support it yet, and Visual Studio / SDK does not work well.
