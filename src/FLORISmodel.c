@@ -19,7 +19,6 @@
 	double fmax(double x, double y) { return(x > y ? x : y); }
 #endif
 
-// void FLORISmodel(float * power, int numberOfTurbines, turbine * TURB, inflow INF, modelParams mP, int flagUseMeasPower)
 void FLORISmodel(double power[], double effU[], double effU_In[], double X[], double Y[], double axialInd[],
 	double yaw[], double rotorDiameter[], double Cp[], double measPower[], int nTurb,
 	double effUdXY, double rho,
