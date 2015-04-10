@@ -24,6 +24,7 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
     and, optionally, the FLORIS-predicted velocities at locations (velX,velY)"""
 
     parameters = VarTree(FLORISParameters(), iotype='in')
+    velocitiesTurbines = Array(iotype='out', units='m/s')
 
     def execute(self):
 
