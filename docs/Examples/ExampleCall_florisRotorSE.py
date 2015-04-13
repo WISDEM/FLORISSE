@@ -1,5 +1,5 @@
 import numpy as np
-from florisRotorSE2 import AeroelasticHAWTVT_CCBlade_floris, constructCoupledFLORIS_CCBlade_control
+from florisRotorSE import AeroelasticHAWTVT_CCBlade_floris, constructCoupledFLORIS_CCBlade_control
 from fusedwind.plant_flow.vt import GenericWindFarmTurbineLayout
 import os
 import matplotlib.pyplot as plt
