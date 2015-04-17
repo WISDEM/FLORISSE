@@ -1,4 +1,4 @@
-from openmdao.main.api import Assembly, Component
+from openmdao.main.api import Assembly, Component, VariableTree
 from openmdao.lib.datatypes.api import Array, Float, Bool, Int, List, Str, VarTree
 
 from rotorse.rotoraerodefaults import CCBlade
@@ -9,9 +9,18 @@ from fusedwind.plant_flow.comp import GenericWindFarm
 from openmdao.lib.drivers.api import BroydenSolver, CaseIteratorDriver, FixedPointIterator
 from fusedwind.plant_flow.vt import GenericWindFarmTurbineLayout
 from floris import FLORIS
+from scipy import interp
 
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+
+
+class PowerSpeedControllerPreCalculated(VariableTree):
+    wind_speeds = Array(iotype='in', units='m/s', desc='range of wind speeds')
+    pitch = Array(iotype='out', units='deg', desc='pitch control setting')
+    rotor_speed = Array(iotype='out', units='rpm', desc='rotor speed control setting')
+
 
 class AeroelasticHAWTVT_CCBlade_floris(AeroelasticHAWTVT):
     """ AeroelasticHAWTVT with extra CCblade inputs and control inputs"""
@@ -67,15 +76,53 @@ class AeroelasticHAWTVT_CCBlade_floris(AeroelasticHAWTVT):
     CQ = Float(iotype='out', desc='torque coefficient')
     axial_induction = Float(iotype='out', desc='axial induction')
 
-    # control
+    # information required for control
     opt_tsr = Float(iotype='in', desc='TSR to track in below-rated conditions')
     rated_generator_speed = Float(iotype='in', units='rpm', desc='rated generator speed')
+    cut_in_wind_speed = Float(iotype='in', units='m/s', desc='cut-in wind speed')
+    cut_out_wind_speed = Float(iotype='in', units='m/s', desc='cut-out wind speed')
+    minimum_generator_speed = Float(iotype='in', units='rpm', desc='minimum generator speed')
+    transitional_generator_speed = Float(iotype='in', desc='transitional generator speed between regions 1 and 1.5')
+
     gearbox_ratio = Float(iotype='in', desc='gearbox ratio')
     rated_power = Float(iotype='in', units='W', desc='rated electric power')
     generator_efficiency = Float(iotype='in', desc='generator efficiency')
+    preCalculated = Bool(False, iotype='in', desc='choice on whether or not to use pre-calculated controller')
+    PreCalculatedPowerSpeedController = VarTree(PowerSpeedControllerPreCalculated(), iotype='in', desc='pre-calculated control schedule')
 
     # FLORIS outputs
     wind_speed_eff = Float(iotype='out', desc='effective wind speed', units='m/s')
+
+    def preCalculateController(self, wind_speeds=None, wind_speed_resolution=200, visual=False):
+
+        # calculate default range of wind speeds
+        if wind_speeds is None:
+
+            # calculate rated wind speed
+            calcRatedWindSpeed = CalculateRatedWindSpeed()
+            calcRatedWindSpeed.turbine = self
+            calcRatedWindSpeed.run()
+
+            wind_speeds = np.hstack((self.cut_in_wind_speed-0.01, np.linspace(self.cut_in_wind_speed, calcRatedWindSpeed.rated_wind_speed, np.round(wind_speed_resolution/3.0)), np.logspace(np.log10(calcRatedWindSpeed.rated_wind_speed+0.001), np.log10(self.cut_out_wind_speed), np.round(2.0*wind_speed_resolution/3.0)), self.cut_out_wind_speed+0.001))
+
+        precalc = preCalculatePowerAndSpeedController()
+        precalc.wind_speeds = wind_speeds
+        precalc.turbine = self
+        precalc.run()
+        self.PreCalculatedPowerSpeedController = precalc.PreCalculatedPowerSpeedController
+        self.preCalculated = True
+
+        if visual:
+            fig = plt.figure()
+            ax1 = fig.add_subplot(211)
+            ax1.plot(self.PreCalculatedPowerSpeedController.wind_speeds, self.PreCalculatedPowerSpeedController.pitch,'.-')
+            ax1.set_xlabel('wind speed (m/s)')
+            ax1.set_ylabel('pitch (deg)')
+            ax2 = fig.add_subplot(212)
+            ax2.plot(self.PreCalculatedPowerSpeedController.wind_speeds, self.PreCalculatedPowerSpeedController.rotor_speed,'.-')
+            ax2.set_xlabel('wind speed (m/s)')
+            ax2.set_ylabel('rotor speed (rpm)')
+            plt.show()
 
 
 class CCBladeCoefficients(Assembly):
@@ -206,7 +253,6 @@ class AeroelasticHAWTVT_floris(AeroelasticHAWTVT):
 class florisPlant(Component):
 
     listOfTurbines = Array(iotype='in')
-    #yaw = Array(iotype='in')
     wind_speed = Float(iotype='in')
     wind_direction = Float(iotype='in')
     air_density = Float(iotype='in')
@@ -258,14 +304,14 @@ class PowerSpeedController(Component):
     turbineIn = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
     turbineOut = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='out')
     verbose = Bool(False, iotype='in', desc='verbosity of controller, False is no output')
+    PowerSpeedControllerPreCalculated = VarTree(PowerSpeedControllerPreCalculated(), iotype='in', desc='pre-calculated pitch and torque control settings for range of wind speeds')
 
     def execute(self):
         turbine = self.turbineIn
 
-        # set optimal rotor speed and zero pitch initially
+        # calculate axial wind speed
         wind_speed_ax = np.cos(turbine.yaw*np.pi/180.0)*turbine.wind_speed_hub
-        turbine.rotor_speed = wind_speed_ax*turbine.opt_tsr/turbine.tip_radius * 30.0/np.pi
-        turbine.pitch = 0.0
+
         if self.verbose:
             if hasattr(turbine,'turbineName'):
                 TopDelimiter = "_____Controller %s_______________________" % turbine.turbineName
@@ -274,43 +320,91 @@ class PowerSpeedController(Component):
             print TopDelimiter
             print "axial component wind speed %s" % wind_speed_ax
 
-        # define constraints
-        rated_rotor_speed = turbine.rated_generator_speed / turbine.gearbox_ratio
-        rated_mechanical_power = turbine.rated_power/turbine.generator_efficiency
-        rated_generator_torque = rated_mechanical_power/(turbine.rated_generator_speed*np.pi/30.0)
-        rated_rotor_torque = rated_generator_torque*turbine.gearbox_ratio
-
-        # if optimal rotor speed exceeds rated rotor speed, use rated rotor speed instead
-        if turbine.rotor_speed > rated_rotor_speed:
-            turbine.rotor_speed = rated_rotor_speed
-            region = 2.5
+        if self.turbineIn.preCalculated:
+            # interpolate pre-calculated pitch and torque policy
+            if self.verbose:
+                print 'interpolates precalculated controller'
+            turbine.pitch = interp(wind_speed_ax,turbine.PreCalculatedPowerSpeedController.wind_speeds, turbine.PreCalculatedPowerSpeedController.pitch)
+            turbine.rotor_speed = interp(wind_speed_ax,turbine.PreCalculatedPowerSpeedController.wind_speeds, turbine.PreCalculatedPowerSpeedController.rotor_speed)
         else:
-            region = 2
+            # control not pre-calculated, find out which region and calculate pitch and rotor speed
+
+            # define constraints
+            rated_rotor_speed = turbine.rated_generator_speed / turbine.gearbox_ratio
+            transitional_rotor_speed = turbine.transitional_generator_speed / turbine.gearbox_ratio
+            rated_mechanical_power = turbine.rated_power/turbine.generator_efficiency
+            rated_generator_torque = rated_mechanical_power/(turbine.rated_generator_speed*np.pi/30.0)
+            rated_rotor_torque = rated_generator_torque*turbine.gearbox_ratio
+
+            if wind_speed_ax > turbine.cut_out_wind_speed:
+                region = 4
+
+                # in region 4, use zero rotor speed and pitch angle for cut-out wind speed
+                turbine.rotor_speed = 0.0
+                calcPitch = CalculateAboveRatedPitch()
+                calcPitch.turbine = turbine
+                calcPitch.turbine.rotor_speed = rated_rotor_speed
+                calcPitch.rated_rotor_torque = rated_rotor_torque
+                calcPitch.turbine.wind_speed_hub = turbine.cut_out_wind_speed
+                calcPitch.turbine.yaw = 0.0
+                calcPitch.run()
+                turbine.pitch = calcPitch.CCBlade.turbineIn.pitch
+
+            elif wind_speed_ax < turbine.cut_in_wind_speed:
+                region = 1
+
+                # in region 1, use zero rotor speed and pitch angle
+                turbine.rotor_speed = 0.0
+                turbine.pitch = 0.0
+
+            else:
+                # set optimal rotor speed and zero pitch initially (region 2), then check if not actually in
+                # region 3 or 1.5
+                region = 2
+                turbine.rotor_speed = wind_speed_ax*turbine.opt_tsr/turbine.tip_radius * 30.0/np.pi
+                turbine.pitch = 0.0
+
+                if turbine.rotor_speed > rated_rotor_speed:
+                    region = 2.5
+
+                    # if optimal rotor speed exceeds rated rotor speed, use rated rotor speed instead
+                    turbine.rotor_speed = rated_rotor_speed
+
+                    # calculate torque to determine if in region 3
+                    CCBlade = CCBladeCoefficients()
+                    CCBlade.turbineIn = turbine
+                    CCBlade.turbineIn.wind_speed_hub = wind_speed_ax
+                    CCBlade.turbineIn.yaw = 0.0
+                    CCBlade.run()
+
+                    if CCBlade.turbineOut.torque>rated_rotor_torque:
+                        region = 3
+
+                        # if above-rated, calculate pitch_angle that will result in rated torque
+                        calcPitch = CalculateAboveRatedPitch()
+                        calcPitch.turbine = turbine
+                        calcPitch.turbine.rotor_speed = rated_rotor_speed
+                        calcPitch.rated_rotor_torque = rated_rotor_torque
+                        calcPitch.turbine.wind_speed_hub = wind_speed_ax
+                        calcPitch.turbine.yaw = 0.0
+                        calcPitch.run()
+                        turbine.pitch = calcPitch.CCBlade.turbineIn.pitch
+                elif turbine.rotor_speed < transitional_rotor_speed:
+
+                    # if in region 1.5, use torque balance to calculate rotor speed
+                    region = 1.5
+
+                    calcRotorSpeed = calculateRotorSpeed15()
+                    calcRotorSpeed.turbine = turbine
+                    calcRotorSpeed.run()
+                    turbine.pitch = 0.0
+                    turbine.rotor_speed = calcRotorSpeed.CCBlade.turbineIn.rotor_speed
+
+            print "region %s" % region
 
         if self.verbose:
             print "rotor speed %s" % turbine.rotor_speed
-
-        # calculate generator torque
-        CCBlade = CCBladeCoefficients()
-        CCBlade.turbineIn = turbine
-        CCBlade.turbineIn.wind_speed_hub = wind_speed_ax
-        CCBlade.turbineIn.yaw = 0.0
-        CCBlade.run()
-
-        # if above-rated torque, calculate pitch_angle that will result in rated torque
-        if CCBlade.turbineOut.torque>rated_rotor_torque:
-            calcPitch = CalculateAboveRatedPitch()
-            calcPitch.turbine = turbine
-            calcPitch.rated_rotor_torque = rated_rotor_torque
-            calcPitch.turbine.wind_speed_hub = wind_speed_ax
-            calcPitch.turbine.yaw = 0.0
-            calcPitch.run()
-            turbine.pitch = calcPitch.CCBlade.turbineIn.pitch
-            region = 3
-
-        if self.verbose:
             print "pitch %s" % turbine.pitch
-            print "region %s" % region
             print "-"*len(TopDelimiter)
 
         self.turbineOut = turbine
@@ -357,6 +451,163 @@ class CQfromTorque(Component):
 
     def execute(self):
         self.CQ = self.torque / (0.50 * self.air_density * self.rotor_area * self.tip_radius * (self.wind_speed ** 2))
+
+
+class CalculateRatedWindSpeed(Assembly):
+    turbine = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
+    rated_wind_speed = Float(iotype='out', units='m/s', desc='rated wind speed (with zero yaw)')
+
+    def configure(self):
+
+        # first calculate rated rotor speed from rated generator speed
+        self.add('calculateRatedRotorSpeed', calculateRatedRotorSpeed())
+        self.add('calculateRatedMechanicalPower', calculateRatedMechanicalPower())
+        self.connect("turbine.rated_generator_speed", "calculateRatedRotorSpeed.rated_generator_speed")
+        self.connect("turbine.gearbox_ratio", "calculateRatedRotorSpeed.gearbox_ratio")
+        self.connect("turbine.rated_power", "calculateRatedMechanicalPower.rated_power")
+        self.connect("turbine.generator_efficiency", "calculateRatedMechanicalPower.generator_efficiency")
+
+        self.add("CCBlade", CCBladeCoefficients())
+        self.add('optimizer', BroydenSolver())
+
+        self.driver.workflow.add(['calculateRatedRotorSpeed', 'calculateRatedMechanicalPower', 'optimizer'])
+
+        # define all CCBlade turbine properties except for wind_speed_hub, for which we use optimizer
+        attributes = ("nblades", "hub_height", "tilt_angle", "cone_angle", "hub_radius", "tip_radius","generator_efficiency",
+                      "air_density", "dynamic_viscosity", "shear_exponent", "radial_locations", "chord", "theta", "precurve",
+                      "precurveTip", "airfoil_files", "nSector", "tiploss", "hubloss", "wakerotation", "usecd")
+        for attribute in attributes:
+            self.connect("turbine.%s" % attribute, "CCBlade.turbineIn.%s" % attribute)
+        # set rotor speed to rated rotor speed
+        self.connect("calculateRatedRotorSpeed.rated_rotor_speed", "CCBlade.turbineIn.rotor_speed")
+        # set pitch and yaw to zero
+        self.CCBlade.turbineIn.pitch = 0.0
+        self.CCBlade.turbineIn.yaw = 0.0
+
+        # let CCBlade calculate wind speed for which turbine will hit rated power
+        self.optimizer.itmax = 20
+        self.optimizer.tol = 0.000001
+        self.optimizer.workflow.add(['CCBlade'])
+        self.optimizer.add_parameter('CCBlade.turbineIn.wind_speed_hub', low=0.0, high=40.0, start=10.0)
+        self.optimizer.add_constraint('CCBlade.turbineOut.power = calculateRatedMechanicalPower.rated_mechanical_power')
+        self.connect('CCBlade.turbineIn.wind_speed_hub', 'rated_wind_speed')
+
+
+class calculateRatedRotorSpeed(Component):
+    rated_generator_speed = Float(iotype='in', units='rpm', desc='rated generator speed')
+    gearbox_ratio = Float(iotype='in', desc='gearbox ratio')
+    rated_rotor_speed = Float(iotype='out', units='rpm', desc='rated rotor speed')
+
+    def execute(self):
+        self.rated_rotor_speed = self.rated_generator_speed / self.gearbox_ratio
+
+class calculateRatedMechanicalPower(Component):
+    rated_power = Float(iotype='in', units='W', desc='rated generator power')
+    generator_efficiency = Float(iotype='in', desc='generator efficiency')
+    rated_mechanical_power = Float(iotype='out', units='W', desc='rated mechanical power')
+
+    def execute(self):
+        self.rated_mechanical_power = self.rated_power / self.generator_efficiency
+
+
+class calculateRotorSpeed15(Assembly):
+    # calculates region 1.5 rotor speed for a certain wind speed, by balancing aerodynamic torque with mechanical torque
+    turbine = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
+
+    def configure(self):
+        self.add('calculateMaximumTorqueRegion15',calculateMaximumTorqueRegion15())
+        self.add('optimizer',BroydenSolver())
+
+        self.driver.workflow.add(['calculateMaximumTorqueRegion15', 'optimizer'])
+
+        self.connect('turbine', 'calculateMaximumTorqueRegion15.turbine')
+
+        self.add("CCBlade", CCBladeCoefficients())
+        self.add("calculateTorqueRegion15", calculateTorqueRegion15())
+
+        attributes = ("nblades", "hub_height", "tilt_angle", "cone_angle", "hub_radius", "tip_radius",
+              "air_density", "dynamic_viscosity", "shear_exponent", "radial_locations", "chord", "theta", "precurve",
+              "precurveTip", "airfoil_files", "nSector", "tiploss", "hubloss", "wakerotation", "usecd", "wind_speed_hub")
+        for attribute in attributes:
+            self.connect("turbine.%s" % attribute, "CCBlade.turbineIn.%s" % attribute)
+            self.connect("turbine.%s" % attribute, "calculateTorqueRegion15.turbine.%s" % attribute)
+
+        attributes = ("minimum_generator_speed", "transitional_generator_speed", "gearbox_ratio")
+        for attribute in attributes:
+            self.connect("turbine.%s" % attribute, "calculateTorqueRegion15.turbine.%s" % attribute)
+
+        self.optimizer.itmax = 20
+        self.optimizer.tol = 0.000001
+        self.optimizer.workflow.add(['CCBlade','calculateTorqueRegion15'])
+        self.optimizer.add_parameter('CCBlade.turbineIn.rotor_speed', low=0.01, high=50.0)
+        self.connect('CCBlade.turbineIn.rotor_speed', 'calculateTorqueRegion15.turbine.rotor_speed')
+        self.connect('calculateMaximumTorqueRegion15.maximum_generator_torque_region_15','calculateTorqueRegion15.maximum_generator_torque_region_15')
+        self.optimizer.add_constraint('CCBlade.turbineOut.torque = calculateTorqueRegion15.mechanical_torque_region_15')
+
+
+class calculateTorqueRegion15(Component):
+    # calculates region 1.5 mechanical torque based on rotor speed
+    # (linear transition between zero torque at minimum_generator_speed and torque = maximum_generator_torque_region_15 at
+    # transitional_generator_speed)
+    turbine = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
+    maximum_generator_torque_region_15 = Float(iotype='in', desc='maximum generator torque region 1.5', units='N*m')
+    mechanical_torque_region_15 = Float(iotype='out', desc='mechanical torque in region 1.5', units='N*m')
+
+    def execute(self):
+        generator_speed = self.turbine.rotor_speed*self.turbine.gearbox_ratio
+        generator_torque = ((generator_speed-self.turbine.minimum_generator_speed)/(self.turbine.transitional_generator_speed-self.turbine.minimum_generator_speed))*self.maximum_generator_torque_region_15
+        self.mechanical_torque_region_15 = generator_torque*self.turbine.gearbox_ratio
+
+
+class calculateMaximumTorqueRegion15(Assembly):
+    turbine = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
+    maximum_generator_torque_region_15 = Float(iotype='out', desc='maximum generator torque region 1.5', units='N*m')
+
+    def execute(self):
+        CCBlade = CCBladeCoefficients()
+        CCBlade.turbineIn = self.turbine
+        CCBlade.turbineIn.wind_speed_hub = (((self.turbine.transitional_generator_speed*np.pi/30.0)/self.turbine.gearbox_ratio)
+                                            *self.turbine.tip_radius)/self.turbine.opt_tsr  # set wind speed to transitional wind speed
+        CCBlade.turbineIn.rotor_speed = self.turbine.transitional_generator_speed/self.turbine.gearbox_ratio
+        CCBlade.turbineIn.pitch = 0.0
+        CCBlade.turbineIn.yaw = 0.0
+        CCBlade.run()
+        self.maximum_generator_torque_region_15 = CCBlade.turbineOut.torque/self.turbine.gearbox_ratio
+
+
+class preCalculatePowerAndSpeedController(Assembly):
+    wind_speeds = Array(iotype='in', units='m/s', desc='effective axial wind speeds for which to pre-calculate pitch and torque control settings')
+    turbine = VarTree(AeroelasticHAWTVT_CCBlade_floris(), iotype='in')
+    PreCalculatedPowerSpeedController = VarTree(PowerSpeedControllerPreCalculated(), iotype='out')
+
+    def configure(self):
+
+        self.add("PowerSpeedController", PowerSpeedController())
+        self.add('driver', CaseIteratorDriver())
+        # connect all needed CCBlade and control turbine properties
+        attributes = ("nblades", "hub_height", "tilt_angle", "cone_angle", "hub_radius", "tip_radius",
+                      "air_density","dynamic_viscosity","shear_exponent","radial_locations","chord","theta","precurve",
+                      "precurveTip","airfoil_files","nSector","tiploss","hubloss","wakerotation","usecd","rotor_speed",
+                      "turbineName", "rated_generator_speed", "gearbox_ratio", "rated_power", "generator_efficiency",
+                      "opt_tsr", "cut_in_wind_speed", "cut_out_wind_speed", "rotor_area","minimum_generator_speed",
+                      "transitional_generator_speed")
+        for attribute in attributes:
+            self.connect("turbine.%s" % attribute, "PowerSpeedController.turbineIn.%s" % attribute)
+
+        # set controller options
+        self.PowerSpeedController.turbineIn.yaw = 0.0
+        self.PowerSpeedController.preCalculated = False
+        self.PowerSpeedController.verbose = True
+
+        # set up CaseIterator to calculate pitch and rotor_speed for range of wind speeds
+        self.driver.add_parameter('PowerSpeedController.turbineIn.wind_speed_hub')
+        self.connect('wind_speeds', 'driver.case_inputs.PowerSpeedController.turbineIn.wind_speed_hub')
+        self.driver.add_response('PowerSpeedController.turbineOut.pitch')
+        self.driver.add_response('PowerSpeedController.turbineOut.rotor_speed')
+        self.connect('wind_speeds', 'PreCalculatedPowerSpeedController.wind_speeds')
+        self.connect('driver.case_outputs.PowerSpeedController.turbineOut.pitch', 'PreCalculatedPowerSpeedController.pitch')
+        self.connect('driver.case_outputs.PowerSpeedController.turbineOut.rotor_speed', 'PreCalculatedPowerSpeedController.rotor_speed')
+
 
 def constructCoupledFLORIS_CCBlade_control(number_of_turbines, freestream_wind_speed=103, startpoint_wind_speed=10, tolerance=0.00001, max_iteration=100):
     """Returns the assembly of the FLORIS model with a coupled CC-Blade model to calculate axial induction, and a power and speed controller for each turbine"""
