@@ -1,5 +1,5 @@
 from fusedwind.plant_flow.comp import GenericWindFarm, GenericFlowModel
-from openmdao.lib.datatypes.api import Array, Float, VarTree
+from openmdao.lib.datatypes.api import Array, Float, VarTree, Bool
 from openmdao.main.api import VariableTree
 
 import numpy as np
@@ -25,6 +25,7 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
 
     parameters = VarTree(FLORISParameters(), iotype='in')
     velocitiesTurbines = Array(iotype='out', units='m/s')
+    verbose = Bool(False, iotype='in', desc='verbosity of FLORIS, False is no output')
 
     def execute(self):
 
@@ -38,6 +39,13 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
         yaw = np.hstack(self.wt_layout.wt_array(attr='yaw'))
         Cp = np.hstack(self.wt_layout.wt_array(attr='CP'))
         axialInd = np.hstack(self.wt_layout.wt_array(attr='axial_induction'))
+
+        if self.verbose:
+            np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+            print "wind direction %s deg" % [windDirection*180.0/np.pi]
+            print "free-stream wind speed %s" % Vinf
+            print "axial induction turbines %s" % axialInd
+            print "Cp turbines %s" % Cp
 
         positions = self.wt_layout.wt_array(attr='position')
         turbineX = positions[:, 0]
@@ -179,9 +187,13 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
 
             # multiply the inflow speed with the wake coefficients to find effective wind speed at turbine
             self.velocitiesTurbines[turbI] *= wakeEffCoeff
+        if self.verbose:
+            print "wind speed at turbines %s [m/s]" % self.velocitiesTurbines
 
         # find turbine powers
         self.wt_power = np.power(self.velocitiesTurbines,3.0) * (0.5*rho*rotorArea*Cp*np.power(np.cos(yaw),pP))
+        if self.verbose:
+            print "powers turbines %s [kW]" % self.wt_power
 
         # set outputs on turbine level
         for turbI in range(0, nTurbines):

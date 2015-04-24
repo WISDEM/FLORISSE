@@ -1,23 +1,14 @@
 import numpy as np
-from florisRotorSE import AeroelasticHAWTVT_CCBlade_floris, constructCoupledFLORIS_CCBlade_control, CalculateRatedWindSpeed, calculateRotorSpeed15,CCBladeCoefficients
+from florisRotorSE import AeroelasticHAWTVT_CCBlade_floris, CoupledFLORIS_CCBlade_control
 from fusedwind.plant_flow.vt import GenericWindFarmTurbineLayout
+from fusedwind.plant_flow.generate_fake_vt import generate_random_GenericWindRoseVT
+from fusedwind.plant_flow.asym import AEPSingleWindRose
 import os
 from copy import copy
 import matplotlib.pyplot as plt
 
-freestream_wind_speed = 12.0  # m/s
 air_density = 1.1716  # kg/m^3
-wind_direction = 30  # deg
 viscosity = 1.81206e-5
-
-# locations of turbines in Princess Amalia Wind Park, North Sea, The Netherlands
-turbineX = np.array([972.91, 1552.6, 2157.5, 720.86,1290.5,1895.4,2515.5,3135.5,468.81,1033.4,1623.2,2238.2,2853.2,3483.3,216.76,776.31,1356,1955.9,2570.9,3185.9,3800.9,519.22,1093.9,1683.7,2283.6,2893.5,3503.5,257.09,821.68,1406.4,1996.2,2601.2,3201,3780.8,0,559.55,1129.2,1713.9,2308.8,2903.6,3468.2,287.34,851.93,1431.6,2006.3,2596.1,3155.7,3710.2,20.164,574.67,1139.3,1719,2283.6,2843.1,297.42,851.93,1426.6,1986.2,1124.1,1683.7])
-turbineY = np.array([4879.69, 4889.77, 4869.61, 4380.63,4395.75,4380.63,4350.38,4310.06,3886.61,3911.82,3901.73,3866.45,3831.16,3785.79,3392.59,3417.80,3412.76,3392.59,3357.31,3316.98,3256.49,2928.82,2928.82,2903.62,2883.45,2843.12,2792.71,2429.76,2439.84,2429.76,2404.56,2369.27,2323.90,2278.53,1940.78,1955.91,1945.83,1935.74,1900.46,1865.17,1819.80,1466.93,1461.89,1451.81,1431.64,1396.36,1356.03,1320.74,977.95,977.95,977.95,962.83,927.54,897.30,499.06,504.10,488.98,468.81,20.16,0.00])
-
-#turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])
-#turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])
-
-numberOfTurbines = turbineX.size
 
 # Define the turbine
 
@@ -70,9 +61,23 @@ wt.transitional_generator_speed =  871.0 #rpm - transitional rotor speed between
 wt.yaw = 0.0
 
 # pre-calculate controller
+print "============== PRE-CALCULATING CONTROLLER ==================="
 wt.preCalculateController(visual=True)
+print "============================================================="
+
 
 # Add turbines to wind plant
+
+# locations of turbines in Princess Amalia Wind Park, North Sea, The Netherlands
+turbineX = np.array([972.91, 1552.6, 2157.5, 720.86,1290.5,1895.4,2515.5,3135.5,468.81,1033.4,1623.2,2238.2,2853.2,3483.3,216.76,776.31,1356,1955.9,2570.9,3185.9,3800.9,519.22,1093.9,1683.7,2283.6,2893.5,3503.5,257.09,821.68,1406.4,1996.2,2601.2,3201,3780.8,0,559.55,1129.2,1713.9,2308.8,2903.6,3468.2,287.34,851.93,1431.6,2006.3,2596.1,3155.7,3710.2,20.164,574.67,1139.3,1719,2283.6,2843.1,297.42,851.93,1426.6,1986.2,1124.1,1683.7])
+turbineY = np.array([4879.69, 4889.77, 4869.61, 4380.63,4395.75,4380.63,4350.38,4310.06,3886.61,3911.82,3901.73,3866.45,3831.16,3785.79,3392.59,3417.80,3412.76,3392.59,3357.31,3316.98,3256.49,2928.82,2928.82,2903.62,2883.45,2843.12,2792.71,2429.76,2439.84,2429.76,2404.56,2369.27,2323.90,2278.53,1940.78,1955.91,1945.83,1935.74,1900.46,1865.17,1819.80,1466.93,1461.89,1451.81,1431.64,1396.36,1356.03,1320.74,977.95,977.95,977.95,962.83,927.54,897.30,499.06,504.10,488.98,468.81,20.16,0.00])
+
+# 3 x 2 wind farm
+#turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])
+#turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])
+
+numberOfTurbines = turbineX.size
+
 wt_layout = GenericWindFarmTurbineLayout()
 for turbineI in range(0, numberOfTurbines):
    wt.name = 'turbine%s' % turbineI
@@ -80,33 +85,33 @@ for turbineI in range(0, numberOfTurbines):
    wt.position = np.array([turbineX[turbineI], turbineY[turbineI]])
    wt_layout.add_wt(copy(wt))
 
-FLORIS_CCBlade_control = constructCoupledFLORIS_CCBlade_control(numberOfTurbines, startpoint_wind_speed=freestream_wind_speed, tolerance=0.00001, max_iteration=100)
-FLORIS_CCBlade_control.control.listOfTurbinesIn = wt_layout.wt_list
-FLORIS_CCBlade_control.floris.wind_speed = freestream_wind_speed  # m/s
-FLORIS_CCBlade_control.floris.air_density = air_density  # kg/m^3
-FLORIS_CCBlade_control.floris.wind_direction = wind_direction  # deg
-FLORIS_CCBlade_control.control.verbose = True
+
+# TODO: prevent that we have to run before adding to AEP calculation
+FLORIS_CCBlade_control = CoupledFLORIS_CCBlade_control()
+FLORIS_CCBlade_control.coupledModel_verbosity = True
+FLORIS_CCBlade_control.wt_layout = wt_layout
+FLORIS_CCBlade_control.wind_speed = 12.0  # m/s
+FLORIS_CCBlade_control.air_density = air_density  # kg/m^3
+FLORIS_CCBlade_control.wind_direction = 30.0  # deg
+FLORIS_CCBlade_control.controller_verbosity = True
 FLORIS_CCBlade_control.run()
 
-print "number of iterations: %s" % FLORIS_CCBlade_control.floris.exec_count
-
-power = np.zeros(numberOfTurbines)
-
+power = np.zeros([numberOfTurbines, 1])
 for turbineI in range(0, numberOfTurbines):
-     florisTurbine = "turbine%s" % turbineI
-     print FLORIS_CCBlade_control.ccblade.listOfTurbinesOut[turbineI].turbineName
-     print " axial induction %s" % FLORIS_CCBlade_control.floris.florisWindPlant.wt_layout.wt_list[turbineI].axial_induction
-     print " C_P %s" % FLORIS_CCBlade_control.floris.florisWindPlant.wt_layout.wt_list[turbineI].CP
-     power[turbineI] = FLORIS_CCBlade_control.floris.florisWindPlant.wt_layout.wt_list[turbineI].power*1e-6*FLORIS_CCBlade_control.control.listOfTurbinesIn[turbineI].generator_efficiency
-     print " power %s MW" % power[turbineI]
-     wind_speed_floris = FLORIS_CCBlade_control.floris.florisWindPlant.wt_layout.wt_list[turbineI].wind_speed_eff
-     print " wind speed floris side %s m/s" % wind_speed_floris
-     print " error with wind speed turbine side %s m/s" % (wind_speed_floris - FLORIS_CCBlade_control.windSpeedDistributor.wind_speed_in[turbineI])
-     rotor_speed = FLORIS_CCBlade_control.ccblade.listOfTurbinesOut[turbineI].rotor_speed
-     tip_radius = FLORIS_CCBlade_control.ccblade.listOfTurbinesOut[turbineI].tip_radius
-     print " rotor speed %s RPM" % rotor_speed
-     print " pitch %s deg" % FLORIS_CCBlade_control.ccblade.listOfTurbinesOut[turbineI].pitch
-     print " tip-speed ratio %s" % (tip_radius * np.pi/30.0 * rotor_speed / wind_speed_floris)
+      florisTurbine = "turbine%s" % turbineI
+      print FLORIS_CCBlade_control.coupledModel.ccblade.listOfTurbinesOut[turbineI].turbineName
+      print " axial induction %s" % FLORIS_CCBlade_control.coupledModel.floris.florisWindPlant.wt_layout.wt_list[turbineI].axial_induction
+      print " C_P %s" % FLORIS_CCBlade_control.coupledModel.floris.florisWindPlant.wt_layout.wt_list[turbineI].CP
+      power[turbineI] = FLORIS_CCBlade_control.wt_power[turbineI]*1e-3*FLORIS_CCBlade_control.coupledModel.control.listOfTurbinesIn[turbineI].generator_efficiency
+      print " power %s MW" % (power[turbineI])
+      wind_speed_floris = FLORIS_CCBlade_control.coupledModel.floris.florisWindPlant.wt_layout.wt_list[turbineI].wind_speed_eff
+      print " wind speed floris side %s m/s" % wind_speed_floris
+      print " error with wind speed turbine side %s m/s" % (wind_speed_floris - FLORIS_CCBlade_control.coupledModel.windSpeedDistributor.wind_speed_in[turbineI])
+      rotor_speed = FLORIS_CCBlade_control.coupledModel.ccblade.listOfTurbinesOut[turbineI].rotor_speed
+      tip_radius = FLORIS_CCBlade_control.coupledModel.ccblade.listOfTurbinesOut[turbineI].tip_radius
+      print " rotor speed %s RPM" % rotor_speed
+      print " pitch %s deg" % FLORIS_CCBlade_control.coupledModel.ccblade.listOfTurbinesOut[turbineI].pitch
+      print " tip-speed ratio %s" % (tip_radius * np.pi/30.0 * rotor_speed / wind_speed_floris)
 
 fig = plt.figure()
 ax = plt.subplot(111)
@@ -122,7 +127,7 @@ bbox_props = dict(boxstyle="rarrow,pad=0.3", fc="cyan", ec="b", lw=2)
 axis_limits = plt.axis()
 arrow_location_x = axis_limits[0]+0.1*(axis_limits[1]-axis_limits[0])
 arrow_location_y = axis_limits[2]+0.1*(axis_limits[3]-axis_limits[2])
-ax.text(arrow_location_x, arrow_location_y, "%s m/s" % freestream_wind_speed, ha="center", va="center", rotation=wind_direction,size=15,bbox=bbox_props)
+ax.text(arrow_location_x, arrow_location_y, "%s m/s" % FLORIS_CCBlade_control.wind_speed, ha="center", va="center", rotation=FLORIS_CCBlade_control.wind_direction,size=15,bbox=bbox_props)
 plt.axis('tight')
 plt.show()
 

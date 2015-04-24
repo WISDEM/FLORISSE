@@ -10,6 +10,7 @@ from openmdao.lib.drivers.api import BroydenSolver, CaseIteratorDriver, FixedPoi
 from fusedwind.plant_flow.vt import GenericWindFarmTurbineLayout
 from floris import FLORIS
 from scipy import interp
+from copy import copy
 
 import os
 import numpy as np
@@ -203,7 +204,10 @@ class CTtoAxialInd(Component):
     axial_induction = Float(iotype='out')
 
     def execute(self):
-        self.axial_induction = 0.5*(1-np.sqrt(1-self.CT))
+        if self.CT > 0.96: # Glauert condition
+            self.axial_induction = 0.143+np.sqrt(0.0203-0.6427*(0.889-self.CT))
+        else:
+            self.axial_induction = 0.5*(1-np.sqrt(1-self.CT))
 
 
 class windSpeedDistributor(Component):
@@ -256,8 +260,11 @@ class florisPlant(Component):
     wind_speed = Float(iotype='in')
     wind_direction = Float(iotype='in')
     air_density = Float(iotype='in')
+    verbose = Bool(False, iotype='in', desc='verbosity of floris, False is no output')
 
     velocitiesTurbines = Array(iotype='out')
+    power = Float(iotype='out')
+    wt_power = Array(iotype='out')
 
     def execute(self):
 
@@ -277,10 +284,13 @@ class florisPlant(Component):
         self.florisWindPlant.wind_speed = self.wind_speed
         self.florisWindPlant.wind_direction = self.wind_direction
         self.florisWindPlant.air_density = self.air_density
+        self.florisWindPlant.verbose = self.verbose
 
         self.florisWindPlant.run()
 
         self.velocitiesTurbines = self.florisWindPlant.velocitiesTurbines
+        self.power = self.florisWindPlant.power
+        self.wt_power = self.florisWindPlant.wt_power
 
 
 class ControllerPlant(Assembly):
@@ -340,15 +350,17 @@ class PowerSpeedController(Component):
                 region = 4
 
                 # in region 4, use zero rotor speed and pitch angle for cut-out wind speed
-                turbine.rotor_speed = 0.0
                 calcPitch = CalculateAboveRatedPitch()
-                calcPitch.turbine = turbine
+                calcPitch.turbine = copy(turbine)
                 calcPitch.turbine.rotor_speed = rated_rotor_speed
                 calcPitch.rated_rotor_torque = rated_rotor_torque
                 calcPitch.turbine.wind_speed_hub = turbine.cut_out_wind_speed
                 calcPitch.turbine.yaw = 0.0
                 calcPitch.run()
+                calcPitch.turbine.rotor_speed = rated_rotor_speed
+
                 turbine.pitch = calcPitch.CCBlade.turbineIn.pitch
+                turbine.rotor_speed = 0.0
 
             elif wind_speed_ax < turbine.cut_in_wind_speed:
                 region = 1
@@ -372,7 +384,7 @@ class PowerSpeedController(Component):
 
                     # calculate torque to determine if in region 3
                     CCBlade = CCBladeCoefficients()
-                    CCBlade.turbineIn = turbine
+                    CCBlade.turbineIn = copy(turbine)
                     CCBlade.turbineIn.wind_speed_hub = wind_speed_ax
                     CCBlade.turbineIn.yaw = 0.0
                     CCBlade.run()
@@ -382,29 +394,31 @@ class PowerSpeedController(Component):
 
                         # if above-rated, calculate pitch_angle that will result in rated torque
                         calcPitch = CalculateAboveRatedPitch()
-                        calcPitch.turbine = turbine
+                        calcPitch.turbine = copy(turbine)
                         calcPitch.turbine.rotor_speed = rated_rotor_speed
                         calcPitch.rated_rotor_torque = rated_rotor_torque
                         calcPitch.turbine.wind_speed_hub = wind_speed_ax
                         calcPitch.turbine.yaw = 0.0
                         calcPitch.run()
                         turbine.pitch = calcPitch.CCBlade.turbineIn.pitch
+                        turbine.rotor_speed = rated_rotor_speed
                 elif turbine.rotor_speed < transitional_rotor_speed:
 
                     # if in region 1.5, use torque balance to calculate rotor speed
                     region = 1.5
 
                     calcRotorSpeed = calculateRotorSpeed15()
-                    calcRotorSpeed.turbine = turbine
+                    calcRotorSpeed.turbine = copy(turbine)
                     calcRotorSpeed.run()
                     turbine.pitch = 0.0
                     turbine.rotor_speed = calcRotorSpeed.CCBlade.turbineIn.rotor_speed
-
-            print "region %s" % region
+            if self.verbose:
+                print "region %s" % region
 
         if self.verbose:
             print "rotor speed %s" % turbine.rotor_speed
             print "pitch %s" % turbine.pitch
+
             print "-"*len(TopDelimiter)
 
         self.turbineOut = turbine
@@ -637,4 +651,66 @@ def constructCoupledFLORIS_CCBlade_control(number_of_turbines, freestream_wind_s
         FLORIS_CCBlade_control.driver.add_parameter('windSpeedDistributor.wind_speed_in[%s]' % turbineI, low = FLORIS_CCBlade_control.driver.tolerance, high = freestream_wind_speed, start = startpoint_wind_speed)
         FLORIS_CCBlade_control.driver.add_constraint("windSpeedDistributor.wind_speed_in[%s] = floris.velocitiesTurbines[%s]" % (turbineI, turbineI))
 
+    FLORIS_CCBlade_control.create_passthrough('floris.wind_speed', 'wind_speed')
+    FLORIS_CCBlade_control.create_passthrough('floris.wind_direction', 'wind_direction')
+    FLORIS_CCBlade_control.create_passthrough('floris.air_density', 'air_density')
+    FLORIS_CCBlade_control.create_passthrough('control.verbose', 'controller_verbosity')
+    FLORIS_CCBlade_control.create_passthrough('floris.verbose', 'floris_verbosity')
+    FLORIS_CCBlade_control.create_passthrough('floris.power', 'power')
+    FLORIS_CCBlade_control.create_passthrough('floris.wt_power', 'wt_power')
+
     return FLORIS_CCBlade_control
+
+
+
+class CoupledFLORIS_CCBlade_control(GenericWindFarm):
+
+    air_density = Float(iotype='in', units='kg/m**3', desc='density of air')
+    controller_verbosity = Bool(False, iotype='in', desc='verbosity of controller, False is no output')
+    floris_verbosity = Bool(False, iotype='in', desc='verbosity of FLORIS, False is no output')
+    coupledModel_verbosity = Bool(False, iotype='in', desc='verbosity of overall model, False is no output')
+
+    def execute(self):
+        if self.coupledModel_verbosity:
+            print " construct coupled model..."
+
+        self.coupledModel = constructCoupledFLORIS_CCBlade_control(len(self.wt_layout.wt_list), startpoint_wind_speed = self.wind_speed)
+        self.coupledModel.control.listOfTurbinesIn = self.wt_layout.wt_list
+        self.coupledModel.wind_speed = self.wind_speed
+        self.coupledModel.air_density = self.air_density
+        self.coupledModel.wind_direction = self.wind_direction
+        self.coupledModel.controller_verbosity = self.controller_verbosity
+        self.coupledModel.floris_verbosity = self.floris_verbosity
+
+        if self.coupledModel_verbosity:
+            print " ... done"
+
+        if self.coupledModel_verbosity:
+            np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+            print " ======== COUPLED MODEL: FLORIS-SE+ROTOR-SE+CONTROL ============="
+            print " free-stream wind direction %0.3f deg" % self.wind_direction
+            print " free-stream wind speed %0.3f m/s" % self.wind_speed
+
+        self.coupledModel.run()
+        self.power = self.coupledModel.power
+        self.wt_power = self.coupledModel.wt_power
+
+        if self.coupledModel_verbosity:
+            print " no. of iterations in model evaluation: %s" % self.coupledModel.floris.exec_count
+
+        if self.coupledModel_verbosity:
+            print_power = self.wt_power/1000.0
+            if len(self.wt_power) > 6:
+                print " turbine powers: [ %0.3f  %0.3f  %0.3f  %0.3f  %0.3f ... ] MW" % (print_power[0], print_power[1], print_power[2], print_power[3], print_power[4])
+            else:
+                print " turbine powers: %s MW" % print_power
+            print " total wind plant power: %0.3f MW" % (self.power/1000.0)
+            print " ================================================================"
+
+
+
+
+
+
+
+
