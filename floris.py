@@ -140,7 +140,7 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
                 wakeCentersYT[turbI,turb] = turbineY[turb]
                 wakeCentersYT[turbI,turb] = wakeCentersYT[turbI,turb] + ad+bd*deltax  # rotation-induced deflection
                 wakeCentersYT[turbI,turb] = wakeCentersYT[turbI,turb] + \
-                                            (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,4))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,2))/(30*kd)) # yaw-induced deflection
+                                            (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,2))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,2))/(30*kd)) # yaw-induced deflection
 
         # calculate wake zone diameters at velX-locations
         wakeDiameters = np.zeros((nLocations,nTurbines,3))
