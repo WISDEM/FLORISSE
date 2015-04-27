@@ -133,14 +133,14 @@ class FLORIS(GenericWindFarm, GenericFlowModel):
                 wakeCentersY[loc,turb] = turbineY[turb]
                 wakeCentersY[loc,turb] = wakeCentersY[loc,turb] + ad+bd*deltax  # rotation-induced deflection
                 wakeCentersY[loc,turb] = wakeCentersY[loc,turb] + \
-                                         (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,2))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,4))/(30*kd)) # yaw-induced deflection
+                                         (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,2))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,2))/(30*kd)) # yaw-induced deflection
             for turbI in range(0,nTurbines):  # at turbineX-locations
                 deltax = np.maximum(turbineX[turbI]-turbineX[turb],0)
                 factor = (2*kd*deltax/rotorDiameter[turb])+1
                 wakeCentersYT[turbI,turb] = turbineY[turb]
                 wakeCentersYT[turbI,turb] = wakeCentersYT[turbI,turb] + ad+bd*deltax  # rotation-induced deflection
                 wakeCentersYT[turbI,turb] = wakeCentersYT[turbI,turb] + \
-                                            (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,4))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,4))/(30*kd)) # yaw-induced deflection
+                                            (wakeAngleInit*(15*np.power(factor,4)+np.power(wakeAngleInit,4))/((30*kd*np.power(factor,5))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15+np.power(wakeAngleInit,2))/(30*kd)) # yaw-induced deflection
 
         # calculate wake zone diameters at velX-locations
         wakeDiameters = np.zeros((nLocations,nTurbines,3))
