@@ -87,3 +87,9 @@ nosetests.xml
 Icon?
 ehthumbs.db
 Thumbs.db
+
+# ignore openmdao log file
+openmdao_log.txt
+
+# ignore pre-built object files
+*.o
