@@ -1,5 +1,6 @@
 from openmdao.api import Problem, Group, IndepVarComp
-from floris_openmdao1 import FLORIS, adjustCtCp_yaw
+from floris_openmdao1 import FLORIS
+from GeneralWindfarmComponents import AdjustCtCpYaw
 
 import time
 import numpy as np
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     # set up problem
     prob = Problem(root=Group())
     prob.root.add('myFloris', FLORIS(nTurbs, resolution=0))
-    prob.root.add('CtCp', adjustCtCp_yaw(nTurbs))
+    prob.root.add('CtCp', AdjustCtCpYaw(nTurbs))
 
     # connect components
     prob.root.connect('CtCp.Ct_out', 'myFloris.Ct')

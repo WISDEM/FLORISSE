@@ -1,6 +1,8 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp
+from openmdao.api import Group, Component, Problem, IndepVarComp, ExecComp
+
+from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX
 
 import _floris
 
@@ -10,244 +12,10 @@ class FLORIS(Group):
 
     def __init__(self, nTurbines, resolution):
         super(FLORIS, self).__init__()
-        self.add('f_1', floris_windframe(nTurbines, resolution), promotes=['*'])
+        self.add('f_1', WindFrame(nTurbines, resolution), promotes=['*'])
         self.add('f_2', floris_wcent_wdiam(nTurbines), promotes=['*'])
         self.add('f_3', floris_overlap(nTurbines), promotes=['*'])
         self.add('f_4', floris_power(nTurbines), promotes=['*'])
-
-
-class adjustCtCp_yaw(Component):
-    """ Adjust Cp and Ct to yaw if they are not already adjusted """
-
-    def __init__(self, nTurbines):
-
-        print 'entering adjustCtCp __init__ - analytic'
-        super(adjustCtCp_yaw, self).__init__()
-
-        # Explicitly size input arrays
-        self.add_param('Ct_in', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
-        self.add_param('Cp_in', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
-        self.add_param('yaw', val=np.zeros(nTurbines), desc='yaw of each turbine')
-
-        # Explicitly size output arrays
-        self.add_output('Ct_out', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
-        self.add_output('Cp_out', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
-
-        # parameters since var trees are not supports
-        self.add_param('floris_params:pP', 1.88)
-        self.add_param('floris_params:CTcorrected', False,
-                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:CPcorrected', False,
-                       desc='CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
-        self.add_param('floris_params:FLORISoriginal', False,
-                       desc='override all parameters and use FLORIS as original in first Wind Energy paper')
-
-    def solve_nonlinear(self, params, unknowns, resids):
-
-        print 'entering adjustCtCP - analytic'
-
-        # collect inputs
-        Ct = params['Ct_in']
-        Cp = params['Cp_in']
-        yaw = params['yaw'] * np.pi / 180.
-
-        # determine floris_parameter values
-        if params['floris_params:FLORISoriginal']:
-            pP = 1.88
-        else:
-            pP = params['floris_params:pP']
-
-        CTcorrected = params['floris_params:CTcorrected']
-        CPcorrected = params['floris_params:CPcorrected']
-
-        # calculate new CT values, if desired
-        if not CTcorrected:
-            unknowns['Ct_out'] = Ct * np.cos(yaw) * np.cos(yaw)
-        else:
-            unknowns['Ct_out'] = Ct
-
-        # calculate new CP values, if desired
-        if not CPcorrected:
-            unknowns['Cp_out'] = Cp * np.cos(yaw) ** pP
-        else:
-            unknowns['Cp_out'] = Cp
-
-    def linearize(self, params, unknowns, resids):
-
-        # collect inputs
-        Ct = params['Ct_in']
-        Cp = params['Cp_in']
-        nTurbines = np.size(Ct)
-        yaw = params['yaw'] * np.pi / 180.
-
-        # determine floris_parameter values
-        if params['floris_params:FLORISoriginal']:
-            pP = 1.88
-        else:
-            pP = params['floris_params:pP']
-
-        CTcorrected = params['floris_params:CTcorrected']
-        CPcorrected = params['floris_params:CPcorrected']
-
-        # calculate gradients
-        J = {}
-
-        if not CTcorrected:
-            J[('Ct_out', 'Ct_in')] = np.eye(nTurbines) * np.cos(yaw) * np.cos(yaw)
-            J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw')] = np.eye(nTurbines) * (-2. * Ct * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
-        else:
-            J[('Ct_out', 'Ct_in')] = np.eye(nTurbines, nTurbines)
-            J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
-
-        if not CPcorrected:
-            J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines) * np.cos(yaw) ** pP
-            J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Cp_out', 'yaw')] = np.eye(nTurbines, nTurbines) * (
-                -Cp * pP * np.sin(yaw) * np.cos(yaw) ** (pP - 1.0)) * np.pi / 180.
-        else:
-            J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines)
-            J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Cp_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
-
-        return J
-
-
-class floris_windframe(Component):
-    """ Calculates the locations of each turbine in the wind direction reference frame """
-
-    def __init__(self, nTurbines, resolution):
-
-        print 'entering windframe __init__ - analytic'
-
-        super(floris_windframe, self).__init__()
-
-        self.nTurbines = nTurbines
-
-        # flow property variables
-        self.add_param('wind_speed', val=8.0, units='m/s', desc='free stream wind velocity')
-        self.add_param('wind_direction', val=270, units='deg',
-                       desc='wind direction using direction from, in deg. cw from north as in meteorological data')
-
-        # Explicitly size input arrays
-        self.add_param('turbineX', val=np.zeros(nTurbines), desc='x positions of turbines in original ref. frame')
-        self.add_param('turbineY', val=np.zeros(nTurbines), desc='y positions of turbines in original ref. frame')
-
-        # variables for testing wind speed at various locations
-        self.add_param('ws_position', val=np.zeros(resolution * resolution), units='m',
-                       desc='position of desired measurements in original ref. frame')
-
-        # Explicitly size output arrays
-        self.add_param('wsw_position', val=np.zeros(resolution * resolution), units='m',
-                       desc='position of desired measurements in wind ref. frame')
-
-        # add output
-        self.add_output('turbineXw', val=np.zeros(nTurbines), units='m', desc='downwind coordinates of turbines')
-        self.add_output('turbineYw', val=np.zeros(nTurbines), units='m', desc='crosswind coordinates of turbines')
-
-        # define floris parameters
-        self.add_param('floris_params:pP', 1.88)
-        self.add_param('floris_params:ke', 0.065)
-        self.add_param('floris_params:keCorrArray', 0.0)
-        self.add_param('floris_params:keCorrCT', 0.0)
-        self.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)))
-        self.add_param('floris_params:kd', 0.15)
-        self.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]))
-        self.add_param('floris_params:initialWakeDisplacement', -4.5)
-        self.add_param('floris_params:initialWakeAngle', 3.0)
-        self.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.))
-        self.add_param('floris_params:keCorrTI', 0.0)
-        self.add_param('floris_params:baselineTI', 0.045)
-        self.add_param('floris_params:keCorrHR', 0.0) # neutral, with heating rate 0, is baseline
-        self.add_param('floris_params:keCorrHRTI', 0.0)
-        self.add_param('floris_params:keSaturation', 0.0)
-        self.add_param('floris_params:kdCorrYawDirection', 0.0)
-        self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]))
-        self.add_param('floris_params:CTcorrected', True, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:CPcorrected', True, desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
-        self.add_param('floris_params:axialIndProvided', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:useWakeAngle', True)
-        self.add_param('floris_params:bd', -0.01)
-        self.add_param('floris_params:useaUbU', False)
-        self.add_param('floris_params:aU', 5.0, units='deg')
-        self.add_param('floris_params:bU', 1.66)
-        self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
-        self.add_param('floris_params:FLORISoriginal', False, desc='override all parameters and use FLORIS as original in first Wind Energy paper')
-
-    def solve_nonlinear(self, params, unknowns, resids):
-
-        windDirectionDeg = params['wind_direction']
-
-        # get turbine positions and velocity sampling positions
-        turbineX = params['turbineX']
-        turbineY = params['turbineY']
-
-        # if self.ws_position.any():
-        #     velX = self.ws_position[:, 0]
-        #     velY = self.ws_position[:, 1]
-        # else:
-        #     velX = np.zeros([0, 0])
-        #     velY = np.zeros([0, 0])
-
-        # convert to downwind(x)-crosswind(y) coordinates
-        windDirectionDeg = 270. - windDirectionDeg
-        if windDirectionDeg < 0.:
-            windDirectionDeg += 360.
-        windDirectionRad = np.pi*windDirectionDeg/180.0             # inflow wind direction in radians
-        # rotationMatrix = np.array([(np.cos(-windDirectionRad), -np.sin(-windDirectionRad)),
-        #                            (np.sin(-windDirectionRad), np.cos(-windDirectionRad))])
-        turbineXw = turbineX*np.cos(-windDirectionRad)-turbineY*np.sin(-windDirectionRad)
-        turbineYw = turbineX*np.sin(-windDirectionRad)+turbineY*np.cos(-windDirectionRad)
-        # turbineLocations = np.dot(rotationMatrix, np.array([turbineX, turbineY]))
-        # turbineLocations = rotationMatrix*np.array([turbineX, turbineY])
-        # print turbineLocations
-        # unknowns['turbineXw'] = turbineLocations[0]
-        # unknowns['turbineXw'] = turbineLocations[0]
-        unknowns['turbineXw'] = turbineXw
-        unknowns['turbineYw'] = turbineYw
-
-
-        #print 'windframe.turbineX = %s' %self.turbineX
-        # if velX.size > 0:
-        #     locations = np.dot(rotationMatrix, np.array([velX, velY]))
-        #     velX = locations[0]
-        #     velY = locations[1]
-
-        # self.wsw_position = np.array([velX, velY])
-        #print 'wsw_position in windframe is:', self.wsw_position
-        #print 'ws_position in windframe is:', self.ws_position
-
-        # print self.turbineXw
-
-    def linearize(self, params, unknowns, resids):
-
-        print 'entering windframe - provideJ'
-
-        nTurbines = self.nTurbines
-
-        windDirectionDeg = params['wind_direction']
-
-        windDirectionDeg = 270. - windDirectionDeg
-        if windDirectionDeg < 0.:
-            windDirectionDeg += 360.
-
-        windDirectionRad = np.pi*windDirectionDeg/180.0             # inflow wind direction in radians
-
-        dturbineXw_dturbineX = np.ones([nTurbines, nTurbines])*np.cos(-windDirectionRad)
-        dturbineXw_dturbineY = np.ones([nTurbines, nTurbines])*(-np.sin(-windDirectionRad))
-        dturbineYw_dturbineX = np.ones([nTurbines, nTurbines])*np.sin(-windDirectionRad)
-        dturbineYw_dturbineY = np.ones([nTurbines, nTurbines])*np.cos(-windDirectionRad)
-
-        print dturbineXw_dturbineY.shape
-        J = {}
-
-        J[('turbineXw', 'turbineX')] = dturbineXw_dturbineX
-        J[('turbineXw', 'turbineY')] = dturbineXw_dturbineY
-        J[('turbineYw', 'turbineX')] = dturbineYw_dturbineX
-        J[('turbineYw', 'turbineY')] = dturbineYw_dturbineY
-
-        return J
 
 
 class floris_wcent_wdiam(Component):
@@ -255,7 +23,7 @@ class floris_wcent_wdiam(Component):
 
     def __init__(self, nTurbines):
 
-        print 'entering wcent_wdiam __init__ - Tapenade'
+        # print 'entering wcent_wdiam __init__ - Tapenade'
 
         super(floris_wcent_wdiam, self).__init__()
 
@@ -301,7 +69,7 @@ class floris_wcent_wdiam(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        print 'entering wcent_wdiam - tapenade'
+        # print 'entering wcent_wdiam - tapenade'
 
         rotorDiameter = params['rotorDiameter']
         Ct = params['Ct']
@@ -346,8 +114,11 @@ class floris_wcent_wdiam(Component):
         unknowns['wakeCentersYT'] = wakeCentersYT_vec
         unknowns['wakeDiametersT'] = wakeDiametersT_vec
 
+        # print 'yaw: ', yaw_deg
+
     def linearize(self, params, unknowns, resids):
 
+        # # # print 'entering wcen wdiam linearize'
         rotorDiameter = params['rotorDiameter']
         Ct = params['Ct']
         Region2CT = params['floris_params:Region2CT']
@@ -402,14 +173,17 @@ class floris_wcent_wdiam(Component):
                               rotorDiameter, me, bd, useWakeAngle, adjustInitialWakeDiamToYaw, wakeCentersYT_vecb, \
                               wakeDiametersT_vecb)
 
+        # print 'here', turbineXwb, yawb.shape, Ctb.shape, rotorDiameterb.shape
+
         # construct Jacobian of wakeCentersYT
-        J['wakeCentersYT', 'yaw'] = yawb
-        J['wakeCentersYT', 'Ct'] = Ctb
-        J['wakeCentersYT', 'turbineXw'] = turbineXwb
-        J['wakeCentersYT', 'turbineYw'] = turbineYwb
-        J['wakeCentersYT', 'rotorDiameter'] = rotorDiameterb
+        J['wakeCentersYT', 'yaw'] = yawb[0:36, :]
+        J['wakeCentersYT', 'Ct'] = Ctb[0:36, :]
+        J['wakeCentersYT', 'turbineXw'] = turbineXwb[0:36, :]
+        J['wakeCentersYT', 'turbineYw'] = turbineYwb[0:36, :]
+        J['wakeCentersYT', 'rotorDiameter'] = rotorDiameterb[0:36, :]
 
         # input arrays to direct differentiation
+        # nbdirs = nTurbines*nTurbines
         wakeCentersYT_vecb[:, :] = 0.0
         wakeDiametersT_vecb = np.eye(nbdirs, nbdirs)
 
@@ -434,7 +208,7 @@ class floris_overlap(Component):
 
     def __init__(self, nTurbines):
 
-        print 'entering overlap __init__ - Tapenade'
+        # print 'entering overlap __init__ - Tapenade'
 
         super(floris_overlap, self).__init__()
 
@@ -459,7 +233,7 @@ class floris_overlap(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        print 'entering overlap - Tapenade'
+        # print 'entering overlap - Tapenade'
 
         # call to fortran code to obtain relative wake overlap values
         wakeOverlapTRel_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
@@ -469,7 +243,7 @@ class floris_overlap(Component):
         unknowns['wakeOverlapTRel'] = wakeOverlapTRel_vec
 
     def linearize(self, params, unknowns, resids):
-
+        # print 'entering overlap linearize'
         # number of turbines
         nTurbines = self.nTurbines
 
@@ -502,7 +276,7 @@ class floris_power(Component):
 
     def __init__(self, nTurbines):
 
-        print 'entering power __init__ - Tapenade'
+        # print 'entering power __init__ - Tapenade'
 
         super(floris_power, self).__init__()
 
@@ -570,7 +344,7 @@ class floris_power(Component):
                        desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
     def solve_nonlinear(self, params, unknowns, resids):
-        print 'entering power - tapenade'
+        # print 'entering power - tapenade'
 
         # reassign input variables
         wakeOverlapTRel_v = params['wakeOverlapTRel']
@@ -627,8 +401,13 @@ class floris_power(Component):
         unknowns['wt_power'] = wt_power
         unknowns['power'] = power
 
-    def linearize(self, params, unknowns, resids):
+        # print 'velocitiesTurbines: ', velocitiesTurbines
+        # print 'wt_power: ', wt_power
+        # print 'power: ', power
 
+
+    def linearize(self, params, unknowns, resids):
+        # print 'entering power linearize'
         # number of turbines
         nTurbines = self.nTurbines
 
@@ -706,6 +485,7 @@ class floris_power(Component):
                                       Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
                                       rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb, wt_powerb, powerb)
 
+        # print wakeOverlapTRel_vb.shape, wt_powerb.shape
         # collect values of the jacobian of wt_power
         J['wt_power', 'wakeOverlapTRel'] = wakeOverlapTRel_vb
         J['wt_power', 'Ct'] = Ctb
@@ -725,18 +505,87 @@ class floris_power(Component):
                                       Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
                                       rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb, wt_powerb, powerb)
 
+        # print wakeOverlapTRel_vb[0, :].shape, Ctb[0, :].shape, Cpb[0, :].shape, axialInductionb[0, :], turbineXwb[0, :].shape, yawb[0, :].shape, rotorDiameterb[0, :].shape
+
+        # # print np.array(yawb[:1, :])
         # collect values of the jacobian of wt_power
-        J['power', 'wakeOverlapTRel'] = wakeOverlapTRel_vb
-        J['power', 'Ct'] = Ctb
-        J['power', 'Cp'] = Cpb
-        J['power', 'axialInduction'] = axialInductionb
-        J['power', 'turbineXw'] = turbineXwb
-        J['power', 'yaw'] = yawb
-        J['power', 'rotorDiameter'] = rotorDiameterb
+        J['power', 'wakeOverlapTRel'] = np.array(wakeOverlapTRel_vb[:1, :])
+        J['power', 'Ct'] = np.array(Ctb[:1, :])
+        J['power', 'Cp'] = np.array(Cpb[:1, :])
+        J['power', 'axialInduction'] = np.array(axialInductionb[:1, :])
+        J['power', 'turbineXw'] = np.array(turbineXwb[:1, :])
+        J['power', 'yaw'] = np.array(yawb[:1, :])
+        J['power', 'rotorDiameter'] = np.array(rotorDiameterb[:1, :])
+
+        # print 'leaving power linearize'
 
         return J
 
 
+# Groups using FLORIS
+class DirectionGroupFLORIS(Group):
+    """
+    Group containing all necessary components for wind plant calculations
+    in a single direction
+    """
+
+    def __init__(self, nTurbines, resolution=0):
+        super(DirectionGroupFLORIS, self).__init__()
+
+        self.add('CtCp', AdjustCtCpYaw(nTurbines),
+                 promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'yaw'])
+
+        self.add('myFloris', FLORIS(nTurbines, resolution),
+                 promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
+                           'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw',
+                           'velocitiesTurbines', 'wt_power', 'power'])
+
+        self.connect('floris_params:CTcorrected', 'params:CTcorrected')
+        self.connect('floris_params:CPcorrected', 'params:CPcorrected')
+        self.connect('CtCp.Ct_out', 'myFloris.Ct')
+        self.connect('CtCp.Cp_out', 'myFloris.Cp')
+
+
+class AEPGroupFLORIS(Group):
+    """
+    Group containing all necessary components for wind plant AEP calculations using the FLORIS model
+    """
+
+    def __init__(self, nTurbines, resolution=0, nDirections=1):
+
+        super(AEPGroupFLORIS, self).__init__()
+
+        # add major components
+        self.add('windDirectionsDeMUX', DeMUX(nDirections))
+        for i in range(0, nDirections):
+            self.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
+                     promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
+                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])
+
+        self.add('powerMUX', MUX(nDirections))
+        self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
+
+        # add necessary inputs for group
+        self.add('p1', IndepVarComp('windDirections', np.zeros(nDirections)), promotes=['*'])
+        self.add('p2', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p3', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
+        for i in range(0, nDirections):
+            self.add('y%i' % i, IndepVarComp('yaw%i' % i, np.zeros(nTurbines)), promotes=['*'])
+
+        # connect components
+        self.connect('windDirections', 'windDirectionsDeMUX.Array')
+        for i in range(0, nDirections):
+            self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
+            self.connect('yaw%i' % i, 'dir%i.yaw' % i)
+            self.connect('dir%i.power' % i, 'powerMUX.input%i' % i)
+            # print nDirections
+
+        self.connect('powerMUX.Array', 'power_directions')
+        # self.connect('floris_params:CTcorrected', 'params:CTcorrected')
+        # self.connect('floris_params:CPcorrected', 'params:CPcorrected')
+
+
+# Testing code for development only
 if __name__ == "__main__":
     top = Problem()
 
@@ -745,7 +594,7 @@ if __name__ == "__main__":
     root.add('p1', IndepVarComp('x', np.array([3.0])))
     root.add('p2', IndepVarComp('y', np.array([2.0])))
     root.add('p3', IndepVarComp('z', np.array([1.0])))
-    root.add('p', adjustCtCp_yaw(nTurbines=np.array([1])))
+    root.add('p', AdjustCtCpYaw(nTurbines=np.array([1])))
 
     root.connect('p1.x', 'p.Ct_in')
     root.connect('p2.y', 'p.Cp_in')
@@ -764,7 +613,7 @@ if __name__ == "__main__":
     root.add('p1', IndepVarComp('x', np.array([10.0])))
     root.add('p2', IndepVarComp('y', np.array([10.0])))
     root.add('p3', IndepVarComp('z', 90))
-    root.add('p', floris_windframe(nTurbines=np.array([1]), resolution=0))
+    root.add('p', WindFrame(nTurbines=np.array([1]), resolution=0))
 
     root.connect('p1.x', 'p.turbineX')
     root.connect('p2.y', 'p.turbineY')
