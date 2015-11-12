@@ -1,4 +1,4 @@
-from openmdao.api import Problem, ScipyOptimizer, pyOptSparseDriver
+from openmdao.api import Problem, pyOptSparseDriver
 from OptimizationGroups import OptAEP
 
 import time
@@ -41,12 +41,14 @@ if __name__ == "__main__":
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    # prob.driver.options['tol'] = 1.0E-8
+    prob.driver.add_objective('obj')
+
+    # select design variables
     # prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
     # prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
     for i in range(0, windDirections.size):
         prob.driver.add_desvar('yaw%i' % i, low=-30.0, high=30.0)
-    prob.driver.add_objective('obj')
+
 
     # initialize problem
     prob.setup()
@@ -59,7 +61,7 @@ if __name__ == "__main__":
 
     # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
-    # prob['axialInduction'] = axialInduction
+    prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
@@ -83,13 +85,9 @@ if __name__ == "__main__":
 
     for i in range(0, windDirections.size):
         print 'yaw%i (deg) = ' % i, prob.root.unknowns['yaw%i' % i]
-        # exec("print prob.root.AEPGroup.dir%i.unknowns['velocitiesTurbines']" % i)
+        exec("print 'velocities in dir%i: ', prob.root.AEPgroup.dir%i.unknowns['velocitiesTurbines']" % (i, i))
 
-    print 'turbine X positions in wind frame (m): %s' % prob.root.AEPGroup.unknowns['turbineX']
+    print 'turbine X positions in wind frame (m): %s' % prob.root.unknowns['turbineX']
     print 'turbine Y positions in wind frame (m): %s' % prob.root.unknowns['turbineY']
-    # print 'turbine powers (kW): %s' % prob.root.unknowns['power_directions']
-    # print 'wind farm power (kW): %s' % prob.root.unknowns['power']
+    print 'power in each direction (kW): %s' % prob.root.AEPgroup.AEPcomp.params['power_directions']
     print 'AEP (kWh): %s' % prob.root.unknowns['AEP']
-
-    # data = prob.check_partial_derivatives()
-

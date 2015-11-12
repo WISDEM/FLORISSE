@@ -37,7 +37,7 @@ class OptAEP(Group):
         super(OptAEP, self).__init__()
 
         # add major components
-        self.add('AEPGroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections), promotes=['*'])
+        self.add('AEPgroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections), promotes=['*'])
 
         # add objective component
         self.add('obj_comp', ExecComp('obj = -1*AEP', AEP=0.0), promotes=['*'])

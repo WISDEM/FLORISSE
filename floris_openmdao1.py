@@ -560,7 +560,7 @@ class AEPGroupFLORIS(Group):
         for i in range(0, nDirections):
             self.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
                      promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
-                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])
+                               'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])
 
         self.add('powerMUX', MUX(nDirections))
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
