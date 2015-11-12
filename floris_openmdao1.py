@@ -176,11 +176,11 @@ class floris_wcent_wdiam(Component):
         # print 'here', turbineXwb, yawb.shape, Ctb.shape, rotorDiameterb.shape
 
         # construct Jacobian of wakeCentersYT
-        J['wakeCentersYT', 'yaw'] = yawb[0:36, :]
-        J['wakeCentersYT', 'Ct'] = Ctb[0:36, :]
-        J['wakeCentersYT', 'turbineXw'] = turbineXwb[0:36, :]
-        J['wakeCentersYT', 'turbineYw'] = turbineYwb[0:36, :]
-        J['wakeCentersYT', 'rotorDiameter'] = rotorDiameterb[0:36, :]
+        J['wakeCentersYT', 'yaw'] = yawb[0:nTurbines*nTurbines, :]
+        J['wakeCentersYT', 'Ct'] = Ctb[0:nTurbines*nTurbines, :]
+        J['wakeCentersYT', 'turbineXw'] = turbineXwb[0:nTurbines*nTurbines, :]
+        J['wakeCentersYT', 'turbineYw'] = turbineYwb[0:nTurbines*nTurbines, :]
+        J['wakeCentersYT', 'rotorDiameter'] = rotorDiameterb[0:nTurbines*nTurbines, :]
 
         # input arrays to direct differentiation
         # nbdirs = nTurbines*nTurbines
