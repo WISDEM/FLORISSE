@@ -257,6 +257,70 @@ class WindFarmAEP(Component):
         return J
 
 
+class SpacingComp(Component):
+    """
+    Calculates inter-turbine spacing for all turbine pairs
+    """
+
+    def __init__(self, nTurbines):
+
+        # print 'entering dist_const __init__
+
+        super(SpacingComp, self).__init__()
+
+        # Explicitly size input arrays
+        self.add_param('turbineX', np.zeros(nTurbines),
+                       desc='x coordinates of turbines in wind dir. ref. frame')
+        self.add_param('turbineY', np.zeros(nTurbines),
+                       desc='y coordinates of turbines in wind dir. ref. frame')
+
+        # Explicitly size output array
+        self.add_output('separation', np.zeros((nTurbines-1.)*nTurbines/2.),
+                        desc='spacing of all turbines in the wind farm')
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        # print 'in dist const'
+
+        turbineX = params['turbineX']
+        turbineY = params['turbineY']
+        nTurbines = turbineX.size
+        separation = np.zeros((nTurbines-1.)*nTurbines/2.)
+
+        k = 0
+        for i in range(0, nTurbines):
+            for j in range(i+1, nTurbines):
+                separation[k] = np.sqrt((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)
+                k += 1
+        unknowns['separation'] = separation
+
+    def linearize(self, params, unknowns, resids):
+        # print 'entering dist const - linearize'
+        turbineX = params['turbineX']
+        turbineY = params['turbineY']
+        nTurbines = turbineX.size
+        dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
+        k = 0
+        # print 'in dist_const, turbineX = ', turbineX
+        # print 'in dist_const, turbineY = ', turbineY
+
+        for i in range(0, nTurbines):
+            for j in range(i+1, nTurbines):
+                dS[k, j] = (turbineX[j]-turbineX[i])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
+                dS[k, i] = (turbineX[i]-turbineX[j])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
+                dS[k, j+nTurbines] = (turbineY[j]-turbineY[i])*((turbineX[j]-turbineX[i])**2 +
+                                                                (turbineY[j]-turbineY[i])**2)**(-0.5)
+                dS[k, i+nTurbines] = (turbineY[i]-turbineY[j])*((turbineX[j]-turbineX[i])**2 +
+                                                                (turbineY[j]-turbineY[i])**2)**(-0.5)
+                k += 1
+
+        J = {}
+
+        J['separation', 'turbineX'] = dS[:, 0:nTurbines]
+        J['separation', 'turbineY'] = dS[:, nTurbines:nTurbines*nTurbines]
+        print J
+        return J
+
+
 class MUX(Component):
     """ Estimate the AEP based on power production for each direction and weighted by wind direction frequency  """
 

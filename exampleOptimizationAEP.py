@@ -31,6 +31,7 @@ if __name__ == "__main__":
     Cp = np.zeros(nTurbs)
     generator_efficiency = np.zeros(nTurbs)
     yaw = np.zeros(nTurbs)
+    minSpacing = 2.                         # number of rotor diameters
 
     # define initial values
     for turbI in range(0, nTurbs):
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     windDirections = np.array([wind_direction, wind_direction-90, wind_direction+90])
 
     # initialize problem
-    prob = Problem(root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0))
+    prob = Problem(root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -56,11 +57,13 @@ if __name__ == "__main__":
     prob.driver.add_objective('obj')
 
     # select design variables
-    # prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
-    # prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
+    prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
+    prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
     for i in range(0, windDirections.size):
         prob.driver.add_desvar('yaw%i' % i, low=-30.0, high=30.0)
 
+    # add constraints
+    # prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
 
     # initialize problem
     prob.setup()
@@ -96,10 +99,10 @@ if __name__ == "__main__":
     print('FLORIS Opt. calculation took %.03f sec.' % (toc-tic))
 
     for i in range(0, windDirections.size):
-        print 'yaw%i (deg) = ' % i, prob.root.unknowns['yaw%i' % i]
+        print 'yaw%i (deg) = ' % i, prob['yaw%i' % i]
         exec("print 'velocities in dir%i: ', prob.root.AEPgroup.dir%i.unknowns['velocitiesTurbines']" % (i, i))
 
-    print 'turbine X positions in wind frame (m): %s' % prob.root.unknowns['turbineX']
-    print 'turbine Y positions in wind frame (m): %s' % prob.root.unknowns['turbineY']
-    print 'power in each direction (kW): %s' % prob.root.AEPgroup.AEPcomp.params['power_directions']
-    print 'AEP (kWh): %s' % prob.root.unknowns['AEP']
+    print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
+    print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
+    print 'power in each direction (kW): %s' % prob['power_directions']
+    print 'AEP (kWh): %s' % prob['AEP']
