@@ -96,8 +96,11 @@ class OptAEP(Group):
 
         power_directions:   1D numpy array containing the power production for each wind direction (unweighted)
 
-        velocitiesTurbines: velocity at each turbine in each direction. Currently only accessible by
-                            ~.AEPgroup.dir%i.unknowns['velocitiesTurbines']
+        velocitiesTurbines: 1D numpy array of velocity at each turbine in each direction. Currently only accessible by
+                            *.AEPgroup.dir%i.unknowns['velocitiesTurbines']
+
+        wt_powers: 1D numpy array of power production at each turbine in each direction. Currently only accessible by
+                            *.AEPgroup.dir%i.unknowns['velocitiesTurbines']
 
     """
 

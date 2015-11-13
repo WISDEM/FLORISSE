@@ -3,6 +3,7 @@ from OptimizationGroups import OptAEP
 
 import time
 import numpy as np
+import pylab as plt
 
 
 if __name__ == "__main__":
@@ -15,7 +16,7 @@ if __name__ == "__main__":
     # turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])   # m
     # turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])   # m
     # Scaling grid case
-    nRows = 3       # number of rows and columns in grid
+    nRows = 5       # number of rows and columns in grid
     spacing = 5     # turbine grid spacing in diameters
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
@@ -46,8 +47,8 @@ if __name__ == "__main__":
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
     wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
-    windDirections = np.array([wind_direction, wind_direction-90, wind_direction+90])
-
+    windDirections = np.linspace(0, 270, 4)
+    print windDirections
     # initialize problem
     prob = Problem(root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
 
@@ -59,8 +60,8 @@ if __name__ == "__main__":
     # select design variables
     prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
     prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
-    for i in range(0, windDirections.size):
-        prob.driver.add_desvar('yaw%i' % i, low=-30.0, high=30.0)
+    # for i in range(0, windDirections.size):
+    #     prob.driver.add_desvar('yaw%i' % i, low=-30.0, high=30.0)
 
     # add constraints
     # prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
@@ -86,7 +87,7 @@ if __name__ == "__main__":
     prob['floris_params:FLORISoriginal'] = True
     prob['floris_params:CPcorrected'] = False
     prob['floris_params:CTcorrected'] = False
-    prob['windrose_frequencies'] = np.array([0.25, 0.5, 0.25])
+    prob['windrose_frequencies'] = np.array([0.2, 0.2, 0.2, 0.4])
 
     # run the problem
     print 'start FLORIS run'
@@ -106,3 +107,17 @@ if __name__ == "__main__":
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
     print 'power in each direction (kW): %s' % prob['power_directions']
     print 'AEP (kWh): %s' % prob['AEP']
+
+    xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
+    ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
+
+    plt.figure()
+    plt.plot(turbineX, turbineY, 'ok', label='Original')
+    plt.plot(prob['turbineX'], prob['turbineY'], 'og', label='Optimized')
+    plt.plot(xbounds, ybounds, ':k')
+    for i in range(0, nTurbs):
+        plt.plot([turbineX[i], prob['turbineX'][i]], [turbineY[i], prob['turbineY'][i]], '--k')
+    plt.legend()
+    plt.xlabel('Turbine X Position (m)')
+    plt.ylabel('Turbine Y Position (m)')
+    plt.show()

@@ -230,7 +230,7 @@ class WindFarmAEP(Component):
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
-        # print 'In AEP, AEP %s' % unknowns['AEP']
+        print 'In AEP, AEP %s' % unknowns['AEP']
 
     def linearize(self, params, unknowns, resids):
 
@@ -317,7 +317,7 @@ class SpacingComp(Component):
 
         J['separation', 'turbineX'] = dS[:, 0:nTurbines]
         J['separation', 'turbineY'] = dS[:, nTurbines:nTurbines*nTurbines]
-        print J
+        # print J
         return J
 
 
