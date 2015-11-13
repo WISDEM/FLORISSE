@@ -1,0 +1,2 @@
+module load python
+. ../../openmdao-0.13.0/bin/activate
