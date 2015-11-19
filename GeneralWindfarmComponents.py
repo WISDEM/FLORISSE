@@ -43,7 +43,7 @@ class WindFrame(Component):
         turbineX = params['turbineX']
         turbineY = params['turbineY']
 
-        # print turbineX, turbineY
+        # print "in windframe", turbineX, turbineY
 
         # if self.ws_position.any():
         #     velX = self.ws_position[:, 0]
@@ -269,13 +269,13 @@ class SpacingComp(Component):
         super(SpacingComp, self).__init__()
 
         # Explicitly size input arrays
-        self.add_param('turbineX', np.zeros(nTurbines),
+        self.add_param('turbineX', val=np.zeros(nTurbines),
                        desc='x coordinates of turbines in wind dir. ref. frame')
-        self.add_param('turbineY', np.zeros(nTurbines),
+        self.add_param('turbineY', val=np.zeros(nTurbines),
                        desc='y coordinates of turbines in wind dir. ref. frame')
 
         # Explicitly size output array
-        self.add_output('separation', np.zeros((nTurbines-1.)*nTurbines/2.),
+        self.add_output('separation', val=np.zeros((nTurbines-1.)*nTurbines/2.),
                         desc='spacing of all turbines in the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -297,6 +297,8 @@ class SpacingComp(Component):
         # print 'entering dist const - linearize'
         turbineX = params['turbineX']
         turbineY = params['turbineY']
+        # print turbineX
+        # print turbineY
         nTurbines = turbineX.size
         dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
         k = 0
@@ -305,18 +307,30 @@ class SpacingComp(Component):
 
         for i in range(0, nTurbines):
             for j in range(i+1, nTurbines):
-                dS[k, j] = (turbineX[j]-turbineX[i])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
-                dS[k, i] = (turbineX[i]-turbineX[j])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
-                dS[k, j+nTurbines] = (turbineY[j]-turbineY[i])*((turbineX[j]-turbineX[i])**2 +
-                                                                (turbineY[j]-turbineY[i])**2)**(-0.5)
-                dS[k, i+nTurbines] = (turbineY[i]-turbineY[j])*((turbineX[j]-turbineX[i])**2 +
-                                                                (turbineY[j]-turbineY[i])**2)**(-0.5)
+
+                if turbineX[i] != turbineX[j] or turbineY[i] != turbineY[j]:
+                    # separation wrt Xj
+                    dS[k, j] = (turbineX[j]-turbineX[i])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
+                    # separation wrt Xi
+                    dS[k, i] = (turbineX[i]-turbineX[j])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
+                    dS[k, j+nTurbines] = (turbineY[j]-turbineY[i])*((turbineX[j]-turbineX[i])**2 +
+                                                                    (turbineY[j]-turbineY[i])**2)**(-0.5)
+                    dS[k, i+nTurbines] = (turbineY[i]-turbineY[j])*((turbineX[j]-turbineX[i])**2 +
+                                                                    (turbineY[j]-turbineY[i])**2)**(-0.5)
+                else:
+                    # separation wrt Xj
+                    dS[k, j] = 1.
+                    # separation wrt Xi
+                    dS[k, i] = 1.
+                    dS[k, j+nTurbines] = 1.
+                    dS[k, i+nTurbines] = 1.
+
                 k += 1
 
         J = {}
 
-        J['separation', 'turbineX'] = dS[:, 0:nTurbines]
-        J['separation', 'turbineY'] = dS[:, nTurbines:nTurbines*nTurbines]
+        J['separation', 'turbineX'] = dS[:, :nTurbines]
+        J['separation', 'turbineY'] = dS[:, nTurbines:]
         # print J
         return J
 
@@ -477,21 +491,38 @@ if __name__ == "__main__":
     # print(root.p.unknowns['Array'])
     # top.check_partial_derivatives()
 
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.zeros(2)))
+    # root.add('p', DeMUX(nElements=2))
+    #
+    # root.connect('p1.x', 'p.Array')
+    #
+    # top.setup()
+    # top.run()
+    #
+    # # should return 8760.0
+    # print(root.p.unknowns['output0'])
+    # print(root.p.unknowns['output1'])
+    # top.check_partial_derivatives()
+
     top = Problem()
 
     root = top.root = Group()
 
-    root.add('p1', IndepVarComp('x', np.zeros(2)))
-    root.add('p', DeMUX(nElements=2))
+    root.add('p1', IndepVarComp('x', np.array([0, 3])))
+    root.add('p2', IndepVarComp('y', np.array([1, 0])))
+    root.add('p', SpacingComp(nTurbines=2))
 
-    root.connect('p1.x', 'p.Array')
+    root.connect('p1.x', 'p.turbineX')
+    root.connect('p2.y', 'p.turbineY')
 
     top.setup()
     top.run()
 
-    # should return 8760.0
-    print(root.p.unknowns['output0'])
-    print(root.p.unknowns['output1'])
+    # print(root.p.unknowns['output0'])
+    # print(root.p.unknowns['output1'])
     top.check_partial_derivatives()
-
 
