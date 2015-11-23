@@ -453,6 +453,85 @@ class DeMUX2D(Component):
         return J
 
 
+# class AdjustCpWindSpeedComponent):
+#     """ Adjust Cp and Ct to yaw if they are not already adjusted """
+#
+#     def __init__(self, nTurbines):
+#
+#         # print 'entering adjustCtCp __init__ - analytic'
+#         super(AdjustCtCpWindSPeed, self).__init__()
+#
+#         # Explicitly size input array
+#         self.add_param('Cp_in', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
+#
+#         # Explicitly size output arrays
+#         self.add_output('Cp_out', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
+#
+#         # parameters since var trees are not supports
+#         self.add_param('params:CpCurve', val=True)
+#
+#     def solve_nonlinear(self, params, unknowns, resids):
+#
+#         # print 'entering adjustCtCP - analytic'
+#
+#         # collect inputs
+#         windspeed = params['wind_speed']
+#         Cp = params['Cp_in']
+#
+#         CpCurve = params['params:CpCurve']
+#
+#         # calculate new CP values, if desired
+#         if not CpCurve:
+#             unknowns['Cp_out'] = Cp
+#         else:
+#             unknowns['Cp_out'] = np.log(windspeed+1.0)
+#
+#
+#
+#     def linearize(self, params, unknowns, resids):
+#
+#         # print 'entering CtCp linearize'
+#         # collect inputs
+#         Ct = params['Ct_in']
+#         Cp = params['Cp_in']
+#         nTurbines = np.size(Ct)
+#         yaw = params['yaw'] * np.pi / 180.
+#
+#         # determine floris_parameter values
+#         if params['floris_params:FLORISoriginal']:
+#             pP = 1.88
+#         else:
+#             pP = params['params:pP']
+#
+#         CTcorrected = params['params:CTcorrected']
+#         CPcorrected = params['params:CPcorrected']
+#
+#         # calculate gradients
+#         J = {}
+#
+#         if not CTcorrected:
+#             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines) * np.cos(yaw) * np.cos(yaw)
+#             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
+#             J[('Ct_out', 'yaw')] = np.eye(nTurbines) * (-2. * Ct * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
+#         else:
+#             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines, nTurbines)
+#             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
+#             J[('Ct_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
+#
+#         if not CPcorrected:
+#             J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines) * np.cos(yaw) ** pP
+#             J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
+#             J[('Cp_out', 'yaw')] = np.eye(nTurbines, nTurbines) * (
+#                 -Cp * pP * np.sin(yaw) * np.cos(yaw) ** (pP - 1.0)) * np.pi / 180.
+#         else:
+#             J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines)
+#             J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
+#             J[('Cp_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
+#
+#         return J
+#
+
+
 if __name__ == "__main__":
 
     # top = Problem()

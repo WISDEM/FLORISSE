@@ -67,6 +67,7 @@ if __name__ == "__main__":
     print 'start FLORIS run'
     tic = time.time()
     prob.run()
+    prob.check_partial_derivatives()
     toc = time.time()
 
     # print the results

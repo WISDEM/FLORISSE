@@ -19,13 +19,18 @@ class FLORIS(Group):
 
 
 class floris_wcent_wdiam(Component):
-    """ Calculates the center and diameter of each turbine wake at each other turbine """
 
     def __init__(self, nTurbines):
 
+        super(floris_wcent_wdiam, self).__init__()
+
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+
         # print 'entering wcent_wdiam __init__ - Tapenade'
 
-        super(floris_wcent_wdiam, self).__init__()
+
 
         # input arrays
         self.add_param('turbineXw', np.zeros(nTurbines), desc='x coordinates of turbines in wind dir. ref. frame')
@@ -208,9 +213,15 @@ class floris_overlap(Component):
 
     def __init__(self, nTurbines):
 
+        super(floris_overlap, self).__init__()
+
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+
         # print 'entering overlap __init__ - Tapenade'
 
-        super(floris_overlap, self).__init__()
+
 
         # input arrays
         self.add_param('turbineXw', np.zeros(nTurbines), units='m',
@@ -276,20 +287,26 @@ class floris_power(Component):
 
     def __init__(self, nTurbines):
 
+        super(floris_power, self).__init__()
+
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+
         # print 'entering power __init__ - Tapenade'
 
-        super(floris_power, self).__init__()
+
 
         self.nTurbines = nTurbines
 
         # inputs
         self.add_param('wind_speed', 8.0, units='m/s', desc='free stream wind velocity')
         self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameters of all turbine')
-        self.add_param('axialInduction', np.zeros(nTurbines), desc='axial induction of all turbines')
-        self.add_param('Ct', np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
-        self.add_param('Cp', np.zeros(nTurbines), desc='power coefficient for all turbines')
-        self.add_param('generator_efficiency', np.zeros(nTurbines), desc='generator efficiency of all turbines')
+        self.add_param('rotorDiameter', np.zeros(nTurbines)+126.4, units='m', desc='rotor diameters of all turbine')
+        self.add_param('axialInduction', np.zeros(nTurbines)+1./3., desc='axial induction of all turbines')
+        self.add_param('Ct', np.zeros(nTurbines)+4.0*(1./3.)*(1.0-(1./3.)), desc='Thrust coefficient for all turbines')
+        self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
+        self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
         self.add_param('turbineXw', np.zeros(nTurbines), units='m',
                        desc='X positions of turbines in the wind direction reference frame')
         self.add_param('yaw', np.zeros(nTurbines), units='deg',
@@ -298,7 +315,7 @@ class floris_power(Component):
                        desc='centers of the wakes at each turbine')
         self.add_param('wakeDiametersT', np.zeros(3*nTurbines*nTurbines), units='m',
                        desc='diameters of each of the wake zones for each of the wakes at each turbine')
-        self.add_param('wakeOverlapTRel', np.zeros(3*nTurbines*nTurbines), units='m',
+        self.add_param('wakeOverlapTRel', np.zeros(3*nTurbines*nTurbines),
                        desc='ratios of wake overlap area per zone to rotor area')
 
         # outputs
@@ -359,6 +376,8 @@ class floris_power(Component):
         Cp = params['Cp']
         yaw = params['yaw']
 
+        # print 'wake OL in power', wakeOverlapTRel_v
+
         # set floris parameter values
         if params['floris_params:FLORISoriginal']:
 
@@ -405,7 +424,6 @@ class floris_power(Component):
         # print 'wt_power: ', wt_power
         # print 'power: ', power
 
-
     def linearize(self, params, unknowns, resids):
         # print 'entering power linearize'
         # number of turbines
@@ -450,13 +468,16 @@ class floris_power(Component):
         axialIndProvided = params['floris_params:axialIndProvided']
 
         # see execute(self) for explanation
-        p_near0 = self.p_near0
+        # p_near0 = self.p_near0
+        p_near0 = 1.0
 
         # create jacobian dict
         J = {}
 
         # input arrays to direct differentiation
         velocitiesTurbinesb = np.eye(nbdirs, nTurbines)
+        # velocitiesTurbinesb = np.zeros((nbdirs, nTurbines))
+        # velocitiesTurbinesb[:, 0] = 1.0
         wt_powerb = np.zeros((nbdirs, nTurbines))
         powerb = np.zeros(nbdirs)
 
@@ -465,6 +486,13 @@ class floris_power(Component):
             = _floris.floris_power_bv(wakeOverlapTRel_v, Ct, axialInduction, axialIndProvided, useaUbU, keCorrCT, \
                                       Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
                                       rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb, wt_powerb, powerb)
+        # print 'dOL', wakeOverlapTRel_vb.shape
+        # print 'Ct', Ctb
+        # print 'AI', axialInductionb
+        # print 'Xw', turbineXwb
+        # print 'Y', yawb
+        # print 'D', rotorDiameterb
+        # print 'Cp', Cpb
 
         # collect values of the jacobian of velocitiesTurbines
         J['velocitiesTurbines', 'wakeOverlapTRel'] = wakeOverlapTRel_vb
@@ -505,10 +533,11 @@ class floris_power(Component):
                                       Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
                                       rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb, wt_powerb, powerb)
 
-        # print wakeOverlapTRel_vb[0, :].shape, Ctb[0, :].shape, Cpb[0, :].shape, axialInductionb[0, :], turbineXwb[0, :].shape, yawb[0, :].shape, rotorDiameterb[0, :].shape
+        #print 'OL', wakeOverlapTRel_vb[0, :]#, Ctb[0, :].shape, Cpb[0, :].shape, axialInductionb[0, :], turbineXwb[0, :].shape, yawb[0, :].shape, rotorDiameterb[0, :].shape
 
         # # print np.array(yawb[:1, :])
         # collect values of the jacobian of wt_power
+        # print 'vb', wakeOverlapTRel_vb
         J['power', 'wakeOverlapTRel'] = np.array(wakeOverlapTRel_vb[:1, :])
         J['power', 'Ct'] = np.array(Ctb[:1, :])
         J['power', 'Cp'] = np.array(Cpb[:1, :])
@@ -518,7 +547,7 @@ class floris_power(Component):
         J['power', 'rotorDiameter'] = np.array(rotorDiameterb[:1, :])
 
         # print 'leaving power linearize'
-
+        # print J
         return J
 
 
@@ -587,102 +616,134 @@ class AEPGroupFLORIS(Group):
 
 # Testing code for development only
 if __name__ == "__main__":
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([3.0])))
+    # root.add('p2', IndepVarComp('y', np.array([2.0])))
+    # root.add('p3', IndepVarComp('z', np.array([10.0])))
+    # root.add('p', AdjustCtCpYaw(nTurbines=np.array([1])))
+    #
+    # root.connect('p1.x', 'p.Ct_in')
+    # root.connect('p2.y', 'p.Cp_in')
+    # root.connect('p3.z', 'p.yaw')
+    #
+    # top.setup()
+    # top.check_partial_derivatives()
+    # top.run()
+    #
+    # print(root.p.unknowns['Ct_out'])
+    # print(root.p.unknowns['Cp_out'])
+    #
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([10.0])))
+    # root.add('p2', IndepVarComp('y', np.array([10.0])))
+    # root.add('p3', IndepVarComp('z', 90.))
+    # root.add('p', WindFrame(nTurbines=np.array([1]), resolution=0))
+    #
+    # root.connect('p1.x', 'p.turbineX')
+    # root.connect('p2.y', 'p.turbineY')
+    # root.connect('p3.z', 'p.wind_direction')
+    #
+    # top.setup()
+    # top.check_partial_derivatives()
+    # top.run()
+    #
+    # print(root.p.unknowns['turbineXw'])
+    # print(root.p.unknowns['turbineYw'])
+    #
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([10.0])))
+    # root.add('p2', IndepVarComp('y', np.array([10.0])))
+    # root.add('p', floris_wcent_wdiam(nTurbines=np.array([1])))
+    #
+    # root.connect('p1.x', 'p.turbineXw')
+    # root.connect('p2.y', 'p.turbineYw')
+    # root.connect('p1.x', 'p.yaw')
+    # root.connect('p1.x', 'p.rotorDiameter')
+    # root.connect('p1.x', 'p.Ct')
+    #
+    # top.setup()
+    # top.check_partial_derivatives()
+    # #top.run()
+    #
+    # print(root.p.unknowns['wakeDiametersT'])
+    # print(root.p.unknowns['wakeCentersYT'])
+    #
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([10.0])))
+    # root.add('p2', IndepVarComp('y', np.array([10.0, 10.0, 10.0])))
+    # root.add('p', floris_overlap(nTurbines=np.array([1])))
+    #
+    # root.connect('p1.x', 'p.turbineXw')
+    # root.connect('p1.x', 'p.turbineYw')
+    # root.connect('p1.x', 'p.rotorDiameter')
+    # root.connect('p1.x', 'p.wakeCentersYT')
+    # root.connect('p2.y', 'p.wakeDiametersT')
+    #
+    # top.setup()
+    # top.check_partial_derivatives()
+    # #top.run()
+    #
+    # print(root.p.unknowns['wakeOverlapTRel'])
+
     top = Problem()
 
     root = top.root = Group()
+    wakeOL = np.array([ 0.94882764,  0.,          0.,          0.,          0.005853,    0.,          0.,
+    0. ,         0.00603356,  0.,          0.,          0.,          0.,
+    0.94876119,  0. ,         0. ,         0.,          0.00585258 , 0. ,         0.,
+    0.  ,        0.00603362,  0. ,         0. ,         0. ,         0.,
+    0.94882764 , 0.    ,      0.  ,        0. ,         0.005853   , 0. ,         0.,
+    0.        ,  0.00603356 , 0.  ,        0.   ,       0. ,         0.,
+    0.94837338,  0.  ,        0.   ,       0.  ,        0.00585014 , 0. ,         0.,
+    0.    ,      0.00603391])
 
-    root.add('p1', IndepVarComp('x', np.array([3.0])))
-    root.add('p2', IndepVarComp('y', np.array([2.0])))
-    root.add('p3', IndepVarComp('z', np.array([1.0])))
-    root.add('p', AdjustCtCpYaw(nTurbines=np.array([1])))
+    root.add('p1', IndepVarComp('x', np.array([10.0, 10.0, 20, 20])))
+    root.add('p2', IndepVarComp('y', wakeOL), promotes=['*'])
+    root.add('p', floris_power(nTurbines=np.array([4])))
 
-    root.connect('p1.x', 'p.Ct_in')
-    root.connect('p2.y', 'p.Cp_in')
-    root.connect('p3.z', 'p.yaw')
-
-    top.setup()
-    top.run()
-
-    print(root.p.unknowns['Ct_out'])
-    print(root.p.unknowns['Cp_out'])
-
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([10.0])))
-    root.add('p2', IndepVarComp('y', np.array([10.0])))
-    root.add('p3', IndepVarComp('z', 90))
-    root.add('p', WindFrame(nTurbines=np.array([1]), resolution=0))
-
-    root.connect('p1.x', 'p.turbineX')
-    root.connect('p2.y', 'p.turbineY')
-    root.connect('p3.z', 'p.wind_direction')
+    root.connect('y', 'p.wakeOverlapTRel')
 
     top.setup()
+
     top.run()
-
-    print(root.p.unknowns['turbineXw'])
-    print(root.p.unknowns['turbineYw'])
-
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([10.0])))
-    root.add('p2', IndepVarComp('y', np.array([10.0])))
-    root.add('p', floris_wcent_wdiam(nTurbines=np.array([1])))
-
-    root.connect('p1.x', 'p.turbineXw')
-    root.connect('p2.y', 'p.turbineYw')
-    root.connect('p1.x', 'p.yaw')
-    root.connect('p1.x', 'p.rotorDiameter')
-    root.connect('p1.x', 'p.Ct')
-
-    top.setup()
-    top.run()
-
-    print(root.p.unknowns['wakeDiametersT'])
-    print(root.p.unknowns['wakeCentersYT'])
-
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([10.0])))
-    root.add('p2', IndepVarComp('y', np.array([10.0, 10.0, 10.0])))
-    root.add('p', floris_overlap(nTurbines=np.array([1])))
-
-    root.connect('p1.x', 'p.turbineXw')
-    root.connect('p1.x', 'p.turbineYw')
-    root.connect('p1.x', 'p.rotorDiameter')
-    root.connect('p1.x', 'p.wakeCentersYT')
-    root.connect('p2.y', 'p.wakeDiametersT')
-
-    top.setup()
-    top.run()
-
-    print(root.p.unknowns['wakeOverlapTRel'])
-
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([10.0])))
-    root.add('p2', IndepVarComp('y', np.array([10.0])))
-    root.add('p', floris_power(nTurbines=np.array([1])))
-
-    root.connect('p1.x', 'p.turbineXw')
-    root.connect('p1.x', 'p.rotorDiameter')
-    root.connect('p1.x', 'p.Ct')
-    root.connect('p2.y', 'p.Cp')
-
-    top.setup()
-    top.run()
-
+    top.check_partial_derivatives()
     print(root.p.unknowns['power'])
     print(root.p.unknowns['wt_power'])
     print(root.p.unknowns['velocitiesTurbines'])
+    d_wakeOL = np.zeros([wakeOL.size])
+    step = 200
+    for i in range(0, 2):
+        top.run()
+        shifthigh = np.zeros_like(wakeOL)
+        shifthigh[i] = step
+        shiftlow = np.zeros_like(wakeOL)
+        shiftlow[i] = -step
+        print shifthigh, shiftlow
+        top['y'] = wakeOL+shifthigh
+        print 'topy = ', top['y']
+        top.setup()
+        top.run()
+        high = top.root.p.unknowns['power']
+        top.root.p.params['wakeOverlapTRel'] = wakeOL+shiftlow
+        print 'topy = ', top['y'], wakeOL+shiftlow
+        top.setup()
+        top.run()
+        low = top.root.p.unknowns['power']
+        print high, low
+        d_wakeOL[i] = (high-low)/(2*step)
+    print 'd_wakeOL: ', d_wakeOL
 
 
 
