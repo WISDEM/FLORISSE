@@ -444,7 +444,8 @@ end subroutine floris_wcent_wdiam
 
 
 subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
-                          wakeDiametersT_vec, wakeCentersYT_vec, wakeOverlapTRel_vec)
+                          wakeDiametersT_vec, wakeCentersYT_vec, wakeOverlapTRel_vec, &
+                          cosFac_vec)
     implicit none
         
     ! define precision to be the standard for a double precision ! on local system
@@ -458,11 +459,15 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     
     ! out
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeOverlapTRel_vec
+    real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: cosFac_vec
     
     ! local
     real(dp), parameter :: p_near0 = 1 
-    integer :: turbI
+    real(dp) :: rmax
+    integer :: turbI, turb, zone
+    real(dp), parameter :: pi = 3.141592653589793_dp
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel_mat, wakeDiametersT_mat
+    real(dp), dimension(nTurbines, nTurbines, 3) :: cosFac_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     
     ! execute    
@@ -482,12 +487,23 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
                                    (nTurbines*(turbI-1)+nTurbines))
     end do
     
+    ! calculate relative overlap
     call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, wakeDiametersT_mat, &
                             wakeCentersYT_mat, p_near0, wakeOverlapTRel_mat)
-                            
+    
+    ! calculate cosine factor
+    do turbI = 1, nTurbines
+        do turb = 1, nTurbines
+            do zone = 1, 3
+                rmax = 0.5_dp*(wakeDiametersT_mat(turbI, turb, zone) + rotorDiameter(turbI))
+                cosFac_mat(turbI, turb, zone) = (1.0_dp + cos(pi*dabs(wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))/2.0_dp
+            end do
+        end do
+    end do
+    
     wakeOverlapTRel_vec = 0.0_dp
     
-    ! pack relative wake overlap into a vector
+    ! pack relative wake overlap and cosine factor into vectors
     do turbI = 1, nTurbines
             wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
                                  = wakeOverlapTRel_mat(turbI, :, 1)
@@ -495,13 +511,20 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
                                    +2*nTurbines) = wakeOverlapTRel_mat(turbI, :, 2)
             wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:3*nTurbines*(turbI-1) &
                                    +3*nTurbines) = wakeOverlapTRel_mat(turbI, :, 3)
+            
+            cosFac_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
+                                 = cosFac_mat(turbI, :, 1)
+            cosFac_vec(3*nTurbines*(turbI-1)+nTurbines+1:3*nTurbines*(turbI-1) &
+                                   +2*nTurbines) = cosFac_mat(turbI, :, 2)
+            cosFac_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:3*nTurbines*(turbI-1) &
+                                   +3*nTurbines) = cosFac_mat(turbI, :, 3)            
     end do
     
 end subroutine floris_overlap
 
 
 
-subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
+subroutine floris_power(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
                  axialIndProvided, useaUbU, keCorrCT, Region2CT, ke_in, Vinf, keCorrArray, &
                  turbineXw, yaw_deg, p_near0, rotorDiameter, MU, rho, aU, bU, &
                  Cp, generator_efficiency, velocitiesTurbines, wt_power, power)
@@ -514,7 +537,7 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
 
     ! in
     integer, intent(in) :: nTurbines                                            ! Number of turbines
-    real(dp), dimension(3*nTurbines*nTurbines), intent(in) :: wakeOverlapTRel_v ! relative overlap (vector of length 3*nTurbines**2)
+    real(dp), dimension(3*nTurbines*nTurbines), intent(in) :: wakeOverlapTRel_v, cosFac_v ! relative overlap and cosine factor (vector of length 3*nTurbines**2)
     real(dp), dimension(nTurbines), intent(in) :: Ct, a_in             ! thrust coeff, axial induction, turbine yaw
     logical,  intent(in) :: axialIndProvided, useaUbU                   ! option logicals
     real(dp), intent(in) :: keCorrCT, Region2CT, ke_in, Vinf, keCorrArray
@@ -526,7 +549,7 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     real(dp), dimension(nTurbines), intent(in) :: Cp, generator_efficiency
     
     ! local
-    real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel    ! relative overlap (NxNx3)
+    real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel, cosFac    ! relative overlap and Cosine factor (NxNx3)
     real(dp), dimension(nTurbines) :: a, ke, keArray, yaw
     real(dp), dimension(3) :: mmU
     real(dp) :: s, wakeEffCoeff, wakeEffCoeffPerZone, deltax
@@ -543,7 +566,7 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     ! convert yaw from degrees to radians
 	yaw = yaw_deg*pi/180.0_dp
 
-    ! pack overlap vector into a matrix
+    ! pack overlap and cosine factor vectors into matrices
     do turbI = 1, nTurbines
         wakeOverlapTRel(turbI, :, 1) = wakeOverlapTRel_v(3*nTurbines*(turbI-1)+1: &
                                    3*nTurbines*(turbI-1)+nTurbines)
@@ -551,8 +574,13 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
                                    3*nTurbines*(turbI-1)+2*nTurbines)
         wakeOverlapTRel(turbI, :, 3) = wakeOverlapTRel_v(3*nTurbines*(turbI-1)+2*nTurbines+1:&
                                    3*nTurbines*(turbI-1)+3*nTurbines)
+        cosFac(turbI, :, 1) = cosFac_v(3*nTurbines*(turbI-1)+1: &
+                                   3*nTurbines*(turbI-1)+nTurbines)
+        cosFac(turbI, :, 2) = cosFac_v(3*nTurbines*(turbI-1)+nTurbines+1:&
+                                   3*nTurbines*(turbI-1)+2*nTurbines)
+        cosFac(turbI, :, 3) = cosFac_v(3*nTurbines*(turbI-1)+2*nTurbines+1:&
+                                   3*nTurbines*(turbI-1)+3*nTurbines)
     end do
-
 
     if (axialIndProvided) then
         a = a_in
@@ -588,12 +616,12 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
                 
                     if (useaUbU) then
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
-                        (((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *mmU(zone)*deltax))**2)*wakeOverlapTRel(turbI, turb, zone)   
+                        ((((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
+                        *mmU(zone)*deltax))*(cosFac(turbI, turb, zone)))**2)*wakeOverlapTRel(turbI, turb, zone)   
                     else
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
-                        (((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *MU(zone)*deltax))**2)*wakeOverlapTRel(turbI, turb, zone)   
+                        ((((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
+                        *MU(zone)*deltax))*(cosFac(turbI, turb, zone)))**2)*wakeOverlapTRel(turbI, turb, zone)   
                     end if                     
                             
                 end do
