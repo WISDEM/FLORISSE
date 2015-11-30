@@ -88,9 +88,9 @@ for yaw1 in yawrange:
 
     # Call FLORIS
     myFloris.run()
-
-    FLORISpower.append(myFloris.root.dir0.unknowns['wt_power'])
-
+    # print 'power = ', myFloris.root.dir0.unknowns['wt_power']
+    FLORISpower.append(list(myFloris.root.dir0.unknowns['wt_power']))
+    # print FLORISpower
 FLORISpower = np.array(FLORISpower)
 SOWFApower = np.array([ICOWESdata['yawPowerT1'][0],ICOWESdata['yawPowerT2'][0]]).transpose()/1000.
 
@@ -122,7 +122,7 @@ for pos2 in posrange:
     # Call FLORIS
     myFloris.run()
     print 'power = ', myFloris.root.dir0.unknowns['wt_power']
-    FLORISpower.append(myFloris.root.dir0.unknowns['wt_power'])
+    FLORISpower.append(list(myFloris.root.dir0.unknowns['wt_power']))
 
 FLORISpower = np.array(FLORISpower)
 SOWFApower = np.array([ICOWESdata['posPowerT1'][0],ICOWESdata['posPowerT2'][0]]).transpose()/1000.
