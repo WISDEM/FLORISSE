@@ -42,7 +42,7 @@ myFloris['generator_efficiency'] = np.array([generator_efficiency, generator_eff
 
 # Define site measurements
 myFloris['windDirections'] = np.array([240.])
-myFloris['wind_speed'] = 8.1    # m/s
+myFloris['wind_speed'] = 8.    # m/s
 # myFloris['windrose_speeds'] = np.ones_like(myFloris['windDirections'])*myFloris['wind_speed']
 myFloris['air_density'] = 1.1716
 
@@ -89,7 +89,7 @@ for yaw1 in yawrange:
     # Call FLORIS
     myFloris.run()
 
-    FLORISpower.append(myFloris.root.dir0.unknowns['wt_power'])
+    FLORISpower.append(list(myFloris.root.dir0.unknowns['wt_power']))
 
 FLORISpower = np.array(FLORISpower)
 SOWFApower = np.array([ICOWESdata['yawPowerT1'][0],ICOWESdata['yawPowerT2'][0]]).transpose()/1000.
@@ -112,18 +112,18 @@ for pos2 in posrange:
     Xinit = np.array([1118.1, 1881.9])
     Yinit = np.array([1279.5, 1720.5])
     XY = np.array([Xinit, Yinit]) + np.dot(np.array([[np.cos(effUdXY),-np.sin(effUdXY)], [np.sin(effUdXY),np.cos(effUdXY)]]), np.array([[0., 0], [0,pos2]]))
+    print XY
     myFloris['turbineX'] = XY[0,:]
     myFloris['turbineY'] = XY[1,:]
 
-    yaw = np.array([0.0, 0.0])
+    myFloris['yaw0'] = np.array([0.0, 0.0])
 
 
 
     # Call FLORIS
     myFloris.run()
-    print 'power = ', myFloris.root.dir0.unknowns['wt_power']
-    FLORISpower.append(myFloris.root.dir0.unknowns['wt_power'])
-
+    # print 'power = ', myFloris.root.dir0.unknowns['wt_power']
+    FLORISpower.append(list(myFloris.root.dir0.unknowns['wt_power']))
 FLORISpower = np.array(FLORISpower)
 SOWFApower = np.array([ICOWESdata['posPowerT1'][0],ICOWESdata['posPowerT2'][0]]).transpose()/1000.
 
@@ -137,6 +137,49 @@ axes[1].plot(posrange, FLORISpower[:,0]+FLORISpower[:,1], 'k-', posrange, SOWFAp
 
 plt.show()
 
+FLORISeffu = list()
+y = np.linspace(-1.5*rotorDiameter, 1.5*rotorDiameter, 100)
+
+for i in range(0, 100):
+    myFloris['windDirections'] = np.array([270])
+    X = np.array([0, 20.*rotorDiameter])
+    Y = np.array([0, y[i]])
+    myFloris['turbineX'] = X
+    myFloris['turbineY'] = Y
+    myFloris['yaw0'] = np.array([0.0, 0.0])
+
+    # Call FLORIS
+    myFloris.run()
+
+    FLORISeffu.append(list(myFloris.root.dir0.unknowns['velocitiesTurbines']))
+
+FLORISeffu = np.array(FLORISeffu)
+plt.figure()
+plt.plot(y/rotorDiameter, FLORISeffu[:, 1])
+plt.show()
+
+FLORISindiam = list()
+res = 1000
+x = np.linspace(-0.25*rotorDiameter, 20.0*rotorDiameter, res)
+for i in range(0, res):
+    myFloris['windDirections'] = np.array([270])
+    X = np.array([0, x[i]])
+    Y = np.array([0, myFloris['wakeCentersYT'][2]])
+    print myFloris['wakeCentersYT'][2]
+    # Y = np.array([0, 0])
+    myFloris['turbineX'] = X
+    myFloris['turbineY'] = Y
+    myFloris['yaw0'] = np.array([0.0, 0.0])
+
+    # Call FLORIS
+    myFloris.run()
+
+    FLORISindiam.append(list(myFloris.root.dir0.unknowns['velocitiesTurbines']))
+
+FLORISindiam = np.array(FLORISindiam)
+plt.figure()
+plt.plot(x/rotorDiameter, FLORISindiam[:, 1])
+plt.show()
 
 
         

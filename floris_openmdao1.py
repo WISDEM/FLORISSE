@@ -570,7 +570,7 @@ class DirectionGroupFLORIS(Group):
         self.add('myFloris', FLORIS(nTurbines, resolution),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw',
-                           'velocitiesTurbines', 'wt_power', 'power'])
+                           'velocitiesTurbines', 'wt_power', 'power', 'wakeCentersYT'])
 
         self.connect('floris_params:CTcorrected', 'params:CTcorrected')
         self.connect('floris_params:CPcorrected', 'params:CPcorrected')
@@ -592,7 +592,7 @@ class AEPGroupFLORIS(Group):
         for i in range(0, nDirections):
             self.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
                      promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
-                               'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])
+                               'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'wakeCentersYT'])
 
         self.add('powerMUX', MUX(nDirections))
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
