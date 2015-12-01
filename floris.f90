@@ -366,7 +366,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             if (zeroloc + p_near1*rotorDiameter(turb) < turbineXw(turbI)) then
                 wakeDiametersT_mat(turbI, turb, zone) = 0.0_dp
             
-            else if (zeroloc - p_near1*rotorDiameter(turb) < turbineXw(turbI))
+            else if (zeroloc - p_near1*rotorDiameter(turb) < turbineXw(turbI)) then
                                
                 !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
                 
