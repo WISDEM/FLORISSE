@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.io import loadmat
@@ -137,7 +136,7 @@ axes[1].plot(posrange, FLORISpower[:,1], 'b-', posrange, SOWFApower[:,1], 'bo')
 axes[1].plot(posrange, FLORISpower[:,0]+FLORISpower[:,1], 'k-', posrange, SOWFApower[:,0]+SOWFApower[:,1], 'ko')
 
 plt.show()
-=======
+
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.io import loadmat
@@ -320,8 +319,3 @@ FLORISindiam = np.array(FLORISindiam)
 plt.figure()
 plt.plot(x/rotorDiameter, FLORISindiam[:, 1])
 plt.show()
-
-
-        
-
->>>>>>> diams
