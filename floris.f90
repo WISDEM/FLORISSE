@@ -230,10 +230,10 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp), parameter :: p_mix0 = p_unity, p_mix1 = 0.25
     real(dp), dimension(nTurbines) :: ke, yaw
     Integer :: turb, turbI, zone
-    real(dp) :: wakeAngleInit
+    real(dp) :: wakeAngleInit, zeroloc
     real(dp), parameter :: pi = 3.141592653589793_dp
     real(dp) :: deltax, factor, displacement, x, x0, x1, y0, dy0, dx_1, factor_1, y1
-    real(dp) :: b, d, dy1_yaw, dy1, wakeDiameter0, x2, y2, dy2
+    real(dp) :: b, d, dy1_yaw, dy1, wakeDiameter0, x2, y2, dy2, x3, y3, dy3
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     
@@ -360,7 +360,39 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             dy1 = 2*ke(turb)*me(2)
             
             zone = 1
-            if (turbineXw(turb)+p_near1*rotorDiameter(turb) < turbineXw(turbI)) then
+            ! define centerpoint of spline
+            zeroloc = turbineXw(turb) - wakeDiameter0/(2.0_dp*ke(turb)*me(zone))
+            
+            if (zeroloc + p_near1*rotorDiameter(turb) < turbineXw(turbI)) then
+                wakeDiametersT_mat(turbI, turb, zone) = 0.0_dp
+            
+            else if (zeroloc - p_near1*rotorDiameter(turb) < turbineXw(turbI))
+                               
+                !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+                ! position of upwind point
+                x2 = zeroloc - p_near1*rotorDiameter(turb)
+                
+                ! diameter of upwind point
+                y2 = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*(x2 - turbineXw(turb))
+                                
+                ! slope at upwind point
+                dy2 = 2.0_dp*ke(turb)*me(zone)
+                
+                ! position of downwind point
+                x3 = zeroloc+p_near1*rotorDiameter(turb)             
+
+                ! diameter at downwind point
+                y3 = 0.0_dp
+                
+                ! slope at downwind point
+                dy3 = 0.0_dp
+                
+                ! solve for the wake zone diameter and its derivative w.r.t. the downwind
+                ! location at the point of interest
+                call Hermite_Spline(x, x2, x3, y2, dy2, y3, dy3, wakeDiametersT_mat(turbI, turb, zone))
+            
+            else if (turbineXw(turb)+p_near1*rotorDiameter(turb) < turbineXw(turbI)) then
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax            
                     
             else if (turbineXw(turb)+p_near1*rotorDiameter(turb) >= turbineXw(turbI) &
