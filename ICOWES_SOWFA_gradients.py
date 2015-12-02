@@ -31,7 +31,7 @@ generator_efficiency = 0.944
 
 myFloris['floris_params:CPcorrected'] = False
 myFloris['floris_params:CTcorrected'] = False
-myFloris['floris_params:FLORISoriginal'] = True
+myFloris['floris_params:FLORISoriginal'] = False
 
 # Define turbine characteristics
 myFloris['axialInduction'] = np.array([axialInduction, axialInduction])
@@ -135,50 +135,6 @@ axes[1].plot(posrange, FLORISpower[:,0], 'r-', posrange, SOWFApower[:,0], 'ro')
 axes[1].plot(posrange, FLORISpower[:,1], 'b-', posrange, SOWFApower[:,1], 'bo')
 axes[1].plot(posrange, FLORISpower[:,0]+FLORISpower[:,1], 'k-', posrange, SOWFApower[:,0]+SOWFApower[:,1], 'ko')
 
-plt.show()
-
-FLORISeffu = list()
-y = np.linspace(-1.5*rotorDiameter, 1.5*rotorDiameter, 100)
-
-for i in range(0, 100):
-    myFloris['windDirections'] = np.array([270])
-    X = np.array([0, 20.*rotorDiameter])
-    Y = np.array([0, y[i]])
-    myFloris['turbineX'] = X
-    myFloris['turbineY'] = Y
-    myFloris['yaw0'] = np.array([0.0, 0.0])
-
-    # Call FLORIS
-    myFloris.run()
-
-    FLORISeffu.append(list(myFloris.root.dir0.unknowns['velocitiesTurbines']))
-
-FLORISeffu = np.array(FLORISeffu)
-plt.figure()
-plt.plot(y/rotorDiameter, FLORISeffu[:, 1])
-plt.show()
-
-FLORISindiam = list()
-res = 1000
-x = np.linspace(-0.25*rotorDiameter, 20.0*rotorDiameter, res)
-for i in range(0, res):
-    myFloris['windDirections'] = np.array([270])
-    X = np.array([0, x[i]])
-    Y = np.array([0, myFloris['wakeCentersYT'][2]])
-    print myFloris['wakeCentersYT'][2]
-    # Y = np.array([0, 0])
-    myFloris['turbineX'] = X
-    myFloris['turbineY'] = Y
-    myFloris['yaw0'] = np.array([0.0, 0.0])
-
-    # Call FLORIS
-    myFloris.run()
-
-    FLORISindiam.append(list(myFloris.root.dir0.unknowns['velocitiesTurbines']))
-
-FLORISindiam = np.array(FLORISindiam)
-plt.figure()
-plt.plot(x/rotorDiameter, FLORISindiam[:, 1])
 plt.show()
 
 

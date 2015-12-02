@@ -495,8 +495,9 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     do turbI = 1, nTurbines
         do turb = 1, nTurbines
             do zone = 1, 3
-                rmax = 1.0_dp*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
-                cosFac_mat(turbI, turb, zone) = (1.0_dp + cos(pi*dabs(wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))/2.0_dp
+                rmax = 2.0_dp*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
+                cosFac_mat(turbI, turb, zone) = (1.0_dp + cos(pi*dabs( &
+                    wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))/2.0_dp
                 !cosFac_mat(turbI, turb, zone) = 1.0_dp
             end do
         end do
