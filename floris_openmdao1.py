@@ -238,8 +238,8 @@ class floris_overlap(Component):
         # output arrays
         self.add_output('wakeOverlapTRel', np.zeros(3*nTurbines*nTurbines),
                         desc='relative wake zone overlap to rotor area')
-        # self.add_output('cosFac', np.zeros(3*nTurbines*nTurbines),
-        #                 desc='cosine factor similar to Jensen 1983')
+        self.add_output('cosFac', np.zeros(3*nTurbines*nTurbines),
+                        desc='cosine factor similar to Jensen 1983')
 
         # etc
         self.nTurbines = nTurbines
@@ -249,15 +249,15 @@ class floris_overlap(Component):
         # print 'entering overlap - Tapenade'
 
         # call to fortran code to obtain relative wake overlap values
-        # wakeOverlapTRel_vec, cosFac_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
-        #                                              params['wakeDiametersT'], params['wakeCentersYT'])
-
-        wakeOverlapTRel_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
+        wakeOverlapTRel_vec, cosFac_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
                                                      params['wakeDiametersT'], params['wakeCentersYT'])
+
+        # wakeOverlapTRel_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
+        #                                              params['wakeDiametersT'], params['wakeCentersYT'])
 
         # pass results to self in the form of a vector for use in Jacobian creation
         unknowns['wakeOverlapTRel'] = wakeOverlapTRel_vec
-        # unknowns['cosFac'] = cosFac_vec
+        unknowns['cosFac'] = cosFac_vec
 
     def linearize(self, params, unknowns, resids):
         # print 'entering overlap linearize'
@@ -320,8 +320,8 @@ class floris_power(Component):
                        desc='diameters of each of the wake zones for each of the wakes at each turbine')
         self.add_param('wakeOverlapTRel', np.zeros(3*nTurbines*nTurbines),
                        desc='ratios of wake overlap area per zone to rotor area')
-        # self.add_param('cosFac', np.zeros(3*nTurbines*nTurbines),
-        #                desc='cosine factor similar to Jensen 1983')
+        self.add_param('cosFac', np.zeros(3*nTurbines*nTurbines),
+                       desc='cosine factor similar to Jensen 1983')
 
         # outputs
         self.add_output('velocitiesTurbines', np.zeros(nTurbines), units='m/s',
@@ -370,7 +370,7 @@ class floris_power(Component):
 
         # reassign input variables
         wakeOverlapTRel_v = params['wakeOverlapTRel']
-        # cosFac_v = params['cosFac']
+        cosFac_v = params['cosFac']
         Region2CT = params['floris_params:Region2CT']
         Ct = params['Ct']
         Vinf = params['wind_speed']
@@ -416,15 +416,15 @@ class floris_power(Component):
         self.p_near0 = p_near0
 
         # call to fortran code to obtain output values
-        # velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction, \
-        #                                                     axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
-        #                                                     Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
-        #                                                     rho, aU, bU, Cp, generator_efficiency)
-
-        velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, Ct, axialInduction, \
+        velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction, \
                                                             axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
                                                             Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
                                                             rho, aU, bU, Cp, generator_efficiency)
+
+        # velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, Ct, axialInduction, \
+        #                                                     axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
+        #                                                     Vinf, keCorrArray, turbineXw, yaw, p_near0, rotorDiameter, MU, \
+        #                                                     rho, aU, bU, Cp, generator_efficiency)
 
         # pass outputs to self
         unknowns['velocitiesTurbines'] = velocitiesTurbines
