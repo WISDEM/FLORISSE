@@ -16,7 +16,7 @@ if __name__ == "__main__":
     # turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])   # m
     # turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])   # m
     # Scaling grid case
-    nRows = 3       # number of rows and columns in grid
+    nRows = 5       # number of rows and columns in grid
     spacing = 5     # turbine grid spacing in diameters
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
