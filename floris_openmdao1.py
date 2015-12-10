@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp, ExecComp
+from openmdao.api import Group, Component, Problem, IndepVarComp, ParallelGroup
 
 from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX
 
@@ -61,8 +61,8 @@ class floris_wcent_wdiam(Component):
         self.add_param('floris_params:keSaturation', 0.0)
         self.add_param('floris_params:kdCorrYawDirection', 0.0)
         self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]))
-        self.add_param('floris_params:CTcorrected', True, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:CPcorrected', True, desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
+        self.add_param('floris_params:CTcorrected', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
+        self.add_param('floris_params:CPcorrected', False, desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
         self.add_param('floris_params:axialIndProvided', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
         self.add_param('floris_params:useWakeAngle', True)
         self.add_param('floris_params:bd', -0.01)
@@ -70,7 +70,7 @@ class floris_wcent_wdiam(Component):
         self.add_param('floris_params:aU', 5.0, units='deg')
         self.add_param('floris_params:bU', 1.66)
         self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
-        self.add_param('floris_params:FLORISoriginal', False, desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+        self.add_param('floris_params:FLORISoriginal', True, desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -349,9 +349,9 @@ class floris_power(Component):
         self.add_param('floris_params:keSaturation', 0.0)
         self.add_param('floris_params:kdCorrYawDirection', 0.0)
         self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]))
-        self.add_param('floris_params:CTcorrected', True,
+        self.add_param('floris_params:CTcorrected', False,
                        desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:CPcorrected', True,
+        self.add_param('floris_params:CPcorrected', False,
                        desc='CP factor already corrected by CCBlade calculation '
                             '(assumed with approximately factor cos(yaw)^3)')
         self.add_param('floris_params:axialIndProvided', False,
@@ -362,7 +362,7 @@ class floris_power(Component):
         self.add_param('floris_params:aU', 5.0, units='deg')
         self.add_param('floris_params:bU', 1.66)
         self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
-        self.add_param('floris_params:FLORISoriginal', False,
+        self.add_param('floris_params:FLORISoriginal', True,
                        desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -626,6 +626,65 @@ class AEPGroupFLORIS(Group):
         # self.connect('floris_params:CTcorrected', 'params:CTcorrected')
         # self.connect('floris_params:CPcorrected', 'params:CPcorrected')
 
+
+class ParallelAEPGroupFLORIS(Group):
+    """
+    Group containing all necessary components for wind plant AEP calculations using the FLORIS model
+    """
+
+    def __init__(self, nTurbines, resolution=0, nDirections=1):
+
+        super(ParallelAEPGroupFLORIS, self).__init__()
+
+        # components and groups
+        self.add('windDirectionsDeMUX', DeMUX(nDirections))
+
+        pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
+
+        for i in range(0, nDirections):
+            # print 'it = %i' %i
+            pg.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
+                   promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
+                             'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])#, 'wakeCentersYT', 'wakeDiametersT'])
+
+        # pg.promotes=['*']
+
+        self.add('powerMUX', MUX(nDirections))
+        self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
+
+        # add necessary inputs for group
+        self.add('p1', IndepVarComp('windDirections', np.zeros(nDirections)), promotes=['*'])
+        self.add('p2', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p3', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
+
+        # add vars to be seen by MPI
+        self.add('p5', IndepVarComp('rotorDiameter', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p6', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p7', IndepVarComp('generator_efficiency', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p8', IndepVarComp('wind_speed', val=8.0), promotes=['*'])
+        self.add('p9', IndepVarComp('air_density', val=1.1716), promotes=['*'])
+        self.add('p11', IndepVarComp('windrose_frequencies', np.zeros(nDirections)), promotes=['*'])
+        self.add('p12', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
+        self.add('p13', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
+        # self.add('p14', IndepVarComp('floris_params:FLORISoriginal', val=False), promotes=['*'])
+        # self.add('p15', IndepVarComp('floris_params:CPcorrected', val=False), promotes=['*'])
+        # self.add('p16', IndepVarComp('floris_params:CTcorrected', val=False), promotes=['*'])
+
+        for i in range(0, nDirections):
+            self.add('y%i' % i, IndepVarComp('yaw%i' % i, np.zeros(nTurbines)), promotes=['*'])
+
+        # connect components
+        self.connect('windDirections', 'windDirectionsDeMUX.Array')
+        for i in range(0, nDirections):
+            self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
+            self.connect('yaw%i' % i, 'dir%i.yaw' % i)
+            # print self.all_directions.dir0.yaw
+            self.connect('dir%i.power' % i, 'powerMUX.input%i' % i)
+            # print nDirections
+
+        self.connect('powerMUX.Array', 'power_directions')
+        # self.connect('floris_params:CTcorrected', 'params:CTcorrected')
+        # self.connect('floris_params:CPcorrected', 'params:CPcorrected')
 
 # Testing code for development only
 if __name__ == "__main__":

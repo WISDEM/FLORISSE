@@ -125,7 +125,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlap
     
     ! local specifically for OMP
-    INTEGER(dp) :: TID, THREADS, OMP_GET_NUM_THREADS!, GET_ENVIRONMENT_VARIABLE
+    !INTEGER(dp) :: TID, THREADS, OMP_GET_NUM_THREADS!, GET_ENVIRONMENT_VARIABLE
 !     
 !     CHARACTER :: OMP_NUM_THREADS, value
 !         
@@ -136,12 +136,12 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
 !     Print *, Threads
 !     CALL OMP_SET_NUM_THREADS(THREADS)
 !     
-    !$OMP PARALLEL PRIVATE(OVdYd, OVr, OVRR, OVL, OVz, turb, turbI, zone, TID, THREADS) SHARED(wakeOverlap)
+    !$OMP PARALLEL PRIVATE(OVdYd, OVr, OVRR, OVL, OVz, turb, turbI, zone) SHARED(wakeOverlap)
     !PRINT *, 'Entering Parallel Region'
     
     !TID = OMP_GET_THREAD_NUM()
-    THREADS = OMP_GET_NUM_THREADS()
-    PRINT *, 'Number of threads', THREADS
+    !THREADS = OMP_GET_NUM_THREADS()
+    !PRINT *, 'Number of threads', THREADS
     
     !CALL SLEEP(2)
     
@@ -260,7 +260,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     
     ! local for OMP
-    INTEGER(dp) :: TID, THREADS, OMP_GET_NUM_THREADS!, GET_ENVIRONMENT_VARIABLE
+    !INTEGER(dp) :: TID, THREADS, OMP_GET_NUM_THREADS!, GET_ENVIRONMENT_VARIABLE
     
     ! execute
 	!    if (CTcorrected) then
@@ -283,8 +283,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     !$OMP & dy0, dx_1, factor_1, y1, b, d, dy1_yaw, wakeDiameter0, zone, zeroloc, turbI, &
     !$OMP & x3, y3, dy3)
     
-    THREADS = OMP_GET_NUM_THREADS()
-    PRINT *, 'Number of threads', THREADS
+    !THREADS = OMP_GET_NUM_THREADS()
+    !PRINT *, 'Number of threads', THREADS
     
     !$OMP DO COLLAPSE(2)
     do turb = 1, nTurbines
@@ -358,7 +358,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         
     end do
     
-    !$OMP MASTER
+    !$OMP SINGLE
     do turbI = 1, nTurbines
         wakeCentersYT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
                                  = wakeCentersYT_mat(turbI, :)
@@ -368,9 +368,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     wakeDiametersT_mat = 0.0_dp
     
-    !$OMP END MASTER
-    
-    !$OMP BARRIER
+    !$OMP END SINGLE
 
     !$OMP DO
     do turb = 1, nTurbines
@@ -645,8 +643,11 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     ! downstream turbine    
     velocitiesTurbines = Vinf
     wakeEffCoeff = 0.0_dp
+    
+    !!$OMP PARALLEL PRIVATE(wakeEffCoeffPerZone, deltax, mmU, zone, wakeEffCoeff)
+    
     do turbI = 1, nTurbines
-                
+    
         ! find overlap-area weighted effect of each wake zone
         do turb = 1, nTurbines
             wakeEffCoeffPerZone = 0.0_dp
@@ -683,6 +684,8 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         wakeEffCoeff = 0.0_dp
         
     end do
+    
+    !!$OMP END PARALLEL
     
     rotorArea = pi*rotorDiameter*rotorDiameter/4.0_dp
     

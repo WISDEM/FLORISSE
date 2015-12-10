@@ -116,11 +116,11 @@ class AdjustCtCpYaw(Component):
 
         # parameters since var trees are not supports
         self.add_param('params:pP', 1.88)
-        self.add_param('params:CTcorrected', True,
+        self.add_param('params:CTcorrected', False,
                        desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('params:CPcorrected', True,
+        self.add_param('params:CPcorrected', False,
                        desc='CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
-        self.add_param('floris_params:FLORISoriginal', False,
+        self.add_param('floris_params:FLORISoriginal', True,
                        desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
     def solve_nonlinear(self, params, unknowns, resids):
