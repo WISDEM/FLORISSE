@@ -70,7 +70,7 @@ if __name__ == "__main__":
     # Define flow properties
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
-    windDirections = np.linspace(0, 90, 2)
+    windDirections = np.linspace(0, 270, 4)
     print(windDirections)
     # initialize problem
     if MPI: # pragma: no cover
@@ -116,7 +116,7 @@ if __name__ == "__main__":
     # prob['floris_params:FLORISoriginal'] = True
     # prob['floris_params:CPcorrected'] = False
     # prob['floris_params:CTcorrected'] = False
-    prob['windrose_frequencies'] = np.array([0.2, 0.4])
+    prob['windrose_frequencies'] = np.array([0.2, 0.2, 0.2, 0.4])
 
     # run the problem
     mpi_print(prob, 'start FLORIS run')
