@@ -27,7 +27,7 @@ submission_script.sh:
 #SBATCH --cpus-per-task=8   # number of nodes
 #SBATCH --mem-per-cpu=1024M   # memory per CPU core
 #SBATCH --qos=standby
-#SBATCH -Cavx # option required for
+#SBATCH -Cavx # use avx architecture (required for this setup due to how petsc was built)
 
 # Compatibility variables for PBS.
 export PBS_NODEFILE=`/fslapps/fslutils/generate_pbs_nodefile`
