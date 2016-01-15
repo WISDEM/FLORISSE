@@ -443,7 +443,7 @@ end subroutine floris_wcent_wdiam
 
 
 
-subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
+subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, cos_spread, &
                           wakeDiametersT_vec, wakeCentersYT_vec, wakeOverlapTRel_vec, &
                           cosFac_vec)
     implicit none
@@ -453,6 +453,7 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     
     ! in
     integer, intent(in) :: nTurbines
+    real(dp), intent(in) :: cos_spread
     real(dp), dimension(nTurbines), intent(in) :: turbineXw, turbineYw, rotorDiameter
     real(dp), dimension(3*nTurbines*nTurbines), intent(in) :: wakeDiametersT_vec
     real(dp), dimension(nTurbines*nTurbines), intent(in) :: wakeCentersYT_vec
@@ -495,9 +496,9 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     do turbI = 1, nTurbines
         do turb = 1, nTurbines
             do zone = 1, 3
-                rmax = 2.0_dp*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
-                cosFac_mat(turbI, turb, zone) = (1.0_dp + cos(pi*dabs( &
-                    wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))/2.0_dp
+                rmax = cos_spread*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
+                cosFac_mat(turbI, turb, zone) = 0.5_dp*(1.0_dp + cos(pi*dabs( &
+                    wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))
                 !cosFac_mat(turbI, turb, zone) = 1.0_dp
             end do
         end do
