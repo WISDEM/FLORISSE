@@ -120,7 +120,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
     
     ! local
     integer :: turb, turbI, zone
-    real(dp), parameter :: pi = 3.141592653589793_dp
+    real(dp), parameter :: pi = 3.141592653589793_dp, tol = 0.000001_dp
     real(dp) :: OVdYd, OVr, OVRR, OVL, OVz
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlap
         
@@ -135,7 +135,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
                 do zone = 1, 3
                     OVRR = wakeDiameters(turbI, turb, zone)/2.0_dp        ! wake diameter
                     OVdYd = abs(OVdYd)
-                    if (OVdYd >= 0.00000001_dp) then
+                    if (OVdYd >= 0.0_dp + tol) then
                         ! calculate the distance from the wake center to the vertical line between
                         ! the two circle intersection points
                         OVL = (-OVr*OVr+OVRR*OVRR+OVdYd*OVdYd)/(2.0_dp*OVdYd)
@@ -146,7 +146,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
                     OVz = OVRR*OVRR-OVL*OVL
 
                     ! Finish calculating the distance from the intersection line to the outer edge of the wake zone
-                    if (OVz > 0.0_dp) then
+                    if (OVz > 0.0_dp + tol) then
                         OVz = sqrt(OVz)
                     else
                         OVz = 0.0_dp
@@ -238,15 +238,15 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     
     ! execute
-	!    if (CTcorrected) then
-	!        Ct = Ct_in
-	!    else
-	!        Ct = Ct_in*cos(yaw)*cos(yaw)
-	!    end if
+    !    if (CTcorrected) then
+    !        Ct = Ct_in
+    !    else
+    !        Ct = Ct_in*cos(yaw)*cos(yaw)
+    !    end if
 
-	! convert yaw from degrees to radians
-	yaw = yaw_deg*pi/180.0_dp
-	    
+    ! convert yaw from degrees to radians
+    yaw = yaw_deg*pi/180.0_dp
+        
     ! calculate y-locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
     
@@ -289,7 +289,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 
                 y0 = turbineYw(turb)-initialWakeDisplacement            ! upwind point
                 dy0 = 0.0_dp                                             ! upwind slope
-
+    
                 dx_1 = x1 - turbineXw(turb)
                 factor_1 = (2.0_dp*kd*dx_1/rotorDiameter(turb)) + 1.0_dp
                 !print *, 'dx_1, factor_1 = ', dx_1, factor_1
@@ -514,6 +514,7 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
                                    (nTurbines*(turbI-1)+nTurbines))
     end do
     
+    ! calculate relative overlap
     call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, wakeDiametersT_mat, &
                             wakeCentersYT_mat, p_near0, wakeOverlapTRel_mat)
                             
