@@ -92,6 +92,7 @@ class WindFrame(Component):
         J[('turbineYw', 'turbineX')] = dturbineYw_dturbineX
         J[('turbineYw', 'turbineY')] = dturbineYw_dturbineY
 
+
         # print 'end windframe jacobian'
 
         return J
