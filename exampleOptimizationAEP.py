@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 24 # number of processors (and number of wind directions to run)
+    size = 4 # number of processors (and number of wind directions to run)
 
     #########################################################################
 
@@ -77,12 +77,9 @@ if __name__ == "__main__":
 
 
     # initialize problem
-    if MPI: # pragma: no cover
-        prob = Problem(impl=impl, root=ParallelOptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
-        prob.setup(check=False)
-    else:
-        prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
 
+    prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
+    prob.setup(check=False)
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()

@@ -656,9 +656,6 @@ class AEPGroupFLORIS(Group):
         self.add('p11', IndepVarComp('windrose_frequencies', np.zeros(nDirections)), promotes=['*'])
         self.add('p12', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
         self.add('p13', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
-        # self.add('p14', IndepVarComp('floris_params:FLORISoriginal', val=False), promotes=['*'])
-        # self.add('p15', IndepVarComp('floris_params:CPcorrected', val=False), promotes=['*'])
-        # self.add('p16', IndepVarComp('floris_params:CTcorrected', val=False), promotes=['*'])
 
         for i in range(0, nDirections):
             self.add('y%i' % i, IndepVarComp('yaw%i' % i, np.zeros(nTurbines)), promotes=['*'])
@@ -673,8 +670,6 @@ class AEPGroupFLORIS(Group):
             # print nDirections
 
         self.connect('powerMUX.Array', 'power_directions')
-        # self.connect('floris_params:CTcorrected', 'params:CTcorrected')
-        # self.connect('floris_params:CPcorrected', 'params:CPcorrected')
 
 
 # Testing code for development only
