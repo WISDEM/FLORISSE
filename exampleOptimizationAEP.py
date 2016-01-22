@@ -1,7 +1,7 @@
 from __future__ import print_function
 
 from openmdao.api import Problem, pyOptSparseDriver
-from OptimizationGroups import OptAEP, ParallelOptAEP
+from OptimizationGroups import OptAEP
 
 import time
 import numpy as np
@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 2 # number of processors (and number of wind directions to run)
+    size = 24 # number of processors (and number of wind directions to run)
 
     #########################################################################
 
@@ -72,8 +72,10 @@ if __name__ == "__main__":
     # Define flow properties
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
-    windDirections = np.linspace(0, 270, 4)
-    print(windDirections)
+    windDirections = np.linspace(0, 270, size)
+    windFrequencies = np.ones_like(windDirections)*1.0/size
+
+
     # initialize problem
     if MPI: # pragma: no cover
         prob = Problem(impl=impl, root=ParallelOptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
@@ -85,7 +87,7 @@ if __name__ == "__main__":
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    prob.driver.add_objective('obj')
+    prob.driver.add_objective('obj', scaler=1E-8)
     # set up driver
     # optdict = {}
     # optdict['Verify level'] = 3
@@ -95,10 +97,10 @@ if __name__ == "__main__":
     # prob.driver.options['SNOPT'] = optdict
 
     # select design variables
-    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX))
-    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY))
+    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
+    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
     for i in range(0, windDirections.size):
-        prob.driver.add_desvar('yaw%i' % i, lower=-30.0, upper=30.0)
+        prob.driver.add_desvar('yaw%i' % i, lower=-30.0, upper=30.0, scaler=1E-1)
 
     # add constraints
     # prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     # prob['floris_params:FLORISoriginal'] = True
     # prob['floris_params:CPcorrected'] = False
     # prob['floris_params:CTcorrected'] = False
-    prob['windrose_frequencies'] = np.array([0.2, 0.2, 0.2, 0.4])
+    prob['windrose_frequencies'] = windFrequencies
 
     # run the problem
     mpi_print(prob, 'start FLORIS run')

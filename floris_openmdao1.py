@@ -626,46 +626,6 @@ class AEPGroupFLORIS(Group):
 
         super(AEPGroupFLORIS, self).__init__()
 
-        # add major components
-        self.add('windDirectionsDeMUX', DeMUX(nDirections))
-        for i in range(0, nDirections):
-            self.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
-                     promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
-                               'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])#, 'wakeCentersYT', 'wakeDiametersT'])
-
-
-        self.add('powerMUX', MUX(nDirections))
-        self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
-
-        # add necessary inputs for group
-        self.add('p1', IndepVarComp('windDirections', np.zeros(nDirections)), promotes=['*'])
-        self.add('p2', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
-        self.add('p3', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
-        for i in range(0, nDirections):
-            self.add('y%i' % i, IndepVarComp('yaw%i' % i, np.zeros(nTurbines)), promotes=['*'])
-
-        # connect components
-        self.connect('windDirections', 'windDirectionsDeMUX.Array')
-        for i in range(0, nDirections):
-            self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
-            self.connect('yaw%i' % i, 'dir%i.yaw' % i)
-            self.connect('dir%i.power' % i, 'powerMUX.input%i' % i)
-            # print nDirections
-
-        self.connect('powerMUX.Array', 'power_directions')
-        # self.connect('floris_params:CTcorrected', 'params:CTcorrected')
-        # self.connect('floris_params:CPcorrected', 'params:CPcorrected')
-
-
-class ParallelAEPGroupFLORIS(Group):
-    """
-    Group containing all necessary components for wind plant AEP calculations using the FLORIS model
-    """
-
-    def __init__(self, nTurbines, resolution=0, nDirections=1):
-
-        super(ParallelAEPGroupFLORIS, self).__init__()
-
         # components and groups
         self.add('windDirectionsDeMUX', DeMUX(nDirections))
 
