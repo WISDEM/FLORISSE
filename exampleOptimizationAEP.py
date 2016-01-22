@@ -100,7 +100,7 @@ if __name__ == "__main__":
         prob.driver.add_desvar('yaw%i' % i, lower=-30.0, upper=30.0, scaler=1E-1)
 
     # add constraints
-    # prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
+    prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
 
     # initialize problem
     prob.setup(check=False)

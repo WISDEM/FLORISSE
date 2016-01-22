@@ -119,8 +119,11 @@ class OptAEP(Group):
         #                                  minSpacing=minSpacing), promotes=['*'])
 
         # add constraint definitions
-        self.add('spacing_con', ExecComp('sc = separation', sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-                                         separation=np.zeros(((nTurbines-1.)*nTurbines/2.))), promotes=['*'])
+        self.add('spacing_con',
+                 ExecComp('sc = separation-minSpacing*rotorDiameter[0]', sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
+                          separation=np.zeros(((nTurbines-1.)*nTurbines/2.)), rotorDiameter=np.zeros(nTurbines),
+                          minSpacing=minSpacing),
+                 promotes=['*'])
 
         # add objective component
         self.add('obj_comp', ExecComp('obj = -1*AEP', AEP=0.0), promotes=['*'])
