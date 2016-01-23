@@ -11,6 +11,11 @@ from _floris import *
 #     def setUp(self):
 #
 #     def test(self):
+# class MPITests(unittest.TestCase):
+#
+#     def setUp(self):
+#
+
 
 class GradientTests(unittest.TestCase):
 
@@ -40,8 +45,8 @@ class GradientTests(unittest.TestCase):
         prob = Problem(root=Group())
         prob.root.add('myFloris', FLORIS(nTurbines, resolution=0))
         prob.root.add('CtCp', AdjustCtCpYaw(nTurbines))
-        prob.root.add('v1', IndepVarComp('rotorDiameter', rotorDiameter), promotes=['*'])
-        prob.root.add('v2', IndepVarComp('yaw', yaw), promotes=['*'])
+        prob.root.add('v1', IndepVarComp('rotorDiameter', rotorDiameter, units='m'), promotes=['*'])
+        prob.root.add('v2', IndepVarComp('yaw', yaw, units='deg'), promotes=['*'])
         prob.root.add('v3', IndepVarComp('axialInduction', axialInduction), promotes=['*'])
         prob.root.add('v4', IndepVarComp('turbineX', turbineX), promotes=['*'])
         prob.root.add('v5', IndepVarComp('turbineY', turbineY), promotes=['*'])
@@ -75,7 +80,7 @@ class GradientTests(unittest.TestCase):
         prob.run()
 
         # pass results to self for use with unit test
-        self.J = prob.check_partial_derivatives()
+        self.J = prob.check_partial_derivatives(out_stream=None)
 
         # print self.J
     def testWindFrameGrads_turbineXw(self):

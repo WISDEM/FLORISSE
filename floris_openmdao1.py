@@ -637,7 +637,10 @@ class AEPGroupFLORIS(Group):
                    promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
                              'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])#, 'wakeCentersYT', 'wakeDiametersT'])
 
+        # self.add('velocitiesMUX', MUX(nDirections))
+        # self.add('wtPowerMUX', MUX(nDirections))
         self.add('powerMUX', MUX(nDirections))
+
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
 
         # add necessary inputs for group
@@ -664,9 +667,13 @@ class AEPGroupFLORIS(Group):
             self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
             self.connect('yaw%i' % i, 'dir%i.yaw' % i)
             # print self.all_directions.dir0.yaw
+            # self.connect('dir%i.velocitiesTurbines' % i, 'velocitiesMUX.input%i' % i)
+            # self.connect('dir%i.wt_power' % i, 'wtPowerMUX.input%i' % i)
             self.connect('dir%i.power' % i, 'powerMUX.input%i' % i)
             # print nDirections
 
+        # self.connect('velocitiesMUX.Array', 'velocitiesTurbines_directions')
+        # self.connect('wtPowerMUX.Array', 'wtPower_directions')
         self.connect('powerMUX.Array', 'power_directions')
 
 
