@@ -85,13 +85,14 @@ if __name__ == "__main__":
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
     prob.driver.add_objective('obj', scaler=1E-8)
-    # set up driver
-    # optdict = {}
-    # optdict['Verify level'] = 3
-    # optdict['Print file'] = 'test_SNOPT_print.out'
-    # optdict['Summary file'] = 'test_SNOPT_summary.out'
-    # optdict['Major iterations limit'] = 100
-    # prob.driver.options['SNOPT'] = optdict
+
+    # set optimizer options
+    prob.driver.opt_settings['Verify level'] = 3
+    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP.out'
+    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP.out'
+    prob.driver.opt_settings['Major iterations limit'] = 1000
+    prob.driver.opt_settings['Verify level'] = 3
+
 
     # select design variables
     prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
