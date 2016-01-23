@@ -3,7 +3,7 @@ import numpy as np
 from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
 
 from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX
-
+from Parameters import FLORISParameters
 import _floris
 
 # Components of FLORIS - for full model use FLORIS(Group)
@@ -606,6 +606,8 @@ class DirectionGroupFLORIS(Group):
     def __init__(self, nTurbines, resolution=0, dir=0):
         super(DirectionGroupFLORIS, self).__init__()
 
+        # self.add('fp', FLORISParameters(), promotes=['*'])
+
         self.add('CtCp', AdjustCtCpYaw(nTurbines),
                  promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'yaw'])
 
@@ -613,7 +615,6 @@ class DirectionGroupFLORIS(Group):
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw',
                            'velocitiesTurbines%i' % dir, 'wt_power%i' % dir, 'power%i' % dir, 'wakeCentersYT', 'wakeDiametersT'])
-
 
         self.connect('floris_params:CTcorrected', 'params:CTcorrected')
         self.connect('floris_params:CPcorrected', 'params:CPcorrected')
@@ -630,13 +631,11 @@ class AEPGroupFLORIS(Group):
 
         super(AEPGroupFLORIS, self).__init__()
 
-        # components and groups
+        # add components and groups
         self.add('windDirectionsDeMUX', DeMUX(nDirections))
 
         pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
-
         for i in range(0, nDirections):
-            # print 'it = %i' %i
             pg.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, dir=i),
                    promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
                              'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter',
@@ -650,7 +649,7 @@ class AEPGroupFLORIS(Group):
         self.add('p2', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
         self.add('p3', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
 
-        # add vars to be seen by MPI
+        # add vars to be seen by MPI and gradient calculations
         self.add('p5', IndepVarComp('rotorDiameter', np.zeros(nTurbines)), promotes=['*'])
         self.add('p6', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
         self.add('p7', IndepVarComp('generator_efficiency', np.zeros(nTurbines)), promotes=['*'])
@@ -669,7 +668,6 @@ class AEPGroupFLORIS(Group):
             self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
             self.connect('yaw%i' % i, 'dir%i.yaw' % i)
             self.connect('power%i' % i, 'powerMUX.input%i' % i)
-
         self.connect('powerMUX.Array', 'power_directions')
 
 

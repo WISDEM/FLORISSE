@@ -41,9 +41,11 @@ if __name__ == "__main__":
     # original example case
     # turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])   # m
     # turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])   # m
+
     # Scaling grid case
     nRows = int(sys.argv[1])     # number of rows and columns in grid
     spacing = 5     # turbine grid spacing in diameters
+
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
     xpoints, ypoints = np.meshgrid(points, points)
@@ -75,9 +77,7 @@ if __name__ == "__main__":
     windDirections = np.linspace(0, 270, size)
     windFrequencies = np.ones_like(windDirections)*1.0/size
 
-
     # initialize problem
-
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0, minSpacing=minSpacing))
     prob.setup(check=False)
 
@@ -122,20 +122,17 @@ if __name__ == "__main__":
     prob['windDirections'] = windDirections
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
-    # prob['floris_params:FLORISoriginal'] = True
-    # prob['floris_params:CPcorrected'] = False
-    # prob['floris_params:CTcorrected'] = False
+    prob['floris_params:FLORISoriginal'] = True
+    prob['floris_params:CPcorrected'] = False
+    prob['floris_params:CTcorrected'] = False
     prob['windrose_frequencies'] = windFrequencies
 
     # run the problem
     mpi_print(prob, 'start FLORIS run')
     tic = time.time()
-    # prob.check_partial_derivatives()
     prob.run()
-    # prob.check_partial_derivatives()
     toc = time.time()
 
-    # print the results
     # print the results
     mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
 
@@ -145,7 +142,6 @@ if __name__ == "__main__":
         mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % i, prob['velocitiesTurbines%i' % i])
     for i in range(0, windDirections.size):
         mpi_print(prob,  'wt_power%i (kW) = ' % i, prob['wt_power%i' % i])
-    #     exec("mpi_print(prob, 'velocities in dir%i: ', prob.root.AEPgroup.dir%i.unknowns['velocitiesTurbines'])" % (i, i))
 
     mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
     mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])

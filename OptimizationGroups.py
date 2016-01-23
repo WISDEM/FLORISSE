@@ -13,6 +13,7 @@ from openmdao.api import Group, IndepVarComp, ExecComp
 
 from floris_openmdao1 import DirectionGroupFLORIS, AEPGroupFLORIS
 from GeneralWindfarmComponents import SpacingComp
+from Parameters import FLORISParameters
 
 
 class OptPowerOneDir(Group):
@@ -113,12 +114,6 @@ class OptAEP(Group):
         # add major components and groups
         self.add('AEPgroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections), promotes=['*'])
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
-
-        # # add constraint definitions
-        # self.add('spacing_con', ExecComp('sc = separation-minSpacing*126.4',
-        #                                  sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-        #                                  separation=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-        #                                  minSpacing=minSpacing), promotes=['*'])
 
         # add constraint definitions
         self.add('spacing_con',
