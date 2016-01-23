@@ -1,6 +1,6 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp, ParallelGroup
+from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
 
 from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX
 
@@ -303,7 +303,7 @@ class floris_overlap(Component):
 class floris_power(Component):
     """ Calculates the turbine power and effective wind speed for each turbine """
 
-    def __init__(self, nTurbines):
+    def __init__(self, nTurbines, dir):
 
         super(floris_power, self).__init__()
 
@@ -313,6 +313,7 @@ class floris_power(Component):
 
         # print 'entering power __init__ - Tapenade'
         self.nTurbines = nTurbines
+        self.dir = dir
 
         # inputs
         self.add_param('wind_speed', 8.0, units='m/s', desc='free stream wind velocity')
@@ -336,11 +337,11 @@ class floris_power(Component):
                        desc='cosine factor similar to Jensen 1983')
 
         # outputs
-        self.add_output('velocitiesTurbines', np.zeros(nTurbines), units='m/s',
+        self.add_output('velocitiesTurbines%i' % dir, np.zeros(nTurbines), units='m/s',
                        desc='effective hub velocity for each turbine')
-        self.add_output('wt_power', np.zeros(nTurbines), units='kW', desc='power output of each turbine')
+        self.add_output('wt_power%i' % dir, np.zeros(nTurbines), units='kW', desc='power output of each turbine')
         # output
-        self.add_output('power', 0.0, units='kW', desc='total power output of the wind farm')
+        self.add_output('power%i' % dir, 0.0, units='kW', desc='total power output of the wind farm')
 
 
         # connect floris_params
@@ -439,9 +440,9 @@ class floris_power(Component):
         #                                                     rho, aU, bU, Cp, generator_efficiency)
 
         # pass outputs to self
-        unknowns['velocitiesTurbines'] = velocitiesTurbines
-        unknowns['wt_power'] = wt_power
-        unknowns['power'] = power
+        unknowns['velocitiesTurbines%i' % self.dir] = velocitiesTurbines
+        unknowns['wt_power%i' % self.dir] = wt_power
+        unknowns['power%i' % self.dir] = power
 
         # print 'velocitiesTurbines: ', velocitiesTurbines
         # print 'wt_power: ', wt_power
@@ -451,6 +452,7 @@ class floris_power(Component):
         # print 'entering power linearize'
         # number of turbines
         nTurbines = self.nTurbines
+        dir = self.dir
 
         # number of directions to differentiate
         nbdirs = nTurbines
@@ -520,14 +522,14 @@ class floris_power(Component):
         # print 'Cp', Cpb
 
         # collect values of the jacobian of velocitiesTurbines
-        J['velocitiesTurbines', 'wakeOverlapTRel'] = wakeOverlapTRel_vb
-        J['velocitiesTurbines', 'cosFac'] = cosFac_vb
-        J['velocitiesTurbines', 'Ct'] = Ctb
-        J['velocitiesTurbines', 'Cp'] = Cpb
-        J['velocitiesTurbines', 'axialInduction'] = axialInductionb
-        J['velocitiesTurbines', 'turbineXw'] = turbineXwb
-        J['velocitiesTurbines', 'yaw'] = yawb
-        J['velocitiesTurbines', 'rotorDiameter'] = rotorDiameterb
+        J['velocitiesTurbines%i' % dir, 'wakeOverlapTRel'] = wakeOverlapTRel_vb
+        J['velocitiesTurbines%i' % dir, 'cosFac'] = cosFac_vb
+        J['velocitiesTurbines%i' % dir, 'Ct'] = Ctb
+        J['velocitiesTurbines%i' % dir, 'Cp'] = Cpb
+        J['velocitiesTurbines%i' % dir, 'axialInduction'] = axialInductionb
+        J['velocitiesTurbines%i' % dir, 'turbineXw'] = turbineXwb
+        J['velocitiesTurbines%i' % dir, 'yaw'] = yawb
+        J['velocitiesTurbines%i' % dir, 'rotorDiameter'] = rotorDiameterb
 
         # input arrays to direct differentiation
         velocitiesTurbinesb[:, :] = 0.0
@@ -542,14 +544,14 @@ class floris_power(Component):
 
         # print wakeOverlapTRel_vb.shape, wt_powerb.shape
         # collect values of the jacobian of wt_power
-        J['wt_power', 'wakeOverlapTRel'] = wakeOverlapTRel_vb
-        J['wt_power', 'cosFac'] = cosFac_vb
-        J['wt_power', 'Ct'] = Ctb
-        J['wt_power', 'Cp'] = Cpb
-        J['wt_power', 'axialInduction'] = axialInductionb
-        J['wt_power', 'turbineXw'] = turbineXwb
-        J['wt_power', 'yaw'] = yawb
-        J['wt_power', 'rotorDiameter'] = rotorDiameterb
+        J['wt_power%i' % dir, 'wakeOverlapTRel'] = wakeOverlapTRel_vb
+        J['wt_power%i' % dir, 'cosFac'] = cosFac_vb
+        J['wt_power%i' % dir, 'Ct'] = Ctb
+        J['wt_power%i' % dir, 'Cp'] = Cpb
+        J['wt_power%i' % dir, 'axialInduction'] = axialInductionb
+        J['wt_power%i' % dir, 'turbineXw'] = turbineXwb
+        J['wt_power%i' % dir, 'yaw'] = yawb
+        J['wt_power%i' % dir, 'rotorDiameter'] = rotorDiameterb
 
         # input arrays to direct differentiation
         wt_powerb[:, :] = 0.0
@@ -567,14 +569,14 @@ class floris_power(Component):
         # # print np.array(yawb[:1, :])
         # collect values of the jacobian of wt_power
         # print 'vb', wakeOverlapTRel_vb
-        J['power', 'wakeOverlapTRel'] = np.array(wakeOverlapTRel_vb[:1, :])
-        J['power', 'cosFac'] = np.array(cosFac_vb[:1, :])
-        J['power', 'Ct'] = np.array(Ctb[:1, :])
-        J['power', 'Cp'] = np.array(Cpb[:1, :])
-        J['power', 'axialInduction'] = np.array(axialInductionb[:1, :])
-        J['power', 'turbineXw'] = np.array(turbineXwb[:1, :])
-        J['power', 'yaw'] = np.array(yawb[:1, :])
-        J['power', 'rotorDiameter'] = np.array(rotorDiameterb[:1, :])
+        J['power%i' % dir, 'wakeOverlapTRel'] = np.array(wakeOverlapTRel_vb[:1, :])
+        J['power%i' % dir, 'cosFac'] = np.array(cosFac_vb[:1, :])
+        J['power%i' % dir, 'Ct'] = np.array(Ctb[:1, :])
+        J['power%i' % dir, 'Cp'] = np.array(Cpb[:1, :])
+        J['power%i' % dir, 'axialInduction'] = np.array(axialInductionb[:1, :])
+        J['power%i' % dir, 'turbineXw'] = np.array(turbineXwb[:1, :])
+        J['power%i' % dir, 'yaw'] = np.array(yawb[:1, :])
+        J['power%i' % dir, 'rotorDiameter'] = np.array(rotorDiameterb[:1, :])
 
         # print 'leaving power linearize'
         # print J
@@ -585,12 +587,12 @@ class floris_power(Component):
 class FLORIS(Group):
     """ Group containing all necessary components of the floris model """
 
-    def __init__(self, nTurbines, resolution):
+    def __init__(self, nTurbines, resolution, dir=0):
         super(FLORIS, self).__init__()
         self.add('f_1', WindFrame(nTurbines, resolution), promotes=['*'])
         self.add('f_2', floris_wcent_wdiam(nTurbines), promotes=['*'])
         self.add('f_3', floris_overlap(nTurbines), promotes=['*'])
-        self.add('f_4', floris_power(nTurbines), promotes=['*'])
+        self.add('f_4', floris_power(nTurbines, dir=dir), promotes=['*'])
 
 
 class DirectionGroupFLORIS(Group):
@@ -599,16 +601,16 @@ class DirectionGroupFLORIS(Group):
     in a single direction
     """
 
-    def __init__(self, nTurbines, resolution=0):
+    def __init__(self, nTurbines, resolution=0, dir=0):
         super(DirectionGroupFLORIS, self).__init__()
 
         self.add('CtCp', AdjustCtCpYaw(nTurbines),
                  promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'yaw'])
 
-        self.add('myFloris', FLORIS(nTurbines, resolution),
+        self.add('myFloris', FLORIS(nTurbines, resolution, dir),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw',
-                           'velocitiesTurbines', 'wt_power', 'power', 'wakeCentersYT', 'wakeDiametersT'])
+                           'velocitiesTurbines%i' % dir, 'wt_power%i' % dir, 'power%i' % dir, 'wakeCentersYT', 'wakeDiametersT'])
 
 
         self.connect('floris_params:CTcorrected', 'params:CTcorrected')
@@ -633,14 +635,12 @@ class AEPGroupFLORIS(Group):
 
         for i in range(0, nDirections):
             # print 'it = %i' %i
-            pg.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
+            pg.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, dir=i),
                    promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
-                             'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])#, 'wakeCentersYT', 'wakeDiametersT'])
+                             'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter',
+                             'velocitiesTurbines%i' % i, 'wt_power%i' % i, 'power%i' % i])#, 'wakeCentersYT', 'wakeDiametersT'])
 
-        # self.add('velocitiesMUX', MUX(nDirections))
-        # self.add('wtPowerMUX', MUX(nDirections))
         self.add('powerMUX', MUX(nDirections))
-
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
 
         # add necessary inputs for group
@@ -666,14 +666,8 @@ class AEPGroupFLORIS(Group):
         for i in range(0, nDirections):
             self.connect('windDirectionsDeMUX.output%i' % i, 'dir%i.wind_direction' % i)
             self.connect('yaw%i' % i, 'dir%i.yaw' % i)
-            # print self.all_directions.dir0.yaw
-            # self.connect('dir%i.velocitiesTurbines' % i, 'velocitiesMUX.input%i' % i)
-            # self.connect('dir%i.wt_power' % i, 'wtPowerMUX.input%i' % i)
-            self.connect('dir%i.power' % i, 'powerMUX.input%i' % i)
-            # print nDirections
+            self.connect('power%i' % i, 'powerMUX.input%i' % i)
 
-        # self.connect('velocitiesMUX.Array', 'velocitiesTurbines_directions')
-        # self.connect('wtPowerMUX.Array', 'wtPower_directions')
         self.connect('powerMUX.Array', 'power_directions')
 
 

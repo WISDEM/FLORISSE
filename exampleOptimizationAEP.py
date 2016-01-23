@@ -141,11 +141,15 @@ if __name__ == "__main__":
 
     for i in range(0, windDirections.size):
         mpi_print(prob,  'yaw%i (deg) = ' % i, prob['yaw%i' % i])
+    for i in range(0, windDirections.size):
+        mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % i, prob['velocitiesTurbines%i' % i])
+    for i in range(0, windDirections.size):
+        mpi_print(prob,  'wt_power%i (kW) = ' % i, prob['wt_power%i' % i])
     #     exec("mpi_print(prob, 'velocities in dir%i: ', prob.root.AEPgroup.dir%i.unknowns['velocitiesTurbines'])" % (i, i))
 
     mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
     mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
-    mpi_print(prob,  'power in each direction (kW): %s' % prob['power_directions'])
+    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['power_directions'])
     mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]

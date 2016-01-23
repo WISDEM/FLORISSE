@@ -337,7 +337,7 @@ class SpacingComp(Component):
 
 
 class MUX(Component):
-    """ Estimate the AEP based on power production for each direction and weighted by wind direction frequency  """
+    """ Connect input elements into a single array  """
 
     def __init__(self, nElements):
 
