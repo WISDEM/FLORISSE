@@ -6,18 +6,7 @@ from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP
 
 import _floris
 
-
-class FLORIS(Group):
-    """ Group containing all necessary components of the floris model """
-
-    def __init__(self, nTurbines, resolution):
-        super(FLORIS, self).__init__()
-        self.add('f_1', WindFrame(nTurbines, resolution), promotes=['*'])
-        self.add('f_2', floris_wcent_wdiam(nTurbines), promotes=['*'])
-        self.add('f_3', floris_overlap(nTurbines), promotes=['*'])
-        self.add('f_4', floris_power(nTurbines), promotes=['*'])
-
-
+# Components of FLORIS - for full model use FLORIS(Group)
 class floris_wcent_wdiam(Component):
 
     def __init__(self, nTurbines):
@@ -31,44 +20,44 @@ class floris_wcent_wdiam(Component):
         # print 'entering wcent_wdiam __init__ - Tapenade'
 
         # input arrays
-        self.add_param('turbineXw', np.zeros(nTurbines), desc='x coordinates of turbines in wind dir. ref. frame')
-        self.add_param('turbineYw', np.zeros(nTurbines), desc='y coordinates of turbines in wind dir. ref. frame')
-        self.add_param('yaw', np.zeros(nTurbines), desc='yaw of each turbine')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), desc='rotor diameter of each turbine')
+        self.add_param('turbineXw', np.zeros(nTurbines), units='m', desc='x coordinates of turbines in wind dir. ref. frame')
+        self.add_param('turbineYw', np.zeros(nTurbines), units='m', desc='y coordinates of turbines in wind dir. ref. frame')
+        self.add_param('yaw', np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
+        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameter of each turbine')
         self.add_param('Ct', np.zeros(nTurbines), desc='thrust coefficient of each turbine')
 
         # output arrays
-        self.add_output('wakeCentersYT', np.zeros(nTurbines*nTurbines), desc='wake center y position at each turbine')
-        self.add_output('wakeDiametersT', np.zeros(3*nTurbines*nTurbines), desc='wake diameter of each zone of each wake at each turbine')
+        self.add_output('wakeCentersYT', np.zeros(nTurbines*nTurbines), units='m', desc='wake center y position at each turbine')
+        self.add_output('wakeDiametersT', np.zeros(3*nTurbines*nTurbines), units='m', desc='wake diameter of each zone of each wake at each turbine')
 
         # FLORIS parameters
-        self.add_param('floris_params:pP', 1.88)
-        self.add_param('floris_params:ke', 0.065)
-        self.add_param('floris_params:keCorrArray', 0.0)
-        self.add_param('floris_params:keCorrCT', 0.0)
-        self.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)))
-        self.add_param('floris_params:kd', 0.15)
-        self.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]))
-        self.add_param('floris_params:initialWakeDisplacement', -4.5)
-        self.add_param('floris_params:initialWakeAngle', 3.0)
-        self.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.))
-        self.add_param('floris_params:keCorrTI', 0.0)
-        self.add_param('floris_params:baselineTI', 0.045)
-        self.add_param('floris_params:keCorrHR', 0.0) # neutral, with heating rate 0, is baseline
-        self.add_param('floris_params:keCorrHRTI', 0.0)
+        self.add_param('floris_params:pP', 1.88, pass_by_obj=True)
+        self.add_param('floris_params:ke', 0.065, pass_by_obj=True)
+        self.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:keCorrCT', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True)
+        self.add_param('floris_params:kd', 0.15, pass_by_obj=True)
+        self.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True)
+        self.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True)
+        self.add_param('floris_params:initialWakeAngle', 3.0, pass_by_obj=True)
+        self.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.), pass_by_obj=True)
+        self.add_param('floris_params:keCorrTI', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:baselineTI', 0.045, pass_by_obj=True)
+        self.add_param('floris_params:keCorrHR', 0.0, pass_by_obj=True) # neutral, with heating rate 0, is baseline
+        self.add_param('floris_params:keCorrHRTI', 0.0, pass_by_obj=True)
         self.add_param('floris_params:keSaturation', 0.0)
-        self.add_param('floris_params:kdCorrYawDirection', 0.0)
-        self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]))
-        self.add_param('floris_params:CTcorrected', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:CPcorrected', False, desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
-        self.add_param('floris_params:axialIndProvided', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:useWakeAngle', True)
-        self.add_param('floris_params:bd', -0.01)
-        self.add_param('floris_params:useaUbU', False)
-        self.add_param('floris_params:aU', 5.0, units='deg')
-        self.add_param('floris_params:bU', 1.66)
-        self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
-        self.add_param('floris_params:FLORISoriginal', True, desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+        self.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True)
+        self.add_param('floris_params:CTcorrected', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
+        self.add_param('floris_params:CPcorrected', False, desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)', pass_by_obj=True)
+        self.add_param('floris_params:axialIndProvided', False, desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
+        self.add_param('floris_params:useWakeAngle', True, pass_by_obj=True)
+        self.add_param('floris_params:bd', -0.01, pass_by_obj=True)
+        self.add_param('floris_params:useaUbU', False, pass_by_obj=True)
+        self.add_param('floris_params:aU', 5.0, units='deg', pass_by_obj=True)
+        self.add_param('floris_params:bU', 1.66, pass_by_obj=True)
+        self.add_param('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True)
+        self.add_param('floris_params:FLORISoriginal', True, desc='override all parameters and use FLORIS as original in first Wind Energy paper', pass_by_obj=True)
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -355,38 +344,38 @@ class floris_power(Component):
 
 
         # connect floris_params
-        self.add_param('floris_params:pP', 1.88)
-        self.add_param('floris_params:ke', 0.065)
-        self.add_param('floris_params:keCorrArray', 0.0)
-        self.add_param('floris_params:keCorrCT', 0.0)
-        self.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)))
-        self.add_param('floris_params:kd', 0.15)
-        self.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]))
-        self.add_param('floris_params:initialWakeDisplacement', -4.5)
-        self.add_param('floris_params:initialWakeAngle', 3.0)
-        self.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.))
-        self.add_param('floris_params:keCorrTI', 0.0)
-        self.add_param('floris_params:baselineTI', 0.045)
-        self.add_param('floris_params:keCorrHR', 0.0) # neutral, with heating rate 0, is baseline
-        self.add_param('floris_params:keCorrHRTI', 0.0)
-        self.add_param('floris_params:keSaturation', 0.0)
-        self.add_param('floris_params:kdCorrYawDirection', 0.0)
-        self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]))
+        self.add_param('floris_params:pP', 1.88, pass_by_obj=True)
+        self.add_param('floris_params:ke', 0.065, pass_by_obj=True)
+        self.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:keCorrCT', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True)
+        self.add_param('floris_params:kd', 0.15, pass_by_obj=True)
+        self.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True)
+        self.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True)
+        self.add_param('floris_params:initialWakeAngle', 3.0, pass_by_obj=True)
+        self.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.), pass_by_obj=True)
+        self.add_param('floris_params:keCorrTI', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:baselineTI', 0.045, pass_by_obj=True)
+        self.add_param('floris_params:keCorrHR', 0.0, pass_by_obj=True) # neutral, with heating rate 0, is baseline
+        self.add_param('floris_params:keCorrHRTI', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:keSaturation', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
+        self.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True)
         self.add_param('floris_params:CTcorrected', False,
-                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
+                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
         self.add_param('floris_params:CPcorrected', False,
                        desc='CP factor already corrected by CCBlade calculation '
-                            '(assumed with approximately factor cos(yaw)^3)')
+                            '(assumed with approximately factor cos(yaw)^3)', pass_by_obj=True)
         self.add_param('floris_params:axialIndProvided', False,
-                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-        self.add_param('floris_params:useWakeAngle', True)
-        self.add_param('floris_params:bd', -0.01)
-        self.add_param('floris_params:useaUbU', False)
-        self.add_param('floris_params:aU', 5.0, units='deg')
-        self.add_param('floris_params:bU', 1.66)
-        self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
+                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
+        self.add_param('floris_params:useWakeAngle', True, pass_by_obj=True)
+        self.add_param('floris_params:bd', -0.01, pass_by_obj=True)
+        self.add_param('floris_params:useaUbU', False, pass_by_obj=True)
+        self.add_param('floris_params:aU', 5.0, units='deg', pass_by_obj=True)
+        self.add_param('floris_params:bU', 1.66, pass_by_obj=True)
+        self.add_param('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True)
         self.add_param('floris_params:FLORISoriginal', True,
-                       desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+                       desc='override all parameters and use FLORIS as original in first Wind Energy paper', pass_by_obj=True)
 
     def solve_nonlinear(self, params, unknowns, resids):
         # print 'entering power - tapenade'
@@ -593,6 +582,17 @@ class floris_power(Component):
 
 
 # Groups using FLORIS
+class FLORIS(Group):
+    """ Group containing all necessary components of the floris model """
+
+    def __init__(self, nTurbines, resolution):
+        super(FLORIS, self).__init__()
+        self.add('f_1', WindFrame(nTurbines, resolution), promotes=['*'])
+        self.add('f_2', floris_wcent_wdiam(nTurbines), promotes=['*'])
+        self.add('f_3', floris_overlap(nTurbines), promotes=['*'])
+        self.add('f_4', floris_power(nTurbines), promotes=['*'])
+
+
 class DirectionGroupFLORIS(Group):
     """
     Group containing all necessary components for wind plant calculations
@@ -636,8 +636,6 @@ class AEPGroupFLORIS(Group):
             pg.add('dir%i' % i, DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution),
                    promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'wind_speed', 'air_density',
                              'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter'])#, 'wakeCentersYT', 'wakeDiametersT'])
-
-        # pg.promotes=['*']
 
         self.add('powerMUX', MUX(nDirections))
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])

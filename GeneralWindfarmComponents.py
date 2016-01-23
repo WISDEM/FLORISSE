@@ -109,20 +109,20 @@ class AdjustCtCpYaw(Component):
         # Explicitly size input arrays
         self.add_param('Ct_in', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
         self.add_param('Cp_in', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
-        self.add_param('yaw', val=np.zeros(nTurbines), desc='yaw of each turbine')
+        self.add_param('yaw', val=np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
 
         # Explicitly size output arrays
         self.add_output('Ct_out', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
         self.add_output('Cp_out', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
 
         # parameters since var trees are not supports
-        self.add_param('params:pP', 1.88)
+        self.add_param('params:pP', 1.88, pass_by_obj=True)
         self.add_param('params:CTcorrected', False,
-                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
+                       desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
         self.add_param('params:CPcorrected', False,
-                       desc='CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
+                       desc='CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)', pass_by_obj=True)
         self.add_param('floris_params:FLORISoriginal', True,
-                       desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+                       desc='override all parameters and use FLORIS as original in first Wind Energy paper', pass_by_obj=True)
 
     def solve_nonlinear(self, params, unknowns, resids):
 
