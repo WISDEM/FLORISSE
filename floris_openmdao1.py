@@ -222,8 +222,6 @@ class floris_overlap(Component):
                        desc='Y positions of turbines wrt the wind direction')
         self.add_param('rotorDiameter', np.zeros(nTurbines), units='m',
                        desc='diameters of all turbine rotors')
-        self.add_param('cos_spread', val=3.0,
-                       desc='spread of cosine smoothing factor (percent of sum of wake and rotor radii)')
         self.add_param('wakeCentersYT', np.zeros(nTurbines*nTurbines), units='m',
                        desc='Y positions of all wakes at each turbine')
         self.add_param('wakeDiametersT', np.zeros(3*nTurbines*nTurbines), units='m',
@@ -234,6 +232,10 @@ class floris_overlap(Component):
                         desc='relative wake zone overlap to rotor area')
         self.add_output('cosFac', np.ones(3*nTurbines*nTurbines),
                         desc='cosine factor similar to Jensen 1983')
+
+        # floris parameters
+        self.add_param('floris_params:cos_spread', val=3.0, pass_by_obj=True,
+                       desc='spread of cosine smoothing factor (percent of sum of wake and rotor radii)')
 
         # etc
         self.nTurbines = nTurbines
@@ -246,7 +248,7 @@ class floris_overlap(Component):
         # print params['turbineXw'], params['turbineYw'], params['rotorDiameter']
         wakeOverlapTRel_vec, cosFac_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'],
                                                                  params['rotorDiameter'], params['wakeDiametersT'],
-                                                                 params['wakeCentersYT'], params['cos_spread'])
+                                                                 params['wakeCentersYT'], params['floris_params:cos_spread'])
 
         # wakeOverlapTRel_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'], params['rotorDiameter'], \
         #                                              params['wakeDiametersT'], params['wakeCentersYT'])
@@ -272,7 +274,7 @@ class floris_overlap(Component):
         turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
             = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
                                         params['wakeDiametersT'], params['wakeCentersYT'],
-                                        params['cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
+                                        params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
 
         J = {}
         # construct Jacobian of floris_overlap
@@ -289,7 +291,7 @@ class floris_overlap(Component):
         turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
             = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
                                         params['wakeDiametersT'], params['wakeCentersYT'],
-                                        params['cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
+                                        params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
 
         # construct Jacobian of floris_overlap
         J['cosFac', 'turbineYw'] = turbineYwb

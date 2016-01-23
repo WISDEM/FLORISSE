@@ -50,3 +50,6 @@ class FLORISParameters(Component):
         self.add_param('floris_params:adjustInitialWakeDiamToYaw', True)
 
         self.add_param('floris_params:FLORISoriginal', False, desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+
+        self.add_param('floris_params:cos_spread', val=3.0, pass_by_obj=True,
+                       desc='spread of cosine smoothing factor (percent of sum of wake and rotor radii)')
