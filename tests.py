@@ -128,37 +128,37 @@ class GradientTests(unittest.TestCase):
 
     def testFlorisPowerGrads_velocitiesTurbines(self):
 
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'cosFac')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'Ct')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'Cp')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'axialInduction')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'turbineXw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'yaw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines', 'rotorDiameter')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines', 'rotorDiameter')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'cosFac')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'Ct')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'Cp')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'axialInduction')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'turbineXw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'yaw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('velocitiesTurbines0', 'rotorDiameter')]['J_fwd'], self.J['myFloris.f_4'][('velocitiesTurbines0', 'rotorDiameter')]['J_fd'], self.atol, self.rtol)
         # return
 
     def testFlorisPowerGrads_wt_power(self):
 
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'cosFac')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'Ct')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'Cp')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'axialInduction')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'turbineXw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'yaw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power', 'rotorDiameter')]['J_fwd'], self.J['myFloris.f_4'][('wt_power', 'rotorDiameter')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'cosFac')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'Ct')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'Cp')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'axialInduction')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'turbineXw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'yaw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('wt_power0', 'rotorDiameter')]['J_fwd'], self.J['myFloris.f_4'][('wt_power0', 'rotorDiameter')]['J_fd'], self.atol, self.rtol)
 
     def testFlorisPowerGrads_power(self):
 
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('power', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('power', 'cosFac')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('power', 'Ct')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('power', 'Cp')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('power', 'axialInduction')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('power', 'turbineXw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4'][('power', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('power', 'yaw')]['J_fd'], self.atol, self.rtol)
-        np.testing.assert_allclose(self.J['myFloris.f_4']['power', 'rotorDiameter']['J_fwd'], self.J['myFloris.f_4']['power', 'rotorDiameter']['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'wakeOverlapTRel')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'wakeOverlapTRel')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'cosFac')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'cosFac')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'Ct')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'Ct')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'Cp')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'Cp')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'axialInduction')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'axialInduction')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'turbineXw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'yaw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fwd'], self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fd'], self.atol, self.rtol)
 
 if __name__ == "__main__":
     unittest.main()
