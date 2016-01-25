@@ -31,10 +31,12 @@ class floris_assembly_opt_AEP(Assembly):
     # output
     AEP = Float(iotype='out', units='kW', desc='total windfarm AEP')
 
-    def __init__(self, nTurbines, nDirections, optimize_position=False, nSamples=0, optimize_yaw=False,
-                 datasize=0):
+    def __init__(self, nTurbines, nDirections, optimize_position=False, nSamples=0, optimize_yaw=False, datasize=0, nSpeeds=False):
 
         super(floris_assembly_opt_AEP, self).__init__()
+
+        if nSpeeds == False:
+            nSpeeds = nDirections
 
         self.nTurbines = nTurbines
         self.nSamples = nSamples
@@ -42,6 +44,7 @@ class floris_assembly_opt_AEP(Assembly):
         self.optimize_yaw = optimize_yaw
         self.optimize_position = optimize_position
         self.datasize = datasize
+        self.nSpeeds = nSpeeds
 
         # wt_layout input variables
         self.add('rotorDiameter', Array(np.zeros(nTurbines), dtype='float', iotype='in', units='m',
@@ -74,10 +77,13 @@ class floris_assembly_opt_AEP(Assembly):
         self.add('windrose_directions', Array(np.zeros(nDirections), dtype='float', iotype='in',
                                               desc='windrose directions in degrees ccw from east'))
         self.add('windrose_frequencies', Array(np.zeros(nDirections), dtype='float', iotype='in',
-                                               desc='windrose frequencies corresponding to windrose_directions'))
-        self.add('windrose_speeds', Array(np.zeros(nDirections), dtype='float', iotype='in',
+					desc='windrose frequencies corresponding to windrose_directions'))
+        if nSpeeds == 1:
+            self.add('windrose_speeds', Float(iotype='in', units='m/s', 
                                           desc='wind speeds for each direction given in windrose_directions'))
-
+        else:
+            self.add('windrose_speeds', Array(np.zeros(nDirections), dtype='float', iotype='in', units='m/s', 
+                                          desc='wind speeds for each direction given in windrose_directions'))
 
         # Explicitly size output arrays
 
@@ -124,6 +130,7 @@ class floris_assembly_opt_AEP(Assembly):
         optimize_yaw = self.optimize_yaw
         datasize = self.datasize
         nSamples = self.nSamples
+        nSpeeds = self.nSpeeds
 
         # add driver so the workflow is not overwritten later
         if optimize_position or optimize_yaw:
@@ -205,7 +212,6 @@ class floris_assembly_opt_AEP(Assembly):
                 self.connect(yawToConnect, ['%sfloris_wcent_wdiam_%d.yaw' % (ssn,i), '%sfloris_power_%d.yaw' % (ssn,i)])
 
             for ssn in samplingNonSampling:
-                self.connect('windrose_speeds[%d]' % i, '%sfloris_power_%d.wind_speed' % (ssn,i))
                 self.connect('air_density', '%sfloris_power_%d.air_density' % (ssn,i))
                 self.connect('windrose_directions[%d]' % i, '%sfloris_windframe_%d.wind_direction' % (ssn,i))
 
@@ -214,7 +220,6 @@ class floris_assembly_opt_AEP(Assembly):
                 self.connect(CT, '%sfloris_windframe_%d.Ct' % (ssn,i))
                 self.connect(CP, '%sfloris_windframe_%d.Cp' % (ssn,i))
                 self.connect(yawToConnect, '%sfloris_windframe_%d.yaw' % (ssn,i))
-                self.connect('windrose_speeds[%d]' % i, '%sfloris_windframe_%d.wind_speed' % (ssn,i))
                 self.connect('axialInduction', '%sfloris_windframe_%d.axialInduction' % (ssn,i))
 
             # ############### Connections between components ##################
@@ -264,6 +269,16 @@ class floris_assembly_opt_AEP(Assembly):
                 self.driver.workflow.add(['Sampling_floris_windframe_%d' % i,
                                           'Sampling_floris_wcent_wdiam_%d' % i, 'Sampling_floris_overlap_%d' % i, 'Sampling_floris_power_%d' % i])
 
+        if nSpeeds>1:
+            for i in range(0, nSpeeds):
+                for ssn in samplingNonSampling:
+                    self.connect('windrose_speeds[%d]' % i, '%sfloris_power_%d.wind_speed' % (ssn,i))
+                    self.connect('windrose_speeds[%d]' % i, '%sfloris_windframe_%d.wind_speed' % (ssn,i))
+        else:
+            for i in range(0, nDirections):
+                for ssn in samplingNonSampling:
+                    self.connect('windrose_speeds', '%sfloris_power_%d.wind_speed' % (ssn,i))
+                    self.connect('windrose_speeds', '%sfloris_windframe_%d.wind_speed' % (ssn,i))
 
         # add AEP calculations to workflow
         self.driver.workflow.add(['floris_AEP', 'floris_dist_const'])
