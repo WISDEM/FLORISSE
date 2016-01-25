@@ -1,5 +1,5 @@
 from openmdao.api import Problem, Group, IndepVarComp
-from floris_openmdao1 import FLORIS
+from floris_openmdao1 import DirectionGroupFLORIS
 from GeneralWindfarmComponents import AdjustCtCpYaw
 
 import time
@@ -37,45 +37,38 @@ if __name__ == "__main__":
 
     # set up problem
     prob = Problem(root=Group())
-    prob.root.add('myFloris', FLORIS(nTurbs, resolution=0))
-    prob.root.add('CtCp', AdjustCtCpYaw(nTurbs))
-
-    # connect components
-    prob.root.connect('CtCp.Ct_out', 'myFloris.Ct')
-    prob.root.connect('CtCp.Cp_out', 'myFloris.Cp')
-    prob.root.connect('CtCp.yaw', 'myFloris.yaw')
+    prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbs, resolution=0), promotes=['*'])
 
     # initialize problem
     prob.setup()
 
+    # assign values to turbine states
+    prob['turbineX'] = turbineX
+    prob['turbineY'] = turbineY
+    prob['yaw'] = yaw
+
     # assign values to constant inputs (not design variables)
-    prob['myFloris.turbineX'] = turbineX
-    prob['myFloris.turbineY'] = turbineY
-    prob['myFloris.rotorDiameter'] = rotorDiameter
-    prob['myFloris.axialInduction'] = axialInduction
-    prob['myFloris.generator_efficiency'] = generator_efficiency
-    prob['myFloris.wind_speed'] = wind_speed
-    prob['myFloris.air_density'] = air_density
-    prob['myFloris.wind_direction'] = wind_direction
-    prob['CtCp.yaw'] = yaw
-    prob['CtCp.Ct_in'] = Ct
-    prob['CtCp.Cp_in'] = Cp
-    prob['myFloris.floris_params:FLORISoriginal'] = True
-    prob['CtCp.floris_params:FLORISoriginal'] = True
+    prob['rotorDiameter'] = rotorDiameter
+    prob['axialInduction'] = axialInduction
+    prob['generator_efficiency'] = generator_efficiency
+    prob['wind_speed'] = wind_speed
+    prob['air_density'] = air_density
+    prob['wind_direction'] = wind_direction
+    prob['Ct_in'] = Ct
+    prob['Cp_in'] = Cp
+    prob['floris_params:FLORISoriginal'] = False
 
     # run the problem
     print 'start FLORIS run'
     tic = time.time()
     prob.run()
-    prob.check_partial_derivatives()
     toc = time.time()
 
     # print the results
-    print('FLORIS Opt. calculation took %.03f sec.' % (toc-tic))
-    print 'turbine powers (kW): %s' % prob.root.myFloris.unknowns['wt_power']
-    print 'turbine X positions in wind frame (m): %s' % prob.root.myFloris.f_1.params['turbineX']
-    print 'turbine Y positions in wind frame (m): %s' % prob.root.myFloris.f_1.params['turbineY']
-    print 'yaw (deg) = ', prob.root.myFloris.f_4.params['yaw']
-    print 'effective wind speeds (m/s): %s' % prob.root.myFloris.f_4.unknowns['velocitiesTurbines']
-    print 'wind farm power (kW): %s' % prob.root.myFloris.f_4.unknowns['power']
-
+    print 'FLORIS calculation took %.06f sec.' % (toc-tic)
+    print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
+    print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
+    print 'yaw (deg) = ', prob['yaw']
+    print 'Effective hub velocities (m/s) = ', prob['velocitiesTurbines0']
+    print 'Turbine powers (kW) = ', prob['wt_power0']
+    print 'wind farm power (kW): %s' % prob['power0']
