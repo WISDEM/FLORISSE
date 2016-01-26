@@ -6,7 +6,6 @@ import numpy as np
 
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from scipy.io import loadmat
 import pickle
@@ -54,7 +53,7 @@ myFloris.turbineY = turbineYinit
 windDirection = 30.
 myFloris.windrose_directions = np.array([windDirection])
 wind_speed = 8.1    # m/s
-myFloris.windrose_speeds = np.ones_like(myFloris.windrose_directions)*wind_speed
+myFloris.windrose_speeds = wind_speed
 myFloris.air_density = 1.1716
 
 myFloris.initVelocitiesTurbines = np.ones_like(myFloris.windrose_directions)*wind_speed
@@ -136,9 +135,7 @@ for i in range(len(yawrange)):
     ax2.autoscale(tight=True)
     ax2.invert_xaxis()
 
-divider = make_axes_locatable(axes1[-1])
-cax = divider.append_axes("bottom", "5%", pad="20%")
-cbar = plt.colorbar(im, cax=cax, orientation = 'horizontal', ticks=[vmin,(vmin+vmax)/2,vmax])
+cbar = plt.colorbar(im, orientation = 'horizontal', ticks=[vmin,(vmin+vmax)/2,vmax])
 cbar.set_label('wind speed (m/s)')
 axes1[-1].axis('off')
 axes2[-1].axis('off')
@@ -229,9 +226,7 @@ for i in range(len(posrange)):
     ax2.autoscale(tight=True)
     ax2.invert_xaxis()
 
-divider = make_axes_locatable(axes1[-1])
-cax = divider.append_axes("bottom", "5%", pad="20%")
-cbar = plt.colorbar(im, cax=cax, orientation = 'horizontal', ticks=[vmin,(vmin+vmax)/2,vmax])
+cbar = plt.colorbar(im, orientation = 'horizontal', ticks=[vmin,(vmin+vmax)/2,vmax])
 cbar.set_label('wind speed (m/s)')
 axes1[-1].axis('off')
 axes2[-1].axis('off')
