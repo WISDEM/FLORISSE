@@ -14,7 +14,6 @@ if __name__ == "__main__":
     ######################### for MPI functionality #########################
     from openmdao.core.mpi_wrap import MPI
 
-
     if MPI: # pragma: no cover
         # if you called this script with 'mpirun', then use the petsc data passing
         from openmdao.core.petsc_impl import PetscImpl as impl
@@ -122,9 +121,9 @@ if __name__ == "__main__":
     prob['windDirections'] = windDirections
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
-    prob['floris_params:FLORISoriginal'] = True
-    prob['floris_params:CPcorrected'] = False
-    prob['floris_params:CTcorrected'] = False
+    # prob['floris_params:FLORISoriginal'] = True
+    # prob['floris_params:CPcorrected'] = False
+    # prob['floris_params:CTcorrected'] = False
     prob['windrose_frequencies'] = windFrequencies
 
     # run the problem
