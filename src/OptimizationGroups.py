@@ -35,7 +35,7 @@ class OptPowerOneDir(Group):
                  promotes=['*'])
 
         # add objective component
-        self.add('obj_comp', ExecComp('obj = -1.*power', power=0.0), promotes=['*'])
+        self.add('obj_comp', ExecComp('obj = -1.*power0', power0=0.0), promotes=['*'])
 
         #
         # # connect components within the problem

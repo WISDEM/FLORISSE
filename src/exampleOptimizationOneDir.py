@@ -87,12 +87,12 @@ if __name__ == "__main__":
 
     # print the results
     print('FLORIS Opt. calculation took %.03f sec.' % (toc-tic))
-    print 'turbine powers (kW): %s' % prob.root.unknowns['wt_power']
-    print 'turbine X positions in wind frame (m): %s' % prob.root.unknowns['turbineX']
-    print 'turbine Y positions in wind frame (m): %s' % prob.root.unknowns['turbineY']
-    print 'yaw (deg) = ', prob.root.unknowns['yaw']
-    print 'effective wind speeds (m/s): %s' % prob.root.unknowns['velocitiesTurbines']
-    print 'wind farm power (kW): %s' % prob.root.unknowns['power']
+    print 'turbine powers (kW): %s' % prob['wt_power0']
+    print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
+    print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
+    print 'yaw (deg) = ', prob['yaw']
+    print 'effective wind speeds (m/s): %s' % prob['velocitiesTurbines0']
+    print 'wind farm power (kW): %s' % prob['power0']
 
     # data = prob.check_partial_derivatives()
 
