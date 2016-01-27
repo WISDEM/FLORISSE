@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-exampleOptAEP.py
+OptimizationGroups.py
 Created by Jared J. Thomas, Nov. 2015.
 Brigham Young University
 """
@@ -17,7 +17,7 @@ from Parameters import FLORISParameters
 
 
 class OptPowerOneDir(Group):
-    """ Group connecting the floris model and adjustCtCp for optimization """
+    """ Group connecting the floris model for optimization with one wind direction"""
 
     def __init__(self, nTurbines, resolution=0, minSpacing=2.):
 
