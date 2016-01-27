@@ -37,12 +37,7 @@ class OptPowerOneDir(Group):
         # add objective component
         self.add('obj_comp', ExecComp('obj = -1.*power0', power0=0.0), promotes=['*'])
 
-        #
-        # # connect components within the problem
-        # self.connect('Ct_out', 'Ct')
-        # self.connect('Cp_out', 'Cp')
-
-         # initialize design variables for optimization
+        # initialize design variables for optimization
         self.add('p1', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
         self.add('p2', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
         self.add('p3', IndepVarComp('yaw', np.zeros(nTurbines)), promotes=['*'])
