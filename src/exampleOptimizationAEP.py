@@ -90,8 +90,6 @@ if __name__ == "__main__":
     prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP.out'
     prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP.out'
     prob.driver.opt_settings['Major iterations limit'] = 1000
-    prob.driver.opt_settings['Verify level'] = 3
-
 
     # select design variables
     prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)

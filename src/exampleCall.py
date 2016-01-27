@@ -1,6 +1,5 @@
-from openmdao.api import Problem, Group, IndepVarComp
+from openmdao.api import Problem, Group
 from floris_openmdao1 import DirectionGroupFLORIS
-from GeneralWindfarmComponents import AdjustCtCpYaw
 
 import time
 import numpy as np
