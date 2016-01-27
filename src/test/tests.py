@@ -1,8 +1,8 @@
 import unittest
-from GeneralWindfarmComponents import *
-from floris_openmdao1 import *
+from src.GeneralWindfarmComponents import *
+from src.floris_openmdao1 import *
 # from OptimizationGroups import *
-from _floris import *
+from src._floris import *
 
 
 #
@@ -24,6 +24,9 @@ class GradientTests(unittest.TestCase):
         nTurbines = 4
         self.atol = 1E-3
         self.rtol = 1E-6
+
+        np.random.seed(seed=5)
+
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
 
@@ -79,6 +82,10 @@ class GradientTests(unittest.TestCase):
         # run problem
         prob.run()
 
+        # indep_list = ['turbineX', 'turbineY', 'yaw', 'rotorDiameter']
+        # unknown_list = ['power0']
+        # self.J = prob.calc_gradient(indep_list, unknown_list, return_format='array')
+        # print self.J
         # pass results to self for use with unit test
         self.J = prob.check_partial_derivatives(out_stream=None)
 
@@ -94,7 +101,7 @@ class GradientTests(unittest.TestCase):
         np.testing.assert_allclose(self.J['myFloris.f_1'][('turbineYw', 'turbineY')]['J_fwd'], self.J['myFloris.f_1'][('turbineYw', 'turbineY')]['J_fd'], self.atol, self.rtol)
 
     def testFlorisCentDiamGrads_wakeCentersYT(self):
-        atol = 1.0e-6
+        atol = self.atol
         rtol = 1.0e-0
         np.testing.assert_allclose(self.J['myFloris.f_2'][('wakeCentersYT', 'yaw')]['J_fwd'], self.J['myFloris.f_2'][('wakeCentersYT', 'yaw')]['J_fd'], atol, rtol)
         np.testing.assert_allclose(self.J['myFloris.f_2'][('wakeCentersYT', 'Ct')]['J_fwd'], self.J['myFloris.f_2'][('wakeCentersYT', 'Ct')]['J_fd'], atol, rtol)
@@ -104,8 +111,8 @@ class GradientTests(unittest.TestCase):
         return
 
     def testFlorisCentDiamGrads_wakeDiametersT(self):
-        atol = 1.0e-6
-        rtol = 1.0e-0
+        atol = self.atol
+        rtol = 1.0e-3
         np.testing.assert_allclose(self.J['myFloris.f_2'][('wakeDiametersT', 'yaw')]['J_fwd'], self.J['myFloris.f_2'][('wakeDiametersT', 'yaw')]['J_fd'], atol, rtol)
         np.testing.assert_allclose(self.J['myFloris.f_2'][('wakeDiametersT', 'Ct')]['J_fwd'], self.J['myFloris.f_2'][('wakeDiametersT', 'Ct')]['J_fd'], atol, rtol)
         np.testing.assert_allclose(self.J['myFloris.f_2'][('wakeDiametersT', 'turbineXw')]['J_fwd'], self.J['myFloris.f_2'][('wakeDiametersT', 'turbineXw')]['J_fd'], atol, rtol)
