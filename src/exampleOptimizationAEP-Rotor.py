@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     if use_rotor_components:
         NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
-        print(NREL5MWCPCT)
+        # print(NREL5MWCPCT)
         # NREL5MWCPCT = pickle.Unpickler(open('NREL5MWCPCT.p')).load()
         datasize = NREL5MWCPCT['CP'].size
     else:
@@ -102,8 +102,8 @@ if __name__ == "__main__":
 
     # set optimizer options
     prob.driver.opt_settings['Verify level'] = 3
-    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP.out'
-    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP.out'
+    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP-Rotor.out'
+    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP-Rotor.out'
     prob.driver.opt_settings['Major iterations limit'] = 1000
 
     # select design variables
