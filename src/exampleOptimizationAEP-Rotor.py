@@ -6,6 +6,7 @@ from OptimizationGroups import OptAEP
 import time
 import numpy as np
 import pylab as plt
+import cPickle as pickle
 
 import cProfile
 
@@ -34,9 +35,19 @@ if __name__ == "__main__":
 
     size = 4 # number of processors (and number of wind directions to run)
 
+    use_rotor_components = True
+
     #########################################################################
     # define turbine size
     rotor_diameter = 126.4  # (m)
+
+    if use_rotor_components:
+        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        print(NREL5MWCPCT)
+        # NREL5MWCPCT = pickle.Unpickler(open('NREL5MWCPCT.p')).load()
+        datasize = NREL5MWCPCT['CP'].size
+    else:
+        datasize = 0
 
     # define turbine locations in global reference frame
     # original example case
@@ -80,7 +91,8 @@ if __name__ == "__main__":
 
     # initialize problem
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
-                                          minSpacing=minSpacing))
+                                          minSpacing=minSpacing, use_rotor_components=use_rotor_components,
+                                          datasize=datasize))
     prob.setup(check=False)
 
     # set up optimizer
@@ -121,8 +133,26 @@ if __name__ == "__main__":
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections
     prob['windrose_frequencies'] = windFrequencies
-    prob['Ct_in'] = Ct
-    prob['Cp_in'] = Cp
+
+    if use_rotor_components:
+        # for i in range(0, nDirections):
+        #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
+        # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
+        # myFloris.windSpeedToCPCT = NREL5MWCPCT
+        prob['params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
+        prob['params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
+        prob['params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
+        prob['floris_params:ke'] = 0.05
+        prob['floris_params:kd'] = 0.17
+        prob['floris_params:aU'] = 12.0
+        prob['floris_params:bU'] = 1.3
+        prob['floris_params:initialWakeAngle'] = 3.0
+        prob['floris_params:useaUbU'] = True
+        prob['floris_params:useWakeAngle'] = True
+        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
+    else:
+        prob['Ct_in'] = Ct
+        prob['Cp_in'] = Cp
 
     # set options
     # prob['floris_params:FLORISoriginal'] = True
