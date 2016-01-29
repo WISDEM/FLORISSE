@@ -42,7 +42,7 @@ if __name__ == "__main__":
     rotor_diameter = 126.4  # (m)
 
     if use_rotor_components:
-        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        NREL5MWCPCT = pickle.load(open('../static/NREL5MWCPCT_dict.p'))
         # print(NREL5MWCPCT)
         # NREL5MWCPCT = pickle.Unpickler(open('NREL5MWCPCT.p')).load()
         datasize = NREL5MWCPCT['CP'].size
