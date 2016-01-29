@@ -7,19 +7,7 @@ from src._floris import *
 import cPickle as pickle
 
 
-#
-# class GeneralWindFarmComponentsTest(unittest.TestCase):
-#
-#     def setUp(self):
-#
-#     def test(self):
-# class MPITests(unittest.TestCase):
-#
-#     def setUp(self):
-#
-
-
-class GradientTests(unittest.TestCase):
+class GradientTestsFLORIS(unittest.TestCase):
 
     def setUp(self):
 
@@ -310,8 +298,6 @@ class GradientTestsCtCpRotor(unittest.TestCase):
     def testCtCpRotor_Ct_out(self):
         np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Ct_out', 'yaw')]['J_fd'], self.atol, self.rtol)
         np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fwd'], self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fd'], self.atol, self.rtol)
-
-
 
 
 if __name__ == "__main__":
