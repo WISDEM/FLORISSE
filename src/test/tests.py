@@ -170,7 +170,72 @@ class GradientTests(unittest.TestCase):
         np.testing.assert_allclose(self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fwd'], self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fd'], self.atol, self.rtol)
 
 
-class GradientTestsRotor(unittest.TestCase):
+class GradientTestsCtCp(unittest.TestCase):
+
+    def setUp(self):
+
+        nTurbines = 4
+        self.atol = 1E-6
+        self.rtol = 1E-6
+
+        np.random.seed(seed=10)
+
+        turbineX = np.random.rand(nTurbines)*3000.
+        turbineY = np.random.rand(nTurbines)*3000.
+
+        # initialize input variable arrays
+        rotorDiameter = np.ones(nTurbines)*np.random.random()*150.
+        # rotorDiameter = np.ones(nTurbines)*126.4
+        axialInduction = np.ones(nTurbines)*np.random.random()*(1./3.)
+        Ct = np.ones(nTurbines)*np.random.random()
+        Cp = np.ones(nTurbines)*np.random.random()
+        generator_efficiency = np.ones(nTurbines)*np.random.random()
+        yaw = np.random.rand(nTurbines)*60. - 30.
+
+        # Define flow properties
+        wind_speed = np.random.random()*20        # m/s
+        air_density = 1.1716    # kg/m^3
+        wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+
+        # set up problem
+        prob = Problem(root=DirectionGroupFLORIS(nTurbines=nTurbines))
+        prob.root.add('v1', IndepVarComp('rotorDiameter', rotorDiameter, units='m'), promotes=['*'])
+        prob.root.add('v2', IndepVarComp('yaw', yaw, units='deg'), promotes=['*'])
+        prob.root.add('v3', IndepVarComp('axialInduction', axialInduction), promotes=['*'])
+        prob.root.add('v4', IndepVarComp('turbineX', turbineX), promotes=['*'])
+        prob.root.add('v5', IndepVarComp('turbineY', turbineY), promotes=['*'])
+        prob.root.add('v6', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
+        prob.root.add('v7', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
+
+
+        # initialize problem
+        prob.setup()
+
+        # assign values to constant inputs (not design variables)
+        prob['generator_efficiency'] = generator_efficiency
+        prob['wind_speed'] = wind_speed
+        prob['air_density'] = air_density
+        prob['wind_direction'] = wind_direction
+        prob['floris_params:FLORISoriginal'] = False
+
+        # run problem
+        prob.run()
+
+        # pass gradient test results to self for use with unit tests
+        self.J = prob.check_partial_derivatives(out_stream=None)
+
+    def testCtCp_Ct_out(self):
+        np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'Ct_in')]['J_fwd'], self.J['CtCp'][('Ct_out', 'Ct_in')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'Cp_in')]['J_fwd'], self.J['CtCp'][('Ct_out', 'Cp_in')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Ct_out', 'yaw')]['J_fd'], self.atol, self.rtol)
+
+    def testCtCp_Cp_out(self):
+        np.testing.assert_allclose(self.J['CtCp'][('Cp_out', 'Ct_in')]['J_fwd'], self.J['CtCp'][('Cp_out', 'Ct_in')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Cp_out', 'Cp_in')]['J_fwd'], self.J['CtCp'][('Cp_out', 'Cp_in')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Cp_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Cp_out', 'yaw')]['J_fd'], self.atol, self.rtol)
+
+
+class GradientTestsCtCpRotor(unittest.TestCase):
 
     def setUp(self):
 
@@ -245,6 +310,8 @@ class GradientTestsRotor(unittest.TestCase):
     def testCtCpRotor_Ct_out(self):
         np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Ct_out', 'yaw')]['J_fd'], self.atol, self.rtol)
         np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fwd'], self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fd'], self.atol, self.rtol)
+
+
 
 
 if __name__ == "__main__":
