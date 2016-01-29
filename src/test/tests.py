@@ -4,6 +4,8 @@ from src.floris import *
 # from OptimizationGroups import *
 from src._floris import *
 
+import cPickle as pickle
+
 
 #
 # class GeneralWindFarmComponentsTest(unittest.TestCase):
@@ -166,6 +168,84 @@ class GradientTests(unittest.TestCase):
         np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'turbineXw')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'turbineXw')]['J_fd'], self.atol, self.rtol)
         np.testing.assert_allclose(self.J['myFloris.f_4'][('power0', 'yaw')]['J_fwd'], self.J['myFloris.f_4'][('power0', 'yaw')]['J_fd'], self.atol, self.rtol)
         np.testing.assert_allclose(self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fwd'], self.J['myFloris.f_4']['power0', 'rotorDiameter']['J_fd'], self.atol, self.rtol)
+
+
+class GradientTestsRotor(unittest.TestCase):
+
+    def setUp(self):
+
+        nTurbines = 4
+        self.atol = 1E-6
+        self.rtol = 1E-6
+
+        np.random.seed(seed=10)
+
+        turbineX = np.random.rand(nTurbines)*3000.
+        turbineY = np.random.rand(nTurbines)*3000.
+
+        # initialize input variable arrays
+        rotorDiameter = np.ones(nTurbines)*np.random.random()*150.
+        # rotorDiameter = np.ones(nTurbines)*126.4
+        axialInduction = np.ones(nTurbines)*np.random.random()*(1./3.)
+        Ct = np.ones(nTurbines)*np.random.random()
+        Cp = np.ones(nTurbines)*np.random.random()
+        generator_efficiency = np.ones(nTurbines)*np.random.random()
+        yaw = np.random.rand(nTurbines)*60. - 30.
+
+        # Define flow properties
+        wind_speed = np.random.random()*20        # m/s
+        air_density = 1.1716    # kg/m^3
+        wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+
+        NREL5MWCPCT = pickle.load(open('../NREL5MWCPCT_dict.p'))
+        datasize = NREL5MWCPCT['CP'].size
+
+        # set up problem
+        prob = Problem(root=DirectionGroupFLORIS(nTurbines=nTurbines, use_rotor_components=True, datasize=datasize))
+        prob.root.add('v1', IndepVarComp('rotorDiameter', rotorDiameter, units='m'), promotes=['*'])
+        prob.root.add('v2', IndepVarComp('yaw', yaw, units='deg'), promotes=['*'])
+        prob.root.add('v3', IndepVarComp('axialInduction', axialInduction), promotes=['*'])
+        prob.root.add('v4', IndepVarComp('turbineX', turbineX), promotes=['*'])
+        prob.root.add('v5', IndepVarComp('turbineY', turbineY), promotes=['*'])
+
+        # initialize problem
+        prob.setup()
+
+        # assign values to constant inputs (not design variables)
+        prob['generator_efficiency'] = generator_efficiency
+        prob['wind_speed'] = wind_speed
+        prob['air_density'] = air_density
+        prob['wind_direction'] = wind_direction
+        prob['floris_params:FLORISoriginal'] = True
+        prob['floris_params:FLORISoriginal'] = True
+
+        # values for rotor coupling
+        prob['params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
+        prob['params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
+        prob['params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
+        prob['floris_params:ke'] = 0.05
+        prob['floris_params:kd'] = 0.17
+        prob['floris_params:aU'] = 12.0
+        prob['floris_params:bU'] = 1.3
+        prob['floris_params:initialWakeAngle'] = 3.0
+        prob['floris_params:useaUbU'] = True
+        prob['floris_params:useWakeAngle'] = True
+        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
+
+        # run problem
+        prob.run()
+
+        # pass gradient test results to self for use with unit tests
+        self.J = prob.check_partial_derivatives(out_stream=None)
+
+    def testCtCpRotor_Cp_out(self):
+        np.testing.assert_allclose(self.J['CtCp'][('Cp_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Cp_out', 'yaw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fwd'], self.J['CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fd'], self.atol, self.rtol)
+
+    def testCtCpRotor_Ct_out(self):
+        np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'yaw')]['J_fwd'], self.J['CtCp'][('Ct_out', 'yaw')]['J_fd'], self.atol, self.rtol)
+        np.testing.assert_allclose(self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fwd'], self.J['CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fd'], self.atol, self.rtol)
+
 
 if __name__ == "__main__":
     unittest.main()
