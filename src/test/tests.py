@@ -1,6 +1,6 @@
 import unittest
 from src.GeneralWindfarmComponents import *
-from src.floris_openmdao1 import *
+from src.floris import *
 # from OptimizationGroups import *
 from src._floris import *
 

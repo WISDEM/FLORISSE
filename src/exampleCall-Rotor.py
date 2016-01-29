@@ -1,5 +1,5 @@
 from openmdao.api import Problem, Group
-from floris_openmdao1 import DirectionGroupFLORIS
+from floris import DirectionGroupFLORIS
 
 import time
 import numpy as np
