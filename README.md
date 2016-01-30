@@ -1,26 +1,26 @@
 README for FLORIS in OpenMDAOv1.5+
 
 ## Installation instructions MAC
-- system requirements  
+### system requirements  
     gfortran  
     gcc  
     python 2.7.x  
     numpy  
     openmdao >= v1.5  
-- from top repo directory run  
+### from top repo directory run  
     $ python setup.py install --record installedfiles.txt  
-- uninstall with  
+### uninstall with  
     $ cat installedfiles.txt | xargs rm -r  
 
 ## Alternative Installation instructions MAC  
-- system requirements  
+### system requirements  
     gfortran  
     gcc  
     python 2.7.x  
     numpy  
     openmdao >= v1.5  
-- put all files in desired directory  
-- run the following commands from src/florisse:  
+### put all files in desired directory  
+### run the following commands from src/florisse:  
     $ gfortran -c adBuffer.f  
     $ gcc -c adStack.c  
     $ f2py -c --opt=-O2 -m _floris floris.f90 adBuffer.o adStack.o  
