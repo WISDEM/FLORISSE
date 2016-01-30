@@ -2,7 +2,7 @@ import numpy as np
 
 from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup, NLGaussSeidel, ScipyGMRES
 
-from GeneralWindfarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, CPCT_Interpolate_Gradients
+from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, CPCT_Interpolate_Gradients
 from Parameters import FLORISParameters
 import _floris
 

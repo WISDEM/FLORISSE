@@ -12,7 +12,7 @@ import numpy as np
 from openmdao.api import Group, IndepVarComp, ExecComp
 
 from floris import DirectionGroupFLORIS, AEPGroupFLORIS
-from GeneralWindfarmComponents import SpacingComp
+from GeneralWindFarmComponents import SpacingComp
 from Parameters import FLORISParameters
 
 

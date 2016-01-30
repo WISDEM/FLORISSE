@@ -1,11 +1,20 @@
 from openmdao.api import Problem, Group
-from floris import DirectionGroupFLORIS
+from florisse.floris import DirectionGroupFLORIS
 
 import time
 import numpy as np
+import cPickle as pickle
 
 
 if __name__ == "__main__":
+
+    use_rotor_components = True
+
+    if use_rotor_components:
+        NREL5MWCPCT = pickle.load(open('../NREL5MWCPCT_dict.p'))
+        datasize = NREL5MWCPCT['CP'].size
+    else:
+        datasize = 0
 
     # define turbine locations in global reference frame
     turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])
@@ -36,7 +45,7 @@ if __name__ == "__main__":
 
     # set up problem
     prob = Problem(root=Group())
-    prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbs, resolution=0), promotes=['*'])
+    prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbs, resolution=0, use_rotor_components=use_rotor_components, datasize=datasize), promotes=['*'])
 
     # initialize problem
     prob.setup()
@@ -53,9 +62,23 @@ if __name__ == "__main__":
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
     prob['wind_direction'] = wind_direction
-    prob['Ct_in'] = Ct
-    prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = False
+
+    if use_rotor_components:
+        prob['params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
+        prob['params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
+        prob['params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
+        prob['floris_params:ke'] = 0.05
+        prob['floris_params:kd'] = 0.17
+        prob['floris_params:aU'] = 12.0
+        prob['floris_params:bU'] = 1.3
+        prob['floris_params:initialWakeAngle'] = 3.0
+        prob['floris_params:useaUbU'] = True
+        prob['floris_params:useWakeAngle'] = True
+        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
+    else:
+        prob['Ct_in'] = Ct
+        prob['Cp_in'] = Cp
 
     # run the problem
     print 'start FLORIS run'

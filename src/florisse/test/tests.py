@@ -1,8 +1,8 @@
 import unittest
-from src.GeneralWindfarmComponents import *
-from src.floris import *
-# from OptimizationGroups import *
-from src._floris import *
+# from florisse.GeneralWindFarmComponents import *
+from florisse.floris import *
+# from florisse.OptimizationGroups import *
+from _floris import *
 
 import cPickle as pickle
 
