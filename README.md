@@ -2,7 +2,11 @@ README for FLORIS in OpenMDAOv1.5+
 
 # Installation instructions MAC
 ##  system requirements  
-    gfortran, gcc, python 2.7.x, numpy, openmdao >= v1.5  
+    gfortran  
+    gcc  
+    python 2.7.x  
+    numpy  
+    openmdao >= v1.5  
 ### from top repo directory run  
     $ python setup.py install --record installedfiles.txt  
 ### uninstall with  
