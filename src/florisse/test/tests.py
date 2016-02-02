@@ -250,7 +250,7 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         air_density = 1.1716    # kg/m^3
         wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
 
-        NREL5MWCPCT = pickle.load(open('../NREL5MWCPCT_dict.p'))
+        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
         datasize = NREL5MWCPCT['CP'].size
 
         # set up problem
