@@ -419,6 +419,7 @@ class floris_power(Component):
             aU = params['floris_params:aU']
             bU = params['floris_params:bU']
 
+        # print 'ke, ME, aI, bU: ', ke, MU, aU, bU
 
         axialIndProvided = params['floris_params:axialIndProvided']
 
@@ -621,7 +622,7 @@ class DirectionGroupFLORIS(Group):
         self.add('myFloris', FLORIS(nTurbines, resolution, direction_id),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw',
-                           'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id, 'power%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT'])
+                           'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id, 'power%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT', 'wakeOverlapTRel'])
         if use_rotor_components:
             self.connect('CtCp.Ct_out', 'myFloris.Ct')
             self.connect('CtCp.Cp_out', 'myFloris.Cp')
@@ -630,7 +631,6 @@ class DirectionGroupFLORIS(Group):
             self.connect('floris_params:CPcorrected', 'params:CPcorrected')
             self.connect('CtCp.Ct_out', 'myFloris.Ct')
             self.connect('CtCp.Cp_out', 'myFloris.Cp')
-
 
 
 class AEPGroupFLORIS(Group):
