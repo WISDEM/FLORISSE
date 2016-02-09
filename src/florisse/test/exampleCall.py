@@ -33,6 +33,7 @@ if __name__ == "__main__":
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
     wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # set up problem
     prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0))
@@ -52,6 +53,7 @@ if __name__ == "__main__":
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
     prob['windDirections'] = np.array([wind_direction])
+    prob['windrose_frequencies'] = np.array([wind_frequency])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = False
@@ -62,6 +64,8 @@ if __name__ == "__main__":
     prob.run()
     toc = time.time()
 
+    print prob['turbineX']
+
     # print the results
     print 'FLORIS calculation took %.06f sec.' % (toc-tic)
     print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
@@ -70,3 +74,4 @@ if __name__ == "__main__":
     print 'Effective hub velocities (m/s) = ', prob['velocitiesTurbines0']
     print 'Turbine powers (kW) = ', prob['wt_power0']
     print 'wind farm power (kW): %s' % prob['power0']
+    print 'wind farm AEP for this direction and speed (kWh): %s' % prob['AEP']
