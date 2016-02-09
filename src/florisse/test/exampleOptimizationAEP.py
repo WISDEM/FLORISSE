@@ -81,7 +81,6 @@ if __name__ == "__main__":
     # initialize problem
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
                                           minSpacing=minSpacing))
-    prob.setup(check=False)
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -103,8 +102,12 @@ if __name__ == "__main__":
     # add constraints
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
 
-    # initialize problem
+    tic = time.time()
     prob.setup(check=False)
+    toc = time.time()
+
+    # print the results
+    mpi_print(prob, ('FLORIS setup took %.03f sec.' % (toc-tic)))
 
     # time.sleep(10)
     # assign initial values to design variables
@@ -117,7 +120,7 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    prob['wind_speed'] = wind_speed
+    prob['windSpeeds'] = np.ones(nTurbs)*wind_speed
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections
     prob['windrose_frequencies'] = windFrequencies

@@ -50,7 +50,7 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    prob['wind_speed'] = wind_speed
+    prob['windSpeeds'] = np.array([wind_speed])
     prob['air_density'] = air_density
     prob['windDirections'] = np.array([wind_direction])
     prob['windrose_frequencies'] = np.array([wind_frequency])

@@ -40,6 +40,7 @@ if __name__ == "__main__":
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
     wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # initialize problem
     prob = Problem(root=OptPowerOneDir(nTurbs, resolution=0))
@@ -54,8 +55,8 @@ if __name__ == "__main__":
     prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptOneDir.out'
 
     # prob.driver.options['tol'] = 1.0E-8
-    prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
-    prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
+    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX))
+    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY))
     prob.driver.add_desvar('yaw0', low=-30.0, high=30.0)
     prob.driver.add_objective('obj')
 
@@ -71,9 +72,10 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    prob['wind_speed'] = wind_speed
+    prob['windSpeeds'] = np.array([wind_speed])
     prob['air_density'] = air_density
     prob['windDirections'] = np.array([wind_direction])
+    prob['windrose_frequencies'] = np.array([wind_frequency])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = True
