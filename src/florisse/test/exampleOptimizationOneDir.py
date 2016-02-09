@@ -47,6 +47,12 @@ if __name__ == "__main__":
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
+
+    # set optimizer options
+    prob.driver.opt_settings['Verify level'] = 3
+    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptOneDir.out'
+    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptOneDir.out'
+
     # prob.driver.options['tol'] = 1.0E-8
     prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
     prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
