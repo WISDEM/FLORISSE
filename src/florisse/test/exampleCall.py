@@ -1,5 +1,5 @@
 from openmdao.api import Problem, Group
-from florisse.floris import DirectionGroupFLORIS
+from florisse.floris import AEPGroupFLORIS
 
 import time
 import numpy as np
@@ -35,8 +35,7 @@ if __name__ == "__main__":
     wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
 
     # set up problem
-    prob = Problem(root=Group())
-    prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbs, resolution=0), promotes=['*'])
+    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0))
 
     # initialize problem
     prob.setup()
@@ -44,7 +43,7 @@ if __name__ == "__main__":
     # assign values to turbine states
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
-    prob['yaw'] = yaw
+    prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
@@ -52,7 +51,7 @@ if __name__ == "__main__":
     prob['generator_efficiency'] = generator_efficiency
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
-    prob['wind_direction'] = wind_direction
+    prob['windDirections'] = np.array([wind_direction])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = False
@@ -67,7 +66,7 @@ if __name__ == "__main__":
     print 'FLORIS calculation took %.06f sec.' % (toc-tic)
     print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
-    print 'yaw (deg) = ', prob['yaw']
+    print 'yaw (deg) = ', prob['yaw0']
     print 'Effective hub velocities (m/s) = ', prob['velocitiesTurbines0']
     print 'Turbine powers (kW) = ', prob['wt_power0']
     print 'wind farm power (kW): %s' % prob['power0']

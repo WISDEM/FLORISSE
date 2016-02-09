@@ -26,8 +26,8 @@ class WindFrame(Component):
                        desc='wind direction using direction from, in deg. cw from north as in meteorological data')
 
         # Explicitly size input arrays
-        self.add_param('turbineX', val=np.zeros(nTurbines), desc='x positions of turbines in original ref. frame')
-        self.add_param('turbineY', val=np.zeros(nTurbines), desc='y positions of turbines in original ref. frame')
+        self.add_param('turbineX', val=np.zeros(nTurbines), units='m', desc='x positions of turbines in original ref. frame')
+        self.add_param('turbineY', val=np.zeros(nTurbines), units='m', desc='y positions of turbines in original ref. frame')
 
         # variables for testing wind speed at various locations
         self.add_param('ws_position', val=np.zeros(resolution * resolution), units='m',
@@ -107,10 +107,12 @@ class WindFrame(Component):
 class AdjustCtCpYaw(Component):
     """ Adjust Cp and Ct to yaw if they are not already adjusted """
 
-    def __init__(self, nTurbines):
+    def __init__(self, nTurbines, direction_id=0):
 
         # print 'entering adjustCtCp __init__ - analytic'
         super(AdjustCtCpYaw, self).__init__()
+
+        self. direction_id = direction_id
 
         # set finite difference options (fd used for testing only)
         self.fd_options['form'] = 'central'
@@ -120,7 +122,7 @@ class AdjustCtCpYaw(Component):
         # Explicitly size input arrays
         self.add_param('Ct_in', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
         self.add_param('Cp_in', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
-        self.add_param('yaw', val=np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
+        self.add_param('yaw%i' % direction_id, val=np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
 
         # Explicitly size output arrays
         self.add_output('Ct_out', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
@@ -137,12 +139,14 @@ class AdjustCtCpYaw(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
+        direction_id = self.direction_id
+
         # print 'entering adjustCtCP - analytic'
 
         # collect inputs
         Ct = params['Ct_in']
         Cp = params['Cp_in']
-        yaw = params['yaw'] * np.pi / 180.
+        yaw = params['yaw%i' % direction_id] * np.pi / 180.
 
         # determine floris_parameter values
         if params['floris_params:FLORISoriginal']:
@@ -167,12 +171,14 @@ class AdjustCtCpYaw(Component):
 
     def linearize(self, params, unknowns, resids):
 
+        direction_id = self.direction_id
+
         # print 'entering CtCp linearize'
         # collect inputs
         Ct = params['Ct_in']
         Cp = params['Cp_in']
         nTurbines = np.size(Ct)
-        yaw = params['yaw'] * np.pi / 180.
+        yaw = params['yaw%i' % direction_id] * np.pi / 180.
 
         # determine floris_parameter values
         if params['floris_params:FLORISoriginal']:
@@ -189,21 +195,21 @@ class AdjustCtCpYaw(Component):
         if not CTcorrected:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines) * np.cos(yaw) * np.cos(yaw)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw')] = np.eye(nTurbines) * (-2. * Ct * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
+            J[('Ct_out', 'yaw%i' % direction_id)] = np.eye(nTurbines) * (-2. * Ct * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
         else:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines, nTurbines)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
+            J[('Ct_out', 'yaw%i' % direction_id)] = np.zeros((nTurbines, nTurbines))
 
         if not CPcorrected:
             J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines) * np.cos(yaw) ** pP
             J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Cp_out', 'yaw')] = np.eye(nTurbines, nTurbines) * (
+            J[('Cp_out', 'yaw%i' % direction_id)] = np.eye(nTurbines, nTurbines) * (
                 -Cp * pP * np.sin(yaw) * np.cos(yaw) ** (pP - 1.0)) * np.pi / 180.
         else:
             J[('Cp_out', 'Cp_in')] = np.eye(nTurbines, nTurbines)
             J[('Cp_out', 'Ct_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Cp_out', 'yaw')] = np.zeros((nTurbines, nTurbines))
+            J[('Cp_out', 'yaw%i' % direction_id)] = np.zeros((nTurbines, nTurbines))
 
         return J
 
@@ -228,7 +234,7 @@ class WindFarmAEP(Component):
                             'direction too')
 
         # define output
-        self.add_output('AEP', val=0.0, units='kW', desc='total annual energy output of wind farm')
+        self.add_output('AEP', val=0.0, units='kWh', desc='total annual energy output of wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -502,7 +508,7 @@ class CPCT_Interpolate_Gradients(Component):
         self.datasize = datasize
 
         # add inputs and outputs
-        self.add_param('yaw', np.zeros(nTurbines), desc='yaw error', units='deg')
+        self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), desc='yaw error', units='deg')
         self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
         self.add_output('Cp_out', np.zeros(nTurbines))
         self.add_output('Ct_out', np.zeros(nTurbines))
@@ -519,7 +525,7 @@ class CPCT_Interpolate_Gradients(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         direction_id = self.direction_id
         pP = self.params['params:pP']
-        wind_speed_ax = np.cos(self.params['yaw']*np.pi/180.0)**(pP/3.0)*self.params['velocitiesTurbines%i' % direction_id]
+        wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP/3.0)*self.params['velocitiesTurbines%i' % direction_id]
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax = np.maximum(wind_speed_ax, self.params['params:windSpeedToCPCT:wind_speed'][0])
         wind_speed_ax = np.minimum(wind_speed_ax, self.params['params:windSpeedToCPCT:wind_speed'][-1])
@@ -527,9 +533,10 @@ class CPCT_Interpolate_Gradients(Component):
         self.unknowns['Ct_out'] = interp(wind_speed_ax, self.params['params:windSpeedToCPCT:wind_speed'], self.params['params:windSpeedToCPCT:CT'])
 
         # normalize on incoming wind speed to correct coefficients for yaw
-        self.unknowns['Cp_out'] = self.unknowns['Cp_out'] * np.cos(self.params['yaw']*np.pi/180.0)**pP
-        self.unknowns['Ct_out'] = self.unknowns['Ct_out'] * np.cos(self.params['yaw']*np.pi/180.0)**2
+        self.unknowns['Cp_out'] = self.unknowns['Cp_out'] * np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**pP
+        self.unknowns['Ct_out'] = self.unknowns['Ct_out'] * np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**2
         # print 'in CPCT interp, wind_speed_hub = ', self.params['velocitiesTurbines%i' % direction_id]
+        # print 'in CPCT: ', params['velocitiesTurbines0']
 
     def linearize(self, params, unknowns, resids):  # standard central differencing
         # set step size for finite differencing
@@ -537,10 +544,10 @@ class CPCT_Interpolate_Gradients(Component):
         direction_id = self.direction_id
 
         # calculate upper and lower function values
-        wind_speed_ax_high_yaw = np.cos((self.params['yaw']+h)*np.pi/180.0)**(self.params['params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
-        wind_speed_ax_low_yaw = np.cos((self.params['yaw']-h)*np.pi/180.0)**(self.params['params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
-        wind_speed_ax_high_wind = np.cos(self.params['yaw']*np.pi/180.0)**(self.params['params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]+h)
-        wind_speed_ax_low_wind = np.cos(self.params['yaw']*np.pi/180.0)**(self.params['params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]-h)
+        wind_speed_ax_high_yaw = np.cos((self.params['yaw%i' % direction_id]+h)*np.pi/180.0)**(self.params['params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
+        wind_speed_ax_low_yaw = np.cos((self.params['yaw%i' % direction_id]-h)*np.pi/180.0)**(self.params['params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
+        wind_speed_ax_high_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]+h)
+        wind_speed_ax_low_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]-h)
 
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax_high_yaw = np.maximum(wind_speed_ax_high_yaw, self.params['params:windSpeedToCPCT:wind_speed'][0])
@@ -564,15 +571,15 @@ class CPCT_Interpolate_Gradients(Component):
         CT_low_wind = interp(wind_speed_ax_low_wind, self.params['params:windSpeedToCPCT:wind_speed'], self.params['params:windSpeedToCPCT:CT'])
 
         # normalize on incoming wind speed to correct coefficients for yaw
-        CP_high_yaw = CP_high_yaw * np.cos((self.params['yaw']+h)*np.pi/180.0)**self.params['params:pP']
-        CP_low_yaw = CP_low_yaw * np.cos((self.params['yaw']-h)*np.pi/180.0)**self.params['params:pP']
-        CP_high_wind = CP_high_wind * np.cos((self.params['yaw'])*np.pi/180.0)**self.params['params:pP']
-        CP_low_wind = CP_low_wind * np.cos((self.params['yaw'])*np.pi/180.0)**self.params['params:pP']
+        CP_high_yaw = CP_high_yaw * np.cos((self.params['yaw%i' % direction_id]+h)*np.pi/180.0)**self.params['params:pP']
+        CP_low_yaw = CP_low_yaw * np.cos((self.params['yaw%i' % direction_id]-h)*np.pi/180.0)**self.params['params:pP']
+        CP_high_wind = CP_high_wind * np.cos((self.params['yaw%i' % direction_id])*np.pi/180.0)**self.params['params:pP']
+        CP_low_wind = CP_low_wind * np.cos((self.params['yaw%i' % direction_id])*np.pi/180.0)**self.params['params:pP']
 
-        CT_high_yaw = CT_high_yaw * np.cos((self.params['yaw']+h)*np.pi/180.0)**2
-        CT_low_yaw = CT_low_yaw * np.cos((self.params['yaw']-h)*np.pi/180.0)**2
-        CT_high_wind = CT_high_wind * np.cos((self.params['yaw'])*np.pi/180.0)**2
-        CT_low_wind = CT_low_wind * np.cos((self.params['yaw'])*np.pi/180.0)**2
+        CT_high_yaw = CT_high_yaw * np.cos((self.params['yaw%i' % direction_id]+h)*np.pi/180.0)**2
+        CT_low_yaw = CT_low_yaw * np.cos((self.params['yaw%i' % direction_id]-h)*np.pi/180.0)**2
+        CT_high_wind = CT_high_wind * np.cos((self.params['yaw%i' % direction_id])*np.pi/180.0)**2
+        CT_low_wind = CT_low_wind * np.cos((self.params['yaw%i' % direction_id])*np.pi/180.0)**2
 
         # compute derivative via central differencing and arrange in sub-matrices of the Jacobian
         dCP_dyaw = np.eye(self.nTurbines)*(CP_high_yaw-CP_low_yaw)/(2.0*h)
@@ -582,9 +589,9 @@ class CPCT_Interpolate_Gradients(Component):
 
         # compile Jacobian dict from sub-matrices
         J = {}
-        J['Cp_out', 'yaw'] = dCP_dyaw
+        J['Cp_out', 'yaw%i' % direction_id] = dCP_dyaw
         J['Cp_out', 'velocitiesTurbines%i' % direction_id] = dCP_dwind
-        J['Ct_out', 'yaw'] = dCT_dyaw
+        J['Ct_out', 'yaw%i' % direction_id] = dCT_dyaw
         J['Ct_out', 'velocitiesTurbines%i' % direction_id] = dCT_dwind
 
         return J

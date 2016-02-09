@@ -24,12 +24,12 @@ class OptPowerOneDir(Group):
         super(OptPowerOneDir, self).__init__()
 
         # add major components
-        self.add('dirComp', DirectionGroupFLORIS(nTurbines, resolution=0), promotes=['*'])
+        self.add('dirComp', AEPGroupFLORIS(nTurbines, resolution=0), promotes=['*'])
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
         self.add('spacing_con', ExecComp('sc = separation-minSpacing*rotorDiameter[0]',
-                                         minSpacing=minSpacing,
+                                         minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbines),
                                          sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
                                          separation=np.zeros(((nTurbines-1.)*nTurbines/2.))),
                  promotes=['*'])
@@ -38,9 +38,9 @@ class OptPowerOneDir(Group):
         self.add('obj_comp', ExecComp('obj = -1.*power0', power0=0.0), promotes=['*'])
 
         # initialize design variables for optimization
-        self.add('p1', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
-        self.add('p2', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
-        self.add('p3', IndepVarComp('yaw', np.zeros(nTurbines)), promotes=['*'])
+        # self.add('p1', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
+        # self.add('p2', IndepVarComp('turbineY', np.zeros(nTurbines)), promotes=['*'])
+        # self.add('p3', IndepVarComp('yaw', np.zeros(nTurbines)), promotes=['*'])
 
 
 class OptAEP(Group):

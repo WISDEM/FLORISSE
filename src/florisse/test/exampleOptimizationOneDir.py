@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # prob.driver.options['tol'] = 1.0E-8
     prob.driver.add_desvar('turbineX', low=np.ones(nTurbs)*min(turbineX), high=np.ones(nTurbs)*max(turbineX))
     prob.driver.add_desvar('turbineY', low=np.ones(nTurbs)*min(turbineY), high=np.ones(nTurbs)*max(turbineY))
-    prob.driver.add_desvar('yaw', low=-30.0, high=30.0)
+    prob.driver.add_desvar('yaw0', low=-30.0, high=30.0)
     prob.driver.add_objective('obj')
 
     # initialize problem
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # assign initial values to design variables
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
-    prob['yaw'] = yaw
+    prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     prob['generator_efficiency'] = generator_efficiency
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
-    prob['wind_direction'] = wind_direction
+    prob['windDirections'] = np.array([wind_direction])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = True
@@ -85,7 +85,7 @@ if __name__ == "__main__":
     print 'turbine powers (kW): %s' % prob['wt_power0']
     print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
-    print 'yaw (deg) = ', prob['yaw']
+    print 'yaw (deg) = ', prob['yaw0']
     print 'effective wind speeds (m/s): %s' % prob['velocitiesTurbines0']
     print 'wind farm power (kW): %s' % prob['power0']
 
