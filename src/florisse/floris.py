@@ -730,8 +730,12 @@ class AEPGroupFLORIS(Group):
 
         super(AEPGroupFLORIS, self).__init__()
 
+        # providing default unit types for general MUX/DeMUX components
+        power_units = 'kW'
+        direction_units = 'deg'
+
         # add components and groups
-        self.add('windDirectionsDeMUX', DeMUX(nDirections))
+        self.add('windDirectionsDeMUX', DeMUX(nDirections, units=direction_units))
 
         pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
         if use_rotor_components:
@@ -751,11 +755,11 @@ class AEPGroupFLORIS(Group):
                                  'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY', 'yaw%i' % direction_id, 'rotorDiameter',
                                  'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id, 'power%i' % direction_id])#, 'wakeCentersYT', 'wakeDiametersT'])
 
-        self.add('powerMUX', MUX(nDirections))
+        self.add('powerMUX', MUX(nDirections, units=power_units))
         self.add('AEPcomp', WindFarmAEP(nDirections), promotes=['*'])
 
         # add necessary inputs for group
-        self.add('p0', IndepVarComp('windDirections', np.zeros(nDirections)), promotes=['*'])
+        self.add('p0', IndepVarComp('windDirections', np.zeros(nDirections), units=direction_units), promotes=['*'])
         self.add('p1', IndepVarComp('windrose_frequencies', np.zeros(nDirections)), promotes=['*'])
         self.add('p2', IndepVarComp('turbineX', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('p3', IndepVarComp('turbineY', np.zeros(nTurbines), units='m'), promotes=['*'])

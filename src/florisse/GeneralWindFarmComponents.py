@@ -366,7 +366,7 @@ class SpacingComp(Component):
 class MUX(Component):
     """ Connect input elements into a single array  """
 
-    def __init__(self, nElements):
+    def __init__(self, nElements, units=None):
 
         super(MUX, self).__init__()
 
@@ -376,11 +376,18 @@ class MUX(Component):
         self.fd_options['step_type'] = 'relative'
 
         # define inputs
-        for i in range(0, nElements):
-            self.add_param('input%i' % i, val=0.0, desc='scalar input')
+        if units == None:
+            for i in range(0, nElements):
+                self.add_param('input%i' % i, val=0.0, desc='scalar input')
+        else:
+            for i in range(0, nElements):
+                self.add_param('input%i' % i, val=0.0, units=units, desc='scalar input')
 
         # define output
-        self.add_output('Array', np.zeros(nElements), desc='ndArray of all the scalar inputs')
+        if units == None:
+            self.add_output('Array', np.zeros(nElements), desc='ndArray of all the scalar inputs')
+        else:
+            self.add_output('Array', np.zeros(nElements), units=units, desc='ndArray of all the scalar inputs')
 
         self.nElements = nElements
 
@@ -411,7 +418,7 @@ class MUX(Component):
 class DeMUX(Component):
     """ split a given array into separate elements """
 
-    def __init__(self, nElements):
+    def __init__(self, nElements, units=None):
 
         super(DeMUX, self).__init__()
 
@@ -421,11 +428,18 @@ class DeMUX(Component):
         self.fd_options['step_type'] = 'relative'
 
         # define input
-        self.add_param('Array', np.zeros(nElements), desc='ndArray of scalars')
+        if units == None:
+            self.add_param('Array', np.zeros(nElements), desc='ndArray of scalars')
+        else:
+            self.add_param('Array', np.zeros(nElements), units=units, desc='ndArray of scalars')
 
         # define outputs
-        for i in range(0, nElements):
-            self.add_output('output%i' % i, val=0.0, desc='scalar output')
+        if units == None:
+            for i in range(0, nElements):
+                self.add_output('output%i' % i, val=0.0, desc='scalar output')
+        else:
+            for i in range(0, nElements):
+                self.add_output('output%i' % i, val=0.0, units=units, desc='scalar output')
         # print 'demux elements: ', nElements
         self.nElements = nElements
 
