@@ -32,6 +32,7 @@ class GradientTestsFLORIS(unittest.TestCase):
         wind_speed = np.random.random()*20        # m/s
         air_density = 1.1716    # kg/m^3
         wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+        wind_frequency = np.random.random()    # probability of wind in given direction
 
         # set up problem
         prob = Problem(root=AEPGroupFLORIS(nTurbines, nDirections=1, resolution=0))
@@ -48,9 +49,10 @@ class GradientTestsFLORIS(unittest.TestCase):
         prob['Ct_in'] = Ct
         prob['Cp_in'] = Cp
         prob['generator_efficiency'] = generator_efficiency
-        prob['wind_speed'] = wind_speed
+        prob['windSpeeds'] = np.array([wind_speed])
         prob['air_density'] = air_density
         prob['windDirections'] = np.array([wind_direction])
+        prob['windrose_frequencies'] = np.array([wind_frequency])
         prob['floris_params:FLORISoriginal'] = True
 
         # run problem
@@ -164,6 +166,7 @@ class GradientTestsCtCp(unittest.TestCase):
         wind_speed = np.random.random()*20        # m/s
         air_density = 1.1716    # kg/m^3
         wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+        wind_frequency = np.random.random()    # probability of wind in given direction
 
         # set up problem
         prob = Problem(root=AEPGroupFLORIS(nTurbines=nTurbines))
@@ -181,7 +184,8 @@ class GradientTestsCtCp(unittest.TestCase):
         prob['Ct_in'] = Ct
         prob['Cp_in'] = Cp
         prob['generator_efficiency'] = generator_efficiency
-        prob['wind_speed'] = wind_speed
+        prob['windSpeeds'] = np.array([wind_speed])
+        prob['windrose_frequencies'] = np.array([wind_frequency])
         prob['air_density'] = air_density
         prob['windDirections'] = np.array([wind_direction])
         prob['floris_params:FLORISoriginal'] = False
@@ -226,6 +230,9 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         wind_speed = np.random.random()*20        # m/s
         air_density = 1.1716    # kg/m^3
         wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+        wind_frequency = np.random.random()    # probability of wind in given direction
+
+
 
         NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
         datasize = NREL5MWCPCT['CP'].size
@@ -243,7 +250,8 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
         prob['generator_efficiency'] = generator_efficiency
-        prob['wind_speed'] = wind_speed
+        prob['windSpeeds'] = np.array([wind_speed])
+        prob['windrose_frequencies'] = np.array([wind_frequency])
         prob['air_density'] = air_density
         prob['windDirections'] = np.array([wind_direction])
         prob['floris_params:FLORISoriginal'] = True
