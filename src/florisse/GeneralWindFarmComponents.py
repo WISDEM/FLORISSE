@@ -1,4 +1,5 @@
 from openmdao.api import Component, Group, Problem, IndepVarComp
+from utilities import smooth_min
 
 import numpy as np
 from scipy import interp
@@ -7,7 +8,7 @@ from scipy import interp
 class WindFrame(Component):
     """ Calculates the locations of each turbine in the wind direction reference frame """
 
-    def __init__(self, nTurbines, resolution):
+    def __init__(self, nTurbines, resolution=0, differentiable=True):
 
         # print 'entering windframe __init__ - analytic'
 
@@ -17,6 +18,10 @@ class WindFrame(Component):
         self.fd_options['form'] = 'central'
         self.fd_options['step_size'] = 1.0e-5
         self.fd_options['step_type'] = 'relative'
+
+        if not differentiable:
+            self.fd_options['force_fd'] = True
+            self.fd_options['form'] = 'forward'
 
         self.nTurbines = nTurbines
 
@@ -107,7 +112,7 @@ class WindFrame(Component):
 class AdjustCtCpYaw(Component):
     """ Adjust Cp and Ct to yaw if they are not already adjusted """
 
-    def __init__(self, nTurbines, direction_id=0):
+    def __init__(self, nTurbines, direction_id=0, differentiable=True):
 
         # print 'entering adjustCtCp __init__ - analytic'
         super(AdjustCtCpYaw, self).__init__()
@@ -118,6 +123,10 @@ class AdjustCtCpYaw(Component):
         self.fd_options['form'] = 'central'
         self.fd_options['step_size'] = 1.0e-5
         self.fd_options['step_type'] = 'relative'
+
+        if not differentiable:
+            self.fd_options['force_fd'] = True
+            self.fd_options['form'] = 'forward'
 
         # Explicitly size input arrays
         self.add_param('Ct_in', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
