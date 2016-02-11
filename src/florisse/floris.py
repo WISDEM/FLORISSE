@@ -779,7 +779,7 @@ class AEPGroupFLORIS(Group):
         # add necessary inputs for group
         self.add('p0', IndepVarComp('windDirections', np.zeros(nDirections), units=direction_units), promotes=['*'])
         self.add('p1', IndepVarComp('windSpeeds', np.zeros(nDirections), units=wind_speed_units), promotes=['*'])
-        self.add('p2', IndepVarComp('windrose_frequencies', np.zeros(nDirections)), promotes=['*'])
+        self.add('p2', IndepVarComp('windrose_frequencies', np.ones(nDirections)), promotes=['*'])
         self.add('p3', IndepVarComp('turbineX', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('p4', IndepVarComp('turbineY', np.zeros(nTurbines), units='m'), promotes=['*'])
 
@@ -787,12 +787,11 @@ class AEPGroupFLORIS(Group):
         self.add('p5', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('p6', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
         self.add('p7', IndepVarComp('generator_efficiency', np.zeros(nTurbines)), promotes=['*'])
-        self.add('p8', IndepVarComp('wind_speed', val=8.0, units='m/s'), promotes=['*'])
-        self.add('p9', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
+        self.add('p8', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
 
         if not use_rotor_components:
-            self.add('p10', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
-            self.add('p11', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
+            self.add('p9', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
+            self.add('p10', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
 
         # add components and groups
         self.add('windDirectionsDeMUX', DeMUX(nDirections, units=direction_units))
