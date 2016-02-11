@@ -76,7 +76,7 @@ class floris_assembly_opt_AEP(Assembly):
         # windrose input variables
         self.add('windrose_directions', Array(np.zeros(nDirections), dtype='float', iotype='in',
                                               desc='windrose directions in degrees ccw from east'))
-        self.add('windrose_frequencies', Array(np.zeros(nDirections), dtype='float', iotype='in',
+        self.add('windrose_frequencies', Array(np.ones(nDirections), dtype='float', iotype='in',
 					desc='windrose frequencies corresponding to windrose_directions'))
         if nSpeeds == 1:
             self.add('windrose_speeds', Float(iotype='in', units='m/s', 
