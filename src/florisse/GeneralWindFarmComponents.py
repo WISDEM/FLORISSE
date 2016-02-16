@@ -1,4 +1,5 @@
 from openmdao.api import Component, Group, Problem, IndepVarComp
+from akima import Akima, akima_interp
 from utilities import smooth_min
 
 import numpy as np
@@ -514,7 +515,7 @@ class DeMUX2D(Component):
         return J
 
 
-## ---- if you know wind speed to power and thrust, you can use these tools ----------------
+# ---- if you know wind speed to power and thrust, you can use these tools ----------------
 class CPCT_Interpolate_Gradients(Component):
 
     def __init__(self, nTurbines, direction_id=0, datasize=0):
@@ -548,6 +549,8 @@ class CPCT_Interpolate_Gradients(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         direction_id = self.direction_id
         pP = self.params['params:pP']
+        # print "turbine 2 inflow velocity: %s" % params['velocitiesTurbines%i' % direction_id]
+        # print "pP: %f" % pP
         wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP/3.0)*self.params['velocitiesTurbines%i' % direction_id]
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax = np.maximum(wind_speed_ax, self.params['params:windSpeedToCPCT:wind_speed'][0])
@@ -621,6 +624,100 @@ class CPCT_Interpolate_Gradients(Component):
 
         return J
 
+
+class CPCT_Interpolate_Gradients_Smooth(Component):
+
+    def __init__(self, nTurbines, direction_id=0, datasize=0):
+
+        super(CPCT_Interpolate_Gradients_Smooth, self).__init__()
+
+        # set finite difference options (fd used for testing only)
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+
+        self.nTurbines = nTurbines
+        self.direction_id = direction_id
+        self.datasize = datasize
+
+        # add inputs and outputs
+        self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), desc='yaw error', units='deg')
+        self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
+        self.add_output('Cp_out', np.zeros(nTurbines))
+        self.add_output('Ct_out', np.zeros(nTurbines))
+
+        # add variable trees
+        self.add_param('params:pP', 3.0, pass_by_obj=True)
+        self.add_param('params:windSpeedToCPCT:wind_speed', np.zeros(datasize), units='m/s',
+                       desc='range of wind speeds', pass_by_obj=True)
+        self.add_param('params:windSpeedToCPCT:CP', np.zeros(datasize), iotype='out',
+                       desc='power coefficients', pass_by_obj=True)
+        self.add_param('params:windSpeedToCPCT:CT', np.zeros(datasize), iotype='out',
+                       desc='thrust coefficients', pass_by_obj=True)
+
+    def solve_nonlinear(self, params, unknowns, resids):
+        direction_id = self.direction_id
+        pP = self.params['params:pP']
+        yaw = self.params['yaw%i' % direction_id]
+        start = 5
+        skip = 8
+        # Cp = params['params:windSpeedToCPCT:CP'][start::skip]
+        Cp = params['params:windSpeedToCPCT:CP']
+        # Ct = params['params:windSpeedToCPCT:CT'][start::skip]
+        Ct = params['params:windSpeedToCPCT:CT']
+        # windspeeds = params['params:windSpeedToCPCT:wind_speed'][start::skip]
+        windspeeds = params['params:windSpeedToCPCT:wind_speed']
+        #
+        # Cp = np.insert(Cp, 0, Cp[0]/2.0)
+        # Cp = np.insert(Cp, 0, 0.0)
+        # Ct = np.insert(Ct, 0, np.max(params['params:windSpeedToCPCT:CP'])*0.99)
+        # Ct = np.insert(Ct, 0, np.max(params['params:windSpeedToCPCT:CT']))
+        # windspeeds = np.insert(windspeeds, 0, 2.5)
+        # windspeeds = np.insert(windspeeds, 0, 0.0)
+        #
+        # Cp = np.append(Cp, 0.0)
+        # Ct = np.append(Ct, 0.0)
+        # windspeeds = np.append(windspeeds, 30.0)
+
+        CPspline = Akima(windspeeds, Cp)
+        CTspline = Akima(windspeeds, Ct)
+
+        # n = 500
+        # x = np.linspace(0.0, 30., n)
+        CP, dCPdvel, _, _ = CPspline.interp(params['velocitiesTurbines%i' % direction_id])
+        CT, dCTdvel, _, _ = CTspline.interp(params['velocitiesTurbines%i' % direction_id])
+
+        # print 'in solve_nonlinear', dCPdvel, dCTdvel
+
+        Cp_out = CP*np.cos(yaw*np.pi/180.)**pP
+        Ct_out = CT*np.cos(yaw*np.pi/180.)**2.
+
+        self.dCp_out_dyaw = (-np.sin(yaw*np.pi/180.))*(np.pi/180.)*pP*CP*np.cos(yaw*np.pi/180.)**(pP-1.)
+        self.dCp_out_dvel = dCPdvel*np.cos(yaw*np.pi/180.)**pP
+
+        # print 'in solve_nonlinear', self.dCp_out_dyaw, self.dCp_out_dvel
+
+        self.dCt_out_dyaw = (-np.sin(yaw*np.pi/180.))*(np.pi/180.)*2.*CT*np.cos(yaw*np.pi/180.)
+        self.dCt_out_dvel = dCTdvel*np.cos(yaw*np.pi/180.)**2.
+
+        # normalize on incoming wind speed to correct coefficients for yaw
+        self.unknowns['Cp_out'] = Cp_out
+        self.unknowns['Ct_out'] = Ct_out
+
+    def linearize(self, params, unknowns, resids):  # standard central differencing
+
+        direction_id = self.direction_id
+
+        # print 'in linearize', self.dCp_out_dyaw, self.dCp_out_dvel
+
+        # compile Jacobian dict
+        J = {}
+        J['Cp_out', 'yaw%i' % direction_id] = np.eye(self.nTurbines)*self.dCp_out_dyaw
+        J['Cp_out', 'velocitiesTurbines%i' % direction_id] = np.eye(self.nTurbines)*self.dCp_out_dvel
+        J['Ct_out', 'yaw%i' % direction_id] = np.eye(self.nTurbines)*self.dCt_out_dyaw
+        J['Ct_out', 'velocitiesTurbines%i' % direction_id] = np.eye(self.nTurbines)*self.dCt_out_dvel
+
+        return J
 
 if __name__ == "__main__":
 

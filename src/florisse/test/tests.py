@@ -241,7 +241,7 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         prob = Problem(root=AEPGroupFLORIS(nTurbines=nTurbines, use_rotor_components=True, datasize=datasize))
 
         # initialize problem
-        prob.setup()
+        prob.setup(check=False)
 
         # assign values to constant inputs (not design variables)
         prob['turbineX'] = turbineX

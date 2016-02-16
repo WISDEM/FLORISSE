@@ -129,7 +129,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
     
     do turb = 1, nTurbines
         do turbI = 1, nTurbines
-            if (turbineX(turbI) > turbineX(turb) - p_near0*rotorDiameter(turb)) then
+            if (turbineX(turbI) > turbineX(turb) + p_near0*rotorDiameter(turb)) then
                 OVdYd = wakeCenters(turbI, turb)-turbineY(turbI)    ! distance between wake center and rotor center
                 OVr = rotorDiameter(turbI)/2                        ! rotor diameter
                 do zone = 1, 3
@@ -200,7 +200,7 @@ end subroutine calcOverlapAreas
 
 subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                               initialWakeAngle, ke_in, keCorrCT, Region2CT, yaw_deg, Ct, &
-                              turbineXw, turbineYw, rotorDiameter, me, bd, useWakeAngle, &
+                              turbineXw, turbineYw, rotorDiameter, me, bd, splineshift, useWakeAngle, &
                               adjustInitialWakeDiamToYaw, wakeCentersYT_vec, &
                               wakeDiametersT_vec)
                               
@@ -215,7 +215,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     ! in
     integer, intent(in) :: nTurbines
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
-    real(dp), intent(in) :: keCorrCT, Region2CT, bd
+    real(dp), intent(in) :: keCorrCT, Region2CT, bd, splineshift
     real(dp), dimension(nTurbines), intent(in) :: yaw_deg, Ct, turbineXw, turbineYw
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: me
@@ -226,11 +226,11 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeDiametersT_vec
     
     ! local
-    real(dp), parameter :: p_unity = 0.25
-    real(dp), parameter :: p_center0 = 0.25, p_center1 = 0.25
-    real(dp), parameter :: p_near0 = 1, p_near1 = p_unity
-    real(dp), parameter :: p_far0 = p_unity
-    real(dp), parameter :: p_mix0 = p_unity, p_mix1 = 0.25
+    real(dp) :: p_unity
+    real(dp) :: p_center0, p_center1
+    real(dp) :: p_near0, p_near1
+    real(dp) :: p_far0
+    real(dp) :: p_mix0, p_mix1
     real(dp), dimension(nTurbines) :: ke, yaw
     Integer :: turb, turbI, zone
     real(dp) :: wakeAngleInit, zeroloc
@@ -239,6 +239,15 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp) :: b, d, dy1_yaw, dy1, wakeDiameter0, x2, y2, dy2, x3, y3, dy3
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
+    
+    p_unity = -0.25_dp + splineshift
+    p_center0 = -0.25_dp
+    p_center1 = 0.25_dp + splineshift
+    p_near0 = -1.0_dp + splineshift
+    p_near1 = 0.25_dp + splineshift
+    p_far0 = p_unity
+    p_mix0 = p_unity
+    p_mix1 = 0.25_dp + splineshift
     
     ! execute
     !    if (CTcorrected) then
@@ -282,12 +291,12 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 
             else if (turbineXw(turb)+p_center1*rotorDiameter(turb) >= turbineXw(turbI) &
                     .and. turbineXw(turbI) >= &
-                    turbineXw(turb)-p_center0*rotorDiameter(turb)) then
+                    turbineXw(turb)+p_center0*rotorDiameter(turb)) then
                 
                 ! set up spline values
                 x = turbineXw(turbI)                                    ! point of interest
 
-                x0 = turbineXw(turb) - p_center0*rotorDiameter(turb)    ! upwind point
+                x0 = turbineXw(turb) + p_center0*rotorDiameter(turb)    ! upwind point
                 x1 = turbineXw(turb) + p_center1*rotorDiameter(turb)    ! downwind point
 
                 y0 = turbineYw(turb)-initialWakeDisplacement            ! upwind point
@@ -354,10 +363,10 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             x = turbineXw(turbI)                         
             
             ! point where all zones have equal diameter
-            x1 = turbineXw(turb)-p_unity*rotorDiameter(turb)  
+            x1 = turbineXw(turb)+p_unity*rotorDiameter(turb)  
             
             ! diameter at point of unity
-            y1 = wakeDiameter0-2.0_dp*ke(turb)*me(2)*p_unity*rotorDiameter(turb) 
+            y1 = wakeDiameter0+2.0_dp*ke(turb)*me(2)*p_unity*rotorDiameter(turb) 
             
             ! derivative of diameter at upwind point of spline w.r.t downwind position
             dy1 = 2*ke(turb)*me(2)
@@ -399,7 +408,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax            
                     
             else if (turbineXw(turb)+p_near1*rotorDiameter(turb) >= turbineXw(turbI) &
-                 .and. turbineXw(turbI) > turbineXw(turb)-p_unity*rotorDiameter(turb)) then
+                 .and. turbineXw(turbI) > turbineXw(turb)+p_unity*rotorDiameter(turb)) then
                 
                 ! calculate spline values
                 x2 = turbineXw(turb)+p_near1*rotorDiameter(turb)  ! downwind point              
@@ -414,10 +423,10 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 ! location at the point of interest
                 call Hermite_Spline(x, x1, x2, y1, dy1, y2, dy2, wakeDiametersT_mat(turbI, turb, zone))
                 
-            else if (turbineXw(turb)-p_near0*rotorDiameter(turb) <= turbineXw(turbI) &
-                    .and. turbineXw(turbI) <= turbineXw(turb)) then
+            else if (turbineXw(turb)+p_near0*rotorDiameter(turb) <= turbineXw(turbI) &
+                    .and. turbineXw(turbI) <= turbineXw(turb) + splineshift*rotorDiameter(turb)) then
                     
-                x0 = turbineXw(turb)-p_near0*rotorDiameter(turb)  ! downwind end point of spline
+                x0 = turbineXw(turb)+p_near0*rotorDiameter(turb)  ! downwind end point of spline
                 
                 ! diameter at upwind point of spline
                 y0 = 0
@@ -432,7 +441,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             end if
             
             zone = 2            
-            if (turbineXw(turb)-p_far0*rotorDiameter(turb) < turbineXw(turbI)) then
+            if (turbineXw(turb)+p_far0*rotorDiameter(turb) < turbineXw(turbI)) then
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
             else    
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiametersT_mat(turbI, turb, 1)                    
@@ -442,7 +451,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             if (turbineXw(turb)+p_mix1*rotorDiameter(turb) < turbineXw(turbI)) then
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax
             else if (turbineXw(turb)+p_mix1*rotorDiameter(turb) >= turbineXw(turbI) &
-                     .and. turbineXw(turbI) > turbineXw(turb)-p_mix0*rotorDiameter(turb)) then
+                     .and. turbineXw(turbI) > turbineXw(turb)+p_mix0*rotorDiameter(turb)) then
                 
                 x2 = turbineXw(turb)+p_mix1*rotorDiameter(turb)  ! downwind end point of spline
 
@@ -480,7 +489,7 @@ end subroutine floris_wcent_wdiam
 
 subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
                           wakeDiametersT_vec, wakeCentersYT_vec, cos_spread, &
-                          wakeOverlapTRel_vec, cosFac_vec)
+                          splineshift, wakeOverlapTRel_vec, cosFac_vec)
                           
     ! dependent variables: wakeOverlapTRel_vec cosFac_vec
     ! independent variables: turbineYw rotorDiameter wakeDiametersT_vec wakeCentersYT_vec
@@ -492,7 +501,7 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     
     ! in
     integer, intent(in) :: nTurbines
-    real(dp), intent(in) :: cos_spread
+    real(dp), intent(in) :: cos_spread, splineshift
     real(dp), dimension(nTurbines), intent(in) :: turbineXw, turbineYw, rotorDiameter
     real(dp), dimension(3*nTurbines*nTurbines), intent(in) :: wakeDiametersT_vec
     real(dp), dimension(nTurbines*nTurbines), intent(in) :: wakeCentersYT_vec
@@ -502,13 +511,15 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: cosFac_vec
     
     ! local
-    real(dp), parameter :: p_near0 = 1 
+    real(dp) :: p_near0
     real(dp) :: rmax
     integer :: turbI, turb, zone
     real(dp), parameter :: pi = 3.141592653589793_dp
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel_mat, wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines, 3) :: cosFac_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
+    
+    p_near0 = -1.0_dp + splineshift
     
     ! execute    
     ! pack wakeDiametersT_v vector into a matrix
@@ -568,7 +579,7 @@ end subroutine floris_overlap
 
 subroutine floris_power(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
                  axialIndProvided, useaUbU, keCorrCT, Region2CT, ke_in, Vinf, keCorrArray, &
-                 turbineXw, yaw_deg, p_near0, rotorDiameter, MU, rho, aU, bU, &
+                 turbineXw, yaw_deg, p_near0, splineshift, rotorDiameter, MU, rho, aU, bU, &
                  Cp, generator_efficiency, velocitiesTurbines, wt_power, power)
 
     ! dependent variables: velocitiesTurbines, wt_power, power
@@ -588,7 +599,7 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
     logical,  intent(in) :: axialIndProvided, useaUbU                   ! option logicals
     real(dp), intent(in) :: keCorrCT, Region2CT, ke_in, Vinf, keCorrArray
     real(dp), dimension(nTurbines), intent(in) :: turbineXw, yaw_deg
-    real(dp), intent(in) :: p_near0
+    real(dp) :: p_near0, splineshift
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: MU
     real(dp), intent(in) :: rho, aU, bU
@@ -608,6 +619,8 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
     real(dp), intent(out) :: power
     
     intrinsic cos
+    
+    p_near0 = p_near0 + splineshift
     
     ! convert yaw from degrees to radians
     yaw = yaw_deg*pi/180.0_dp
@@ -657,7 +670,7 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
                 mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
             end if
             
-            if (deltax > -1.0_dp*p_near0*rotorDiameter(turb) .and. turbI /= turb) then
+            if (deltax > p_near0*rotorDiameter(turb) .and. turbI /= turb) then
                 do zone = 1, 3
                 
                     if (useaUbU) then

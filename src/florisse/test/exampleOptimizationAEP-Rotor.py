@@ -34,16 +34,17 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 4 # number of processors (and number of wind directions to run)
+    nDirections = 4 # number of processors (and number of wind directions to run)
 
     use_rotor_components = True
+    optimizingLayout = True
 
     #########################################################################
     # define turbine size
     rotor_diameter = 126.4  # (m)
 
     if use_rotor_components:
-        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
         # print(NREL5MWCPCT)
         # NREL5MWCPCT = pickle.Unpickler(open('NREL5MWCPCT.p')).load()
         datasize = NREL5MWCPCT['CP'].size
@@ -87,13 +88,13 @@ if __name__ == "__main__":
     # Define flow properties
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
-    windDirections = np.linspace(0, 270, size)
-    windFrequencies = np.ones_like(windDirections)*1.0/size
+    windDirections = np.linspace(0, 270, nDirections)
+    windFrequencies = np.ones_like(windDirections)*1.0/nDirections
 
     # initialize problem
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
                                           minSpacing=minSpacing, use_rotor_components=use_rotor_components,
-                                          datasize=datasize))
+                                          datasize=datasize, optimizingLayout=optimizingLayout))
     prob.setup(check=False)
 
     # set up optimizer
@@ -102,7 +103,7 @@ if __name__ == "__main__":
     prob.driver.add_objective('obj', scaler=1E-8)
 
     # set optimizer options
-    prob.driver.opt_settings['Verify level'] = 3
+    prob.driver.opt_settings['Verify level'] = 0
     prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP-Rotor.out'
     prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP-Rotor.out'
     prob.driver.opt_settings['Major iterations limit'] = 1000
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    prob['windSpeeds'] = np.ones(nTurbs)*wind_speed
+    prob['windSpeeds'] = np.ones(nDirections)*wind_speed
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections
     prob['windrose_frequencies'] = windFrequencies
