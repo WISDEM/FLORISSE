@@ -31,7 +31,7 @@ class floris_assembly_opt_AEP(Assembly):
     # output
     AEP = Float(iotype='out', units='kW', desc='total windfarm AEP')
 
-    def __init__(self, nTurbines, nDirections, optimize_position=False, nSamples=0, optimize_yaw=False, datasize=0, nSpeeds=False):
+    def __init__(self, nTurbines, nDirections, optimize_position=False, nSamples=0, optimize_yaw=False, datasize=0, nSpeeds=False, maxiter=100):
 
         super(floris_assembly_opt_AEP, self).__init__()
 
@@ -45,6 +45,7 @@ class floris_assembly_opt_AEP(Assembly):
         self.optimize_position = optimize_position
         self.datasize = datasize
         self.nSpeeds = nSpeeds
+        self.maxiter = maxiter
 
         # wt_layout input variables
         self.add('rotorDiameter', Array(np.zeros(nTurbines), dtype='float', iotype='in', units='m',
@@ -131,6 +132,7 @@ class floris_assembly_opt_AEP(Assembly):
         datasize = self.datasize
         nSamples = self.nSamples
         nSpeeds = self.nSpeeds
+        maxiter = self.maxiter
 
         # add driver so the workflow is not overwritten later
         if optimize_position or optimize_yaw:
@@ -286,7 +288,7 @@ class floris_assembly_opt_AEP(Assembly):
             # set up driver
             self.driver.iprint = 3
             self.driver.accuracy = 1.0e-12
-            self.driver.maxiter = 100
+            self.driver.maxiter = maxiter
             self.driver.add_objective('-floris_AEP.AEP')
             if optimize_position:
                 self.driver.add_parameter('turbineX', low=7*126.4, high=np.sqrt(self.nTurbines)*7*126.4)

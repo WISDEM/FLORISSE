@@ -8,7 +8,7 @@ import time
 
 useSubset = True
 
-# optimize yaw for all turbines in Princess Amalia Wind Farm, for one wind speed, for directions from 0 to 90
+# optimize yaw for all or a subset of NREL 5MW turbines in Princess Amalia Wind Farm configuration, for one wind speed and direction
 baselinePowers = list()
 optPowers = list()
 increasePercentages = list()
