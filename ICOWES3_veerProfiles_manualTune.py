@@ -34,11 +34,12 @@ deltaTimeRange = np.arange(705,1000,5) # time range over which to average power 
 downStreamDiamRange = np.array([1,3,5])
 
 # linear coefficient: skew c = cCoefficient * distance to rotor (in rotor diameters)
-cCoefficientsD = [0.15/5., 1.0/5.]
+cCoefficientsD = [0.10/5., 1.0/5.]
 
 figInflowProfs, axesInflowProfs = plt.subplots(nrows=1, ncols=3, figsize = (15.,5.))
 figFullFlow, axesFullFlow = plt.subplots(nrows=len(stabilityCases), ncols=1, figsize=(15.,10.))
 figSlicesSOWFAvsFLORIS, axesSlicesSOWFAvsFLORIS = plt.subplots(nrows=len(downStreamDiamRange), ncols=len(stabilityCases)*2, figsize=(20.,3.*len(downStreamDiamRange)))
+figDiagsSOWFAvsFLORIS, axesDiagsSOWFAvsFLORIS = plt.subplots(nrows=len(downStreamDiamRange), ncols=len(stabilityCases), figsize=(15.,3.*len(downStreamDiamRange)))
 figSlicesContour, axesSlicesContour = plt.subplots(nrows=len(downStreamDiamRange), ncols=len(stabilityCases), figsize=(15.,5.*len(downStreamDiamRange)))
 
 colors = ['g','b']
@@ -68,31 +69,29 @@ figPowerTime, axesPowerTime = plt.subplots(nrows = nTurbines, ncols = len(stabil
 for stabilityCaseI, case in enumerate(stabilityCases):
 
     caseICOWES3 = casesICOWES3[stabilityCaseI]
-    caseFolder = '/scratch/pfleming/runs/ICOWES_3/runCases/' + caseICOWES3
-
+    
     # load and average turbine power data
-    SCOfile = caseFolder + '/CONOUT/superCONOUT.csv'
+    SCOfile = 'averageProfilesICOWES3/'+caseICOWES3+'.superCONOUT.csv'
     SCO = readSuperCONOUT(SCOfile)
 
     # get average power for each turbine over deltaTimeRange in kW
     powersSOWFA[case] = np.array([np.mean([SCO.data[turb]['Power (W)'][i] for i in range(len(SCO.time)) if (SCO.time[i]>=deltaTimeRange[0] and SCO.time[i] <= deltaTimeRange[-1])]) for turb in range(SCO.nTurbines)])/1000.
     for turb in range(SCO.nTurbines):
         axesPowerTime[turb,stabilityCaseI].plot(SCO.time, SCO.data[turb]['Power (W)']/1000., 'b', label='SOWFA')
-        axesPowerTime[turb,stabilityCaseI].plot([deltaTimeRange[0], deltaTimeRange[-1]],[powersSOWFA[case][turb],powersSOWFA[case][turb]],'b--', label='SOWFA Time-Averaged')
+        axesPowerTime[turb,stabilityCaseI].plot([deltaTimeRange[0], deltaTimeRange[-1]],[powersSOWFA[case][turb],powersSOWFA[case][turb]],'b:', label='SOWFA Time-Averaged')
         axesPowerTime[turb,stabilityCaseI].set_title('Turbine %d, %s' % ((turb+1), case))
         axesPowerTime[turb,stabilityCaseI].set_ylabel('Generator Power (kW)')
     axesPowerTime[turb,stabilityCaseI].set_xlabel('Time (s)')
 
     # load vertical slice data 
-    sdiFolder = caseFolder + '/sliceDataInstant'
     fileSlice = 'U_slice_2'
     print 'load vertical slice data'
-    d = pickle.load(file(sdiFolder + '/' + fileSlice + '.avg_pickle'))
+    d = pickle.load(file('averageProfilesICOWES3/' + fileSlice + '.' + caseICOWES3 + '.avg_pickle'))
     print 'done'
     cellData = d['cellData']; cellCenters = d['cellCenters'];
 
     # change reference frame and convert to down-/cross-stream coordinates
-    refFrame = np.array([(cellCenters[:,0]-1118.1)/(np.cos(windDirection*np.pi/180.)*rotorDiameter),(cellCenters[:,2]-hubHeight)/rotorDiameter]).transpose()
+    refFrame = np.array([(cellCenters[:,0]-turbineLocation[0])/(np.cos(windDirection*np.pi/180.)*rotorDiameter),(cellCenters[:,2]-hubHeight)/rotorDiameter]).transpose()
     rotMat = np.array([[np.cos(-windDirection*np.pi/180.), -np.sin(-windDirection*np.pi/180.), 0.], [np.sin(-windDirection*np.pi/180.), np.cos(-windDirection*np.pi/180.), 0.], [0., 0., 1.]])
     cellDataCrossDown = np.dot(rotMat,cellData.transpose()).transpose()
 
@@ -163,7 +162,7 @@ print velocityHubheight
 veerToSkewCoefDLinear = np.polyfit(veerSlope, cCoefficientsD,1)
 
 # read in turbine positions
-tapfFile = caseFolder + '/constant/turbineArrayPropertiesFAST'
+tapfFile = 'averageProfilesICOWES3/'+caseICOWES3+'.turbineArrayPropertiesFAST'
 TAPFproperties = readTurbineArrayPropertiesFAST(tapfFile)
 
 # load NREL 5MW characteristics
@@ -193,21 +192,21 @@ for stabilityCaseI, case in enumerate(stabilityCases):
             axContour = axesSlicesContour[downStreamDiamI, stabilityCaseI]
 
         if len(downStreamDiamRange) == 1:
-            axSlicesSOWFA = axesSlicesSOWFAvsFLORIS[caseI]
-            axSlicesFLORIS = axesSlicesSOWFAvsFLORIS[caseI]
+            axSlicesSOWFA = axesSlicesSOWFAvsFLORIS[stabilityCaseI*2]
+            axSlicesFLORIS = axesSlicesSOWFAvsFLORIS[stabilityCaseI*2+1]
+            axDiagsSOWFAvsFLORIS = axesDiagsSOWFAvsFLORIS[stabilityCaseI]
         else:
             axSlicesSOWFA = axesSlicesSOWFAvsFLORIS[downStreamDiamI, stabilityCaseI*2]
             axSlicesFLORIS = axesSlicesSOWFAvsFLORIS[downStreamDiamI, stabilityCaseI*2+1]
+            axDiagsSOWFAvsFLORIS = axesDiagsSOWFAvsFLORIS[downStreamDiamI, stabilityCaseI]
 
         print('D ' + str(downStreamDiam))
         slices[case][downStreamDiam] = dict()
-        sdiFolder = '/scratch/pfleming/runs/ICOWES_3/runCases/%s/sliceDataInstant' % caseICOWES3s
         fileSlice = 'U_slide_%dDdwnstrT1' % downStreamDiam
         print 'load wake cut-through data'
-        d = pickle.load(file(sdiFolder + '/' + fileSlice + '.avg_pickle'))
+        d = pickle.load(file('averageProfilesICOWES3/' + fileSlice + '.' + caseICOWES3 + '.avg_pickle'))
         print 'done'
         cellData = d['cellData']; cellCenters = d['cellCenters'];
-        sdiFolder = '/scratch/pfleming/runs/ICOWES_3/runCases/%s/sliceDataInstant' % caseICOWES3s
 
         # change reference frame and convert to down-/cross-stream coordinates
         rotMat = np.array([[np.cos(-windDirection*np.pi/180.), -np.sin(-windDirection*np.pi/180.), 0.], [np.sin(-windDirection*np.pi/180.), np.cos(-windDirection*np.pi/180.), 0.], [0., 0., 1.]])
@@ -367,6 +366,14 @@ for stabilityCaseI, case in enumerate(stabilityCases):
         myFloris.parameters.CTcorrected = True
         myFloris.parameters.FLORISoriginal = False
 
+        myFloris.parameters.me = np.array([-0.5, 0.25, 1.0])
+        if case == 'neutral':
+            myFloris.parameters.ke = 0.055
+            myFloris.parameters.MU = np.array([0.8, 1.0, 5.5])
+        elif case == 'stable':
+            myFloris.parameters.MU = np.array([0.25, 0.4, 5.5])
+            myFloris.parameters.ke = 0.105
+
         myFloris.air_density            = 1.1716
         myFloris.axialInduction         = np.array([axialInduction, axialInduction])
         myFloris.rotorDiameter          = np.array([rotorDiameter, rotorDiameter])
@@ -401,6 +408,22 @@ for stabilityCaseI, case in enumerate(stabilityCases):
         axSlicesFLORIS.set_aspect('equal')
         axSlicesFLORIS.autoscale(tight=True)
         axSlicesFLORIS.set_title('FLORIS, %s, %dD downstream' % (case, downStreamDiam))
+
+        # define sampling points for sampling across longest diagonal
+        rotatedEllipse_phi, rotatedEllipse_w, rotatedEllipse_h = skewedToRotatedEllipse(R_ellipse*2, R_ellipse*2, c)
+        diag_z = np.linspace(np.maximum(-1.5*R_ellipse, np.min(zCutThrough)), np.minimum(1.5*R_ellipse, np.max(zCutThrough)), 25)
+        diag_y = -diag_z*np.tan(rotatedEllipse_phi)
+        axSlicesFLORIS.plot(diag_y,diag_z,'k--')
+        axSlicesSOWFA.plot(diag_y,diag_z,'k--')
+
+        f = interp2d(yCutThrough, zCutThrough, velocitiesFLORIS)
+        velocitiesDiagFLORIS = np.array([f(diag_y[i], diag_z[i]) for i in range(len(diag_y))]).flatten()
+        
+        f = interp2d(yCutThrough, zCutThrough, axialVelocitiesMeshShearRemoved)
+        velocitiesDiagSOWFA = np.array([f(diag_y[i], diag_z[i]) for i in range(len(diag_y))]).flatten()
+
+        axDiagsSOWFAvsFLORIS.plot(diag_y, velocitiesDiagSOWFA,'b-')
+        axDiagsSOWFAvsFLORIS.plot(diag_y, velocitiesDiagFLORIS,'r--')
 
     powersFLORIS[case] = myFloris.floris_power_0.wt_power
 
