@@ -743,10 +743,11 @@ class FLORIS(Group):
         super(FLORIS, self).__init__()
         splineshift = 0.0
         # print differentiable
+        print 'in myFloris direction %i' % direction_id
         if optimizingLayout:
             splineshift = 1.0
         self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable), promotes=['*'])
-        self.add('f_2', floris_wcent_wdiam(nTurbines, differentiable=differentiable, splineshift=splineshift),
+        self.add('f_2', floris_wcent_wdiam(nTurbines, direction_id=direction_id, differentiable=differentiable, splineshift=splineshift),
                  promotes=['*'])
         self.add('f_3', floris_overlap(nTurbines, differentiable=differentiable, splineshift=splineshift),
                  promotes=['*'])
@@ -799,7 +800,8 @@ class DirectionGroupFLORIS(Group):
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
                      promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'yaw%i' % direction_id])
 
-        self.add('myFloris', FLORIS(nTurbines, resolution, direction_id, differentiable, optimizingLayout=optimizingLayout),
+
+        self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id, differentiable=differentiable, optimizingLayout=optimizingLayout),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                            'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id, 'power%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT', 'wakeOverlapTRel'])
@@ -851,7 +853,8 @@ class AEPGroupFLORIS(Group):
 
         pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
         if use_rotor_components:
-            for direction_id in range(0, nDirections):
+            for direction_id in np.arange(0, nDirections):
+                print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
@@ -861,7 +864,8 @@ class AEPGroupFLORIS(Group):
                                  'yaw%i' % direction_id, 'rotorDiameter', 'velocitiesTurbines%i' % direction_id,
                                  'wt_power%i' % direction_id, 'power%i' % direction_id])#, 'wakeCentersYT', 'wakeDiametersT'])
         else:
-            for direction_id in range(0, nDirections):
+            for direction_id in np.arange(0, nDirections):
+                print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
@@ -877,7 +881,7 @@ class AEPGroupFLORIS(Group):
         # connect components
         self.connect('windDirections', 'windDirectionsDeMUX.Array')
         self.connect('windSpeeds', 'windSpeedsDeMUX.Array')
-        for direction_id in range(0, nDirections):
+        for direction_id in np.arange(0, nDirections):
             self.add('y%i' % direction_id, IndepVarComp('yaw%i' % direction_id, np.zeros(nTurbines), units='deg'), promotes=['*'])
             self.connect('windDirectionsDeMUX.output%i' % direction_id, 'direction_group%i.wind_direction' % direction_id)
             self.connect('windSpeedsDeMUX.output%i' % direction_id, 'direction_group%i.wind_speed' % direction_id)
