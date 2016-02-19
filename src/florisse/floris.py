@@ -6,6 +6,7 @@ from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP
 from Parameters import FLORISParameters
 import _floris
 import _florisDiscontinuous
+# import _florisNoHubSmooth as _floris
 
 
 # Components of FLORIS - for full model use FLORIS(Group)
@@ -113,6 +114,7 @@ class floris_wcent_wdiam(Component):
                                   initialWakeAngle, ke, keCorrCT, Region2CT, yaw_deg, Ct, turbineXw, turbineYw, \
                                   rotorDiameter, me, bd, self.splineshift, useWakeAngle, adjustInitialWakeDiamToYaw)
         else:
+            # print "not differentiable"
             wakeCentersYT_vec, wakeDiametersT_vec = _florisDiscontinuous.floris_wcent_wdiam(kd, initialWakeDisplacement, \
                                   initialWakeAngle, ke, keCorrCT, Region2CT, yaw_deg, Ct, turbineXw, turbineYw, \
                                   rotorDiameter, me, bd, useWakeAngle, adjustInitialWakeDiamToYaw)
@@ -178,8 +180,13 @@ class floris_wcent_wdiam(Component):
         # function call to extract gradients of wakeCentersYT w.r.t. all design vars
         yawb, Ctb, turbineXwb, turbineYwb, rotorDiameterb = \
             _floris.floris_wcent_wdiam_bv(kd, initialWakeDisplacement, initialWakeAngle, ke, keCorrCT, Region2CT,
-                                          yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, useWakeAngle,
+                                          yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, self.splineshift, useWakeAngle,
                                           adjustInitialWakeDiamToYaw, wakeCentersYT_vecb, wakeDiametersT_vecb)
+        #
+        # yawb, Ctb, turbineXwb, turbineYwb, rotorDiameterb = \
+        #     _floris.floris_wcent_wdiam_bv(kd, initialWakeDisplacement, initialWakeAngle, ke, keCorrCT, Region2CT,
+        #                                   yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, useWakeAngle,
+        #                                   adjustInitialWakeDiamToYaw, wakeCentersYT_vecb, wakeDiametersT_vecb)
 
         # print 'here', turbineXwb, yawb.shape, Ctb.shape, rotorDiameterb.shape
 
@@ -202,8 +209,13 @@ class floris_wcent_wdiam(Component):
         # function call to extract gradients of wakeDiametersT w.r.t. all design vars
         yawb, Ctb, turbineXwb, turbineYwb, rotorDiameterb = \
             _floris.floris_wcent_wdiam_bv(kd, initialWakeDisplacement, initialWakeAngle, ke, keCorrCT, Region2CT,
-                                          yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, useWakeAngle,
+                                          yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, self.splineshift, useWakeAngle,
                                           adjustInitialWakeDiamToYaw, wakeCentersYT_vecb, wakeDiametersT_vecb)
+            #
+            #     yawb, Ctb, turbineXwb, turbineYwb, rotorDiameterb = \
+            # _floris.floris_wcent_wdiam_bv(kd, initialWakeDisplacement, initialWakeAngle, ke, keCorrCT, Region2CT,
+            #                               yaw_deg, Ct, turbineXw, turbineYw, rotorDiameter, me, bd, useWakeAngle,
+            #                               adjustInitialWakeDiamToYaw, wakeCentersYT_vecb, wakeDiametersT_vecb)
 
         # construct Jacobian of wakeDiametersT
         J['wakeDiametersT', 'yaw%i' % self.direction_id] = yawb
@@ -298,10 +310,15 @@ class floris_overlap(Component):
         # print params['rotorDiameter'], cosFac_vecb.shape, wakeOverlapTRel_vecb.shape
         # function call to fortran to obtain gradients
         # print params['turbineXw'], params['turbineYw'], params['rotorDiameter']
-        turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
+        turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb\
             = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
                                         params['wakeDiametersT'], params['wakeCentersYT'],
-                                        params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
+                                        params['floris_params:cos_spread'], self.splineshift, wakeOverlapTRel_vecb, cosFac_vecb)
+
+        # turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
+        #     = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
+        #                                 params['wakeDiametersT'], params['wakeCentersYT'],
+        #                                 params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
 
         J = {}
         # construct Jacobian of floris_overlap
@@ -315,10 +332,15 @@ class floris_overlap(Component):
         cosFac_vecb = np.eye(nbdirs, 3*nTurbines*nTurbines)
 
         # function call to fortran to obtain gradients
-        turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
+        turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb\
             = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
                                         params['wakeDiametersT'], params['wakeCentersYT'],
-                                        params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
+                                        params['floris_params:cos_spread'], self.splineshift, wakeOverlapTRel_vecb, cosFac_vecb)
+        #
+        # turbineYwb, rotorDiameterb, wakeDiametersT_vecb, wakeCentersYT_vecb, _, _ \
+        #     = _floris.floris_overlap_bv(params['turbineXw'], params['turbineYw'], params['rotorDiameter'],
+        #                                 params['wakeDiametersT'], params['wakeCentersYT'],
+        #                                 params['floris_params:cos_spread'], wakeOverlapTRel_vecb, cosFac_vecb)
 
         # construct Jacobian of floris_overlap
         J['cosFac', 'turbineYw'] = turbineYwb
@@ -465,14 +487,15 @@ class floris_power(Component):
 
         # how far in front of turbines to use overlap power calculations (in rotor diameters). This must match the
         # value used in floris_wcent_wdiam (hardcoded in fortran as 1)
+        # print self.differentiable
         if self.differentiable:
             # TODO hard code this parameter in the fortran code and remove the specifier from all functions of this component
             p_near0 = -1.0
+            # p_near0 = 0.0
             splineshift = self.splineshift
 
             # pass p_near0 to self for use in gradient calculations
             self.p_near0 = p_near0
-            self.splineshift = splineshift
 
             # call to fortran code to obtain output values
             velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction,
@@ -545,7 +568,7 @@ class floris_power(Component):
 
         # pass p_near0 to self for use in gradient calculations
         # self.p_near0 = p_near0
-
+        # print self.differentiable
         if self.differentiable:
             # TODO hard code this parameter in the fortran code and remove the specifier from all functions of this component
             p_near0 = self.p_near0
@@ -564,7 +587,7 @@ class floris_power(Component):
                                                                 axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
                                                                 Vinf, keCorrArray, turbineXw, yaw, rotorDiameter, MU, \
                                                                 rho, aU, bU, Cp, generator_efficiency)
-            print 'here'
+            # print 'here'
 
         # pass outputs to self
         resids['velocitiesTurbines%i' % self.direction_id] = velocitiesTurbines - unknowns['velocitiesTurbines%i' %
@@ -623,8 +646,8 @@ class floris_power(Component):
         axialIndProvided = params['floris_params:axialIndProvided']
 
         # see execute(self) for explanation
-        # p_near0 = self.p_near0
-        p_near0 = -1.0
+        p_near0 = self.p_near0
+        # p_near0 = -1.0
 
         # create jacobian dict
         J = {}
@@ -637,9 +660,9 @@ class floris_power(Component):
         powerb = np.zeros(nbdirs)
 
         # call to fortran to obtain gradients of velocitiesTurbines
-        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb, _, _, _ \
+        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb\
             = _floris.floris_power_bv(wakeOverlapTRel_v, cosFac, Ct, axialInduction, axialIndProvided, useaUbU,
-                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0,
+                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, self.splineshift,
                                       rotorDiameter, MU, rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb,
                                       wt_powerb, powerb)
         # print 'dOL', wakeOverlapTRel_vb.shape
@@ -665,9 +688,9 @@ class floris_power(Component):
         wt_powerb = np.eye(nbdirs, nTurbines)
 
         # call to fortran to obtain gradients wt_power
-        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb, _, _, _ \
+        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb\
             = _floris.floris_power_bv(wakeOverlapTRel_v, cosFac, Ct, axialInduction, axialIndProvided, useaUbU,
-                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0,
+                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, self.splineshift,
                                       rotorDiameter, MU, rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb,
                                       wt_powerb, powerb)
 
@@ -687,9 +710,9 @@ class floris_power(Component):
         powerb[0] = 1.0
 
         # call to fortran to obtain gradients of power
-        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb, _, _, _ \
+        wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb\
             = _floris.floris_power_bv(wakeOverlapTRel_v, cosFac, Ct, axialInduction, axialIndProvided, useaUbU,
-                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0,
+                                      keCorrCT, Region2CT, ke, Vinf, keCorrArray, turbineXw, yaw, p_near0, self.splineshift,
                                       rotorDiameter, MU, rho, aU, bU, Cp, generator_efficiency, velocitiesTurbinesb,
                                       wt_powerb, powerb)
 
@@ -719,6 +742,7 @@ class FLORIS(Group):
     def __init__(self, nTurbines, resolution, direction_id=0, differentiable=True, optimizingLayout=False):
         super(FLORIS, self).__init__()
         splineshift = 0.0
+        # print differentiable
         if optimizingLayout:
             splineshift = 1.0
         self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable), promotes=['*'])
