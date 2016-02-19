@@ -348,13 +348,13 @@ class SpacingComp(Component):
         for i in range(0, nTurbines):
             for j in range(i+1, nTurbines):
                 # separation wrt Xj
-                dS[k, j] = 2*(turbineX[j]-turbineX[i])*turbineX[j]
+                dS[k, j] = 2*(turbineX[j]-turbineX[i])
                 # separation wrt Xi
-                dS[k, i] = -2*(turbineX[j]-turbineX[i])*turbineX[i]
+                dS[k, i] = -2*(turbineX[j]-turbineX[i])
                 # separation wrt Yj
-                dS[k, j+nTurbines] = 2*(turbineY[j]-turbineY[i])*turbineY[j]
+                dS[k, j+nTurbines] = 2*(turbineY[j]-turbineY[i])
                 # separation wrt Yi
-                dS[k, i+nTurbines] = -2*(turbineY[j]-turbineY[i])*turbineY[i]
+                dS[k, i+nTurbines] = -2*(turbineY[j]-turbineY[i])
                 k += 1
 
         J = {}
