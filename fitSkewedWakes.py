@@ -4,6 +4,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 from scipy.io import loadmat
 from scipy.interpolate import interp1d, interp2d
+import cPickle as pickle
 import pyOpt
 
 from Parameters import FLORISParameters
@@ -28,6 +29,7 @@ turbineY = np.array([1250.])
 
 downstreamProfiles = True
 savefigs = True
+showfigs = False 
 mpl.rcParams.update({'font.size': 8})
 downstreamDistRange = [1,3,5,7,9]
 
@@ -282,7 +284,7 @@ for stabilityCaseI, stabilityCase in enumerate(stabilityCases):
         deltaz = zz-hub_height
 
 
-        # for get SOWFA diagonal profile along skew angle without shear
+        # for getting SOWFA diagonal profile along skew angle without shear
         diag_z = np.linspace(np.minimum(1.5*R_ellipse, np.max(deltaz)), np.maximum(-1.5*R_ellipse, np.min(deltaz)), 25)
         diag_y = diag_z/np.tan(phi_ellipseLU)
         diag_x = np.ones(len(diag_z)) * downstreamDist*rotorDiameter
@@ -350,6 +352,7 @@ for stabilityCaseI, stabilityCase in enumerate(stabilityCases):
         myFloris.wakeSkew = np.array([skew_ellipseLU])
         myFloris.shearProfileZnorm = shearProfileZnorm
         myFloris.shearProfileUnorm = np.ones(len(shearProfileZnorm))
+        print usePredefinedShearProfile
         if not usePredefinedShearProfile:
             myFloris.parameters.shearCoefficientAlpha = shearCoefficientAlpha
         myFloris.parameters.shearZh = shearZh
@@ -442,8 +445,11 @@ if savefigs:
     figDiagWakeCutThrough.savefig('matWakeAnalysis/fitResults/figDiagWakeCutThrough')
     figFinalFit.savefig('matWakeAnalysis/fitResults/figFinalFit')
     figSkewVsDist.savefig('matWakeAnalysis/fitResults/figSkewVsDist.png')
+else:
+    print 'figures saved in matWakeAnalysis/fitResults'
 
-# if __name__ == "__main__":
-#     plt.show()
-# else:
-#     plt.show(block=False)
+if showfigs:
+    if __name__ == "__main__":
+        plt.show()
+    else:
+        plt.show(block=False)

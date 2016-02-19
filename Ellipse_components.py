@@ -503,7 +503,6 @@ class floris_power(Component):
         keArray = np.zeros(nTurbines)
         for turb in range(0, nTurbines):
             s = np.sum(wakeOverlapTRel[turb, :, 0]+wakeOverlapTRel[turb, :, 1])
-            # print 's = %s' %s
             keArray[turb] = ke[turb]*(1+s*keCorrArray)
 
         # calculate velocities in full flow field (optional)

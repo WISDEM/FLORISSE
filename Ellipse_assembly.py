@@ -240,15 +240,15 @@ class floris_assembly_opt_AEP(Assembly):
                 self.connect('generator_efficiency', '%sfloris_power_%d.generator_efficiency' % (ssn,i))
                 self.connect('wakeSkew', '%sfloris_wcent_wdiam_%d.wakeSkew' % (ssn,i))
                 self.connect('hubHeight', ['%sfloris_wcent_wdiam_%d.hubHeight' % (ssn,i), '%sfloris_windframe_%d.hubHeight' % (ssn,i)])
-                if shearProfileSize>0:
-                    self.connect('shearProfileUnorm', '%sfloris_power_%d.shearProfileUnorm' % (ssn,i))
-                    self.connect('shearProfileZnorm', '%sfloris_power_%d.shearProfileZnorm' % (ssn,i))
 
             if nSamples>0:
                 # connections needed for visualization
                 self.connect('ws_positionX', 'Sampling_floris_windframe_%d.ws_positionX' % i)
                 self.connect('ws_positionY', 'Sampling_floris_windframe_%d.ws_positionY' % i)
                 self.connect('ws_positionZ', 'Sampling_floris_windframe_%d.ws_positionZ' % i)
+                if shearProfileSize>0:
+                    self.connect('shearProfileUnorm', 'Sampling_floris_power_%d.shearProfileUnorm' % i)
+                    self.connect('shearProfileZnorm', 'Sampling_floris_power_%d.shearProfileZnorm' % i)
 
             if optimize_yaw:
                 yawToConnect = 'yaw_%d' % i

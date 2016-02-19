@@ -1,32 +1,25 @@
-FLORISSE
+FLORISSE ELLIPSE
 ========
 
 
-Created by Pieter Gebraad and Paul Fleming.
+Created by Pieter Gebraad.
 Copyright (c) NREL. All rights reserved.
 
--This archive contains the c implementation of FLORIS, with python wrapper through CYTHON
+-This archive contains the OpenMDAO 0.13 implementation of FLORIS, with adjustments to incorporate veer effects
+-This model also implements downstream corrections close to the rotor using an arctan profile, and a shear profile
+-For overview of this FLORIS model refer to the pptx file
 
-REQUIRED PYTHON LIBRARIES:
-  -Cython
+-The main examples to run are fitSkewedWakes.py and ICOWES3_veerProfiles_manualTune.py
 
--For summary of the FLORIS model refer to:
-P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, “A Data-Driven Model for Wind Plant Power Optimization by Yaw Control,” in Proceedings of the American Control Conference, 2014, pp. 3128–3134.
+fitSkewedWakes.py fits to the average SOWFA profiles generated for Matts poster:
+"Large-Eddy Simulations of Wind Turbine Wakes  Subject to Different Atmospheric Stabilities"
 
--For full details refer to:
-Data-driven wind plant control, PhD Thesis, Pieter Gebraad 2014 [see: Chapter 4]
-http://dx.doi.org/10.4233/uuid:5c37b2d7-c2da-4457-bff9-f6fd27fe8767
-
-FILES:
-setup.py: Setup function to build the python-wrapped FLORIS function
-  Usage: "python setup.py build_ext --inplace"
-
-example.py: Example call to python-wrapped from python
-
-FLORISmodel.[c h]: c-implementation of FLORIS
-
-"""
+ICOWES3_veerProfiles_manualTune.py fits to averaged SOWFA ICOWES3 profiles ( generated with ICOWES3_averageProfiles.py ) using the neutral and stable case, and performs power prediction for those two cases. Note that:
+* a linear relationship is found between the slope of the 5D upstream cross-stream wind across the rotor (as a measure for veer), to the coefficient wakeSkewCoefficient  that defines the increase in in-plane skew with downstream distance (note that more cases with more or less veer are needed to confirm that first relationship is linear). The linear relationship between downstream distance and skew is built-in into FLORIS, although also a constant skew can be predefined (wakeSkew)
+* Adjustments had to be made to CP and CT curve to make a good prediction of power in shear. Note that CCBlade should have some option to correct for veer (but assumes a power-law).
+* Velocity shear profile in FLORIS can be predefined as a scaling factor that changes with height, normalized by hub-height (shearProfileZnorm, shearProfileUnorm), or assuming a power-law w
+ith coefficient shearCoefficientAlpha
+* We use downstream corrections close to the rotor using an arctan profile, k_nearwake could be used to adjust somewhat.
 
 
-Note: (Pieter)
-To set up FLORISSE standalone, set up python with numpy, cython and a compiler. On Windows 7, I used the Anaconda python package (32-bit version), which has the Cython and MinGW compiler included, and I used these instructions to set up the compiler (http://docs.cython.org/src/tutorial/appendix.html, with the Anaconda installation path instead of standard Python path) and then the above installation line within the Anaconda Command Prompt. 64-bit has issues because MinGW does not support it yet, and Visual Studio / SDK does not work well.
+

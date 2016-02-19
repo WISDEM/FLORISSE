@@ -71,6 +71,9 @@ nosetests.xml
 *.tar
 *.zip
 
+# Ignoring saved pngs
+*.png
+
 # Logs and databases #
 ######################
 *.log
