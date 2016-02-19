@@ -28,10 +28,10 @@ class OptPowerOneDir(Group):
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
-        self.add('spacing_con', ExecComp('sc = separation-minSpacing*rotorDiameter[0]',
+        self.add('spacing_con', ExecComp('sc = separation_squared-(minSpacing*rotorDiameter[0])**2',
                                          minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbines),
                                          sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-                                         separation=np.zeros(((nTurbines-1.)*nTurbines/2.))),
+                                         separation_squared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
                  promotes=['*'])
 
         # add objective component
@@ -116,10 +116,10 @@ class OptAEP(Group):
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
-        self.add('spacing_con',
-                 ExecComp('sc = separation-minSpacing*rotorDiameter[0]', sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-                          separation=np.zeros(((nTurbines-1.)*nTurbines/2.)), rotorDiameter=np.zeros(nTurbines),
-                          minSpacing=minSpacing),
+        self.add('spacing_con', ExecComp('sc = separation_squared-(minSpacing*rotorDiameter[0])**2',
+                                         minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbines),
+                                         sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
+                                         separation_squared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
                  promotes=['*'])
 
         # add objective component

@@ -157,7 +157,7 @@ class AdjustCtCpYaw(Component):
         Ct = params['Ct_in']
         Cp = params['Cp_in']
         yaw = params['yaw%i' % direction_id] * np.pi / 180.
-
+        # print 'in Ct correction, Ct_in: ', Ct
         # determine floris_parameter values
         if params['floris_params:FLORISoriginal']:
             pP = 1.88
@@ -169,7 +169,9 @@ class AdjustCtCpYaw(Component):
 
         # calculate new CT values, if desired
         if not CTcorrected:
-            unknowns['Ct_out'] = Ct * np.cos(yaw) * np.cos(yaw)
+            # print "ct not corrected"
+            unknowns['Ct_out'] = np.cos(yaw)*np.cos(yaw)*Ct
+            # print 'in ct correction Ct_out: ', unknowns['Ct_out']
         else:
             unknowns['Ct_out'] = Ct
 
@@ -180,7 +182,7 @@ class AdjustCtCpYaw(Component):
             unknowns['Cp_out'] = Cp
 
     def linearize(self, params, unknowns, resids):
-
+        #TODO check derivatives
         direction_id = self.direction_id
 
         # print 'entering CtCp linearize'
@@ -205,7 +207,7 @@ class AdjustCtCpYaw(Component):
         if not CTcorrected:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines) * np.cos(yaw) * np.cos(yaw)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw%i' % direction_id)] = np.eye(nTurbines) * (-2. * Ct * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
+            J[('Ct_out', 'yaw%i' % direction_id)] = np.eye(nTurbines) * Ct * (-2. * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
         else:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines, nTurbines)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
@@ -313,7 +315,7 @@ class SpacingComp(Component):
                        desc='y coordinates of turbines in wind dir. ref. frame')
 
         # Explicitly size output array
-        self.add_output('separation', val=np.zeros((nTurbines-1.)*nTurbines/2.),
+        self.add_output('separation_squared', val=np.zeros((nTurbines-1.)*nTurbines/2.),
                         desc='spacing of all turbines in the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -322,14 +324,14 @@ class SpacingComp(Component):
         turbineX = params['turbineX']
         turbineY = params['turbineY']
         nTurbines = turbineX.size
-        separation = np.zeros((nTurbines-1.)*nTurbines/2.)
+        separation_squared = np.zeros((nTurbines-1.)*nTurbines/2.)
 
         k = 0
         for i in range(0, nTurbines):
             for j in range(i+1, nTurbines):
-                separation[k] = np.sqrt((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)
+                separation_squared[k] = (turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2
                 k += 1
-        unknowns['separation'] = separation
+        unknowns['separation_squared'] = separation_squared
 
     def linearize(self, params, unknowns, resids):
         # print 'entering dist const - linearize'
@@ -345,30 +347,20 @@ class SpacingComp(Component):
 
         for i in range(0, nTurbines):
             for j in range(i+1, nTurbines):
-
-                if turbineX[i] != turbineX[j] or turbineY[i] != turbineY[j]:
-                    # separation wrt Xj
-                    dS[k, j] = (turbineX[j]-turbineX[i])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
-                    # separation wrt Xi
-                    dS[k, i] = (turbineX[i]-turbineX[j])*((turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2)**(-0.5)
-                    dS[k, j+nTurbines] = (turbineY[j]-turbineY[i])*((turbineX[j]-turbineX[i])**2 +
-                                                                    (turbineY[j]-turbineY[i])**2)**(-0.5)
-                    dS[k, i+nTurbines] = (turbineY[i]-turbineY[j])*((turbineX[j]-turbineX[i])**2 +
-                                                                    (turbineY[j]-turbineY[i])**2)**(-0.5)
-                else:
-                    # separation wrt Xj
-                    dS[k, j] = 1.
-                    # separation wrt Xi
-                    dS[k, i] = 1.
-                    dS[k, j+nTurbines] = 1.
-                    dS[k, i+nTurbines] = 1.
-
+                # separation wrt Xj
+                dS[k, j] = 2*(turbineX[j]-turbineX[i])*turbineX[j]
+                # separation wrt Xi
+                dS[k, i] = -2*(turbineX[j]-turbineX[i])*turbineX[i]
+                # separation wrt Yj
+                dS[k, j+nTurbines] = 2*(turbineY[j]-turbineY[i])*turbineY[j]
+                # separation wrt Yi
+                dS[k, i+nTurbines] = -2*(turbineY[j]-turbineY[i])*turbineY[i]
                 k += 1
 
         J = {}
 
-        J['separation', 'turbineX'] = dS[:, :nTurbines]
-        J['separation', 'turbineY'] = dS[:, nTurbines:]
+        J['separation_squared', 'turbineX'] = dS[:, :nTurbines]
+        J['separation_squared', 'turbineY'] = dS[:, nTurbines:]
         # print J
         return J
 
