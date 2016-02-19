@@ -445,7 +445,6 @@ if savefigs:
     figDiagWakeCutThrough.savefig('matWakeAnalysis/fitResults/figDiagWakeCutThrough')
     figFinalFit.savefig('matWakeAnalysis/fitResults/figFinalFit')
     figSkewVsDist.savefig('matWakeAnalysis/fitResults/figSkewVsDist.png')
-else:
     print 'figures saved in matWakeAnalysis/fitResults'
 
 if showfigs:
