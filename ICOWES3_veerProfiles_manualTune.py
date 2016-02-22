@@ -449,9 +449,9 @@ if savefigs:
     figSlicesSOWFAvsFLORIS.savefig('figSlicesSOWFAvsFLORIS')
     figDiagsSOWFAvsFLORIS.savefig('figDiagsSOWFAvsFLORIS')
     figPowerTime.savefig('figPowerTime')
-    figFullFlow('figFullFlow')
-    figPhiRho('figPhiRho')
-    figInflowProfs('figInflowProfs')
+    figFullFlow.savefig('figFullFlow')
+    figPhiRho.savefig('figPhiRho')
+    figInflowProfs.savefig('figInflowProfs')
 
 if __name__ == '__main__':
     plt.show()
