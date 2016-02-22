@@ -5,7 +5,6 @@ import numpy as np
 from scipy.io import loadmat
 from scipy.interpolate import interp1d, interp2d
 import cPickle as pickle
-import pyOpt
 
 from Parameters import FLORISParameters
 from Ellipse_assembly import floris_assembly_opt_AEP
@@ -445,7 +444,7 @@ if savefigs:
     figDiagWakeCutThrough.savefig('matWakeAnalysis/fitResults/figDiagWakeCutThrough')
     figFinalFit.savefig('matWakeAnalysis/fitResults/figFinalFit')
     figSkewVsDist.savefig('matWakeAnalysis/fitResults/figSkewVsDist.png')
-    print 'figures saved in matWakeAnalysis/fitResults'
+    print 'figures saved in matWakeAnalysis/fitResults/'
 
 if showfigs:
     if __name__ == "__main__":
