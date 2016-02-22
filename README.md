@@ -5,10 +5,17 @@ FLORISSE ELLIPSE
 Created by Pieter Gebraad.
 Copyright (c) NREL. All rights reserved.
 
--This archive contains the OpenMDAO 0.13 implementation of FLORIS, with adjustments to incorporate veer effects
+-This archive contains the OpenMDAO 0.13 implementation of FLORIS, with adjustments to incorporate veer effects, based on rotated elliptical shapes of the wake
 -This model also implements downstream corrections close to the rotor using an arctan profile, and a shear profile
 -For overview of this FLORIS model refer to the pptx file
 
+-- INSTALLATIION
+- Git clone this branch
+- Setup openmdao 0.13 and source it
+- Go into EEOver (C-code EEOver for calculating overlaps of ellipses, https://github.com/chraibi/EEOver, that I made a Python wrapper for) and build this part of the code:
+python setup.py build_ext --inplace
+
+-- EXAMPLES
 -The main examples to run are fitSkewedWakes.py and ICOWES3_veerProfiles_manualTune.py
 
 fitSkewedWakes.py fits to the average SOWFA profiles generated for Matts poster:
