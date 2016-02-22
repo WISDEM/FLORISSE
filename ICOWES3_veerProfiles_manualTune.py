@@ -440,9 +440,9 @@ cb.set_clim(vmin, vmax)
 cb = figSlicesSOWFAvsFLORIS.colorbar(pc, orientation='horizontal', label = 'axial velocity, shear removed (m/s)')
 cb.set_clim(vmin, vmax)
 
-plt.figure()
-plt.plot(veerSlope, cCoefficientsD, '*')
-plt.plot(veerSlope, veerToSkewCoefDLinear[0]*veerSlope + veerToSkewCoefDLinear[1], '-')
+figVeerSlope = plt.figure()
+figVeerSlope.plot(veerSlope, cCoefficientsD, '*')
+figVeerSlope.plot(veerSlope, veerToSkewCoefDLinear[0]*veerSlope + veerToSkewCoefDLinear[1], '-')
 
 if savefigs:
     figSlicesContour.savefig('figSlicesContour')
@@ -450,8 +450,10 @@ if savefigs:
     figDiagsSOWFAvsFLORIS.savefig('figDiagsSOWFAvsFLORIS')
     figPowerTime.savefig('figPowerTime')
     figFullFlow.savefig('figFullFlow')
-    figPhiRho.savefig('figPhiRho')
+    if plotPhiRho:
+        figPhiRho.savefig('figPhiRho')
     figInflowProfs.savefig('figInflowProfs')
+    figVeerSlope.savefig('figVeerSlope')
 
 if __name__ == '__main__':
     plt.show()
