@@ -158,11 +158,7 @@ class floris_assembly_opt_AEP(Assembly):
 
         # add driver so the workflow is not overwritten later
         if optimize_position or optimize_yaw:
-            # self.add('driver', COBYLAdriver())
-            # self.driver.gradient_options.force_fd = True
-            self.add('driver', pyOptDriver())
-            self.driver.optimizer = 'SNOPT'
-            #self.driver.pyopt_diff = True
+            self.add('driver', SLSQPdriver())
 
         # add AEP component first so it can be connected to
         F6 = self.add('floris_AEP', AEP(nDirections=nDirections))
