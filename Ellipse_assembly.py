@@ -1,7 +1,6 @@
 from openmdao.main.api import Assembly
 from openmdao.lib.datatypes.api import Array, Bool, Float, VarTree
 from openmdao.lib.drivers.api import FixedPointIterator, SLSQPdriver, COBYLAdriver
-from pyopt_driver.pyopt_driver import pyOptDriver
 from openmdao.lib.casehandlers.listcase import ListCaseIterator
 from Parameters import FLORISParameters
 
