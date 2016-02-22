@@ -440,9 +440,9 @@ cb.set_clim(vmin, vmax)
 cb = figSlicesSOWFAvsFLORIS.colorbar(pc, orientation='horizontal', label = 'axial velocity, shear removed (m/s)')
 cb.set_clim(vmin, vmax)
 
-figVeerSlope = plt.figure()
-figVeerSlope.plot(veerSlope, cCoefficientsD, '*')
-figVeerSlope.plot(veerSlope, veerToSkewCoefDLinear[0]*veerSlope + veerToSkewCoefDLinear[1], '-')
+figVeerSlope,ax = plt.subplots(1,1)
+ax.plot(veerSlope, cCoefficientsD, '*')
+ax.plot(veerSlope, veerToSkewCoefDLinear[0]*veerSlope + veerToSkewCoefDLinear[1], '-')
 
 if savefigs:
     figSlicesContour.savefig('figSlicesContour')
