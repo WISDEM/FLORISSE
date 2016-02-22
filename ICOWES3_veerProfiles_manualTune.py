@@ -13,6 +13,8 @@ from EEOver.skewedToRotatedEllipse import skewedToRotatedEllipse, rotatedToSkewe
 
 from Ellipse_assembly import floris_assembly_opt_AEP
 
+savefigs = True
+
 # convert to polar coordinates
 def cart2pol(x, y):
     rho = np.sqrt(x**2 + y**2)
@@ -442,6 +444,14 @@ plt.figure()
 plt.plot(veerSlope, cCoefficientsD, '*')
 plt.plot(veerSlope, veerToSkewCoefDLinear[0]*veerSlope + veerToSkewCoefDLinear[1], '-')
 
+if savefigs:
+    figSlicesContour.savefig('figSlicesContour')
+    figSlicesSOWFAvsFLORIS.savefig('figSlicesSOWFAvsFLORIS')
+    figDiagsSOWFAvsFLORIS.savefig('figDiagsSOWFAvsFLORIS')
+    figPowerTime.savefig('figPowerTime')
+    figFullFlow('figFullFlow')
+    figPhiRho('figPhiRho')
+    figInflowProfs('figInflowProfs')
 
 if __name__ == '__main__':
     plt.show()
