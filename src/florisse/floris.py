@@ -21,7 +21,7 @@ class floris_wcent_wdiam(Component):
         self.splineshift = splineshift
 
         self.fd_options['form'] = 'central'
-        self.fd_options['step_size'] = 1.0e-5
+        self.fd_options['step_size'] = 1.0e-3
         self.fd_options['step_type'] = 'relative'
 
         if not differentiable:
@@ -743,7 +743,7 @@ class FLORIS(Group):
         super(FLORIS, self).__init__()
         splineshift = 0.0
         # print differentiable
-        print 'in myFloris direction %i' % direction_id
+        # print 'in myFloris direction %i' % direction_id
         if optimizingLayout:
             splineshift = 1.0
         self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable), promotes=['*'])
@@ -854,7 +854,7 @@ class AEPGroupFLORIS(Group):
         pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
         if use_rotor_components:
             for direction_id in np.arange(0, nDirections):
-                print 'assigning direction group %i' % direction_id
+                # print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
@@ -865,7 +865,7 @@ class AEPGroupFLORIS(Group):
                                  'wt_power%i' % direction_id, 'power%i' % direction_id])#, 'wakeCentersYT', 'wakeDiametersT'])
         else:
             for direction_id in np.arange(0, nDirections):
-                print 'assigning direction group %i' % direction_id
+                # print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
