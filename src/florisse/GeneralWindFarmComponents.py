@@ -711,6 +711,102 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
 
         return J
 
+
+class WindDirectionPower(Component):
+
+    def __init__(self, nTurbines, direction_id=0, differentiable=True):
+
+        super(WindDirectionPower, self).__init__()
+
+        self.differentiable = differentiable
+        self.nTurbines = nTurbines
+        self.direction_id = direction_id
+
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+
+        if not differentiable:
+            self.fd_options['force_fd'] = True
+            self.fd_options['form'] = 'forward'
+
+        self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
+        self.add_param('rotorDiameter', np.zeros(nTurbines)+126.4, units='m', desc='rotor diameters of all turbine')
+        self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
+        self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
+        self.add_param('velocitiesTurbines%i' % direction_id, np.ones(nTurbines)*1, units='m/s',
+                       desc='effective hub velocity for each turbine')
+
+        self.add_param('rated_power', np.ones(nTurbines)*5.0, units='MW',
+                       desc='rated power for each turbine', pass_by_obj=True)
+
+        # outputs
+        self.add_output('wt_power%i' % direction_id, np.zeros(nTurbines), units='kW', desc='power output of each turbine')
+        # output
+        self.add_output('power%i' % direction_id, 0.0, units='kW', desc='total power output of the wind farm')
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        direction_id = self.direction_id
+        velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
+        rated_power = params['rated_power']*1E6
+        air_density = params['air_density']
+        rotorArea = 0.25*np.pi*np.power(params['rotorDiameter'], 2)
+        Cp = params['Cp']
+        generator_efficiency = params['generator_efficiency']
+
+        wt_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(velocitiesTurbines, 3))
+        # wt_power = smooth_min(wt_power, rated_power, dyd=True)
+        wt_power = np.min(np.array([wt_power, rated_power]), 0)
+        wt_power /= 1000.0
+
+        power = np.sum(wt_power)
+
+        unknowns['wt_power%i' % direction_id] = wt_power
+        unknowns['power%i' % direction_id] = power
+
+    def linearize(self, params, unknowns, resids):
+
+        direction_id = self.direction_id
+        nTurbines = self.nTurbines
+        velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
+        air_density = params['air_density']
+        rotorDiameter = params['rotorDiameter']
+        rotorArea = 0.25*np.pi*np.power(rotorDiameter, 2)
+        Cp = params['Cp']
+        generator_efficiency = params['generator_efficiency']
+
+
+        dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
+                                                              np.power(velocitiesTurbines, 2))
+        dwt_power_dCp = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*rotorArea*np.power(velocitiesTurbines, 3))
+        dwt_power_drotorDiameter = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*(0.5*np.pi*rotorDiameter)*Cp *
+                                                         np.power(velocitiesTurbines, 3))
+        # print 'shape is', dwt_power_drotorDiameter.shape
+        # print 'array is', dwt_power_drotorDiameter
+        dwt_power_dvelocitiesTurbines /= 1000.
+        dwt_power_dCp /= 1000.
+        dwt_power_drotorDiameter /= 1000.
+
+        dpower_dvelocitiesTurbines = np.array([np.sum(dwt_power_dvelocitiesTurbines, 0)])
+        dpower_dCp = np.array([np.sum(dwt_power_dCp, 0)])
+        dpower_drotorDiameter = np.array([np.sum(dwt_power_drotorDiameter, 0)])
+
+        # print 'shape is', dpower_drotorDiameter.shape
+
+        J = {}
+
+        J['wt_power%i' % direction_id, 'velocitiesTurbines%i' % direction_id] = dwt_power_dvelocitiesTurbines
+        J['wt_power%i' % direction_id, 'Cp'] = dwt_power_dCp
+        J['wt_power%i' % direction_id, 'rotorDiameter'] = dwt_power_drotorDiameter
+
+        J['power%i' % direction_id, 'velocitiesTurbines%i' % direction_id] = dpower_dvelocitiesTurbines
+        J['power%i' % direction_id, 'Cp'] = dpower_dCp
+        J['power%i' % direction_id, 'rotorDiameter'] = dpower_drotorDiameter
+
+        return J
+
+
 if __name__ == "__main__":
 
     # top = Problem()
