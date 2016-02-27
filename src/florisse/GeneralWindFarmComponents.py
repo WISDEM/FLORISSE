@@ -823,7 +823,7 @@ class WindDirectionPower(Component):
         dwt_power_drotorDiameter /= 1000.
 
         rated_power = params['rated_power']
-        wt_power = unknowns['wt_power0']
+        wt_power = unknowns['wt_power%i' % direction_id]
         # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
 
         # if np.any(rated_velocity+1.) >= np.any(velocitiesTurbines) >= np.any(rated_velocity-1.) and not \
