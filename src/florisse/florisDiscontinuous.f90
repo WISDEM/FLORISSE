@@ -325,16 +325,15 @@ end subroutine floris_overlap
 
 
 
-subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
+subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
                  axialIndProvided, useaUbU, keCorrCT, Region2CT, ke_in, Vinf, keCorrArray, &
-                 turbineXw, yaw_deg, rotorDiameter, MU, rho, aU, bU, &
-                 Cp, generator_efficiency, velocitiesTurbines, wt_power, power)
+                 turbineXw, yaw_deg, rotorDiameter, MU, aU, bU, &
+                 velocitiesTurbines)
 
     implicit none
     
     ! define precision to be the standard for a double precision ! on local system
     integer, parameter :: dp = kind(0.d0)
-
 
     ! in
     integer, intent(in) :: nTurbines                                            ! Number of turbines
@@ -345,21 +344,17 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     real(dp), dimension(nTurbines), intent(in) :: turbineXw, yaw_deg
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: MU
-    real(dp), intent(in) :: rho, aU, bU
-    real(dp), dimension(nTurbines), intent(in) :: Cp, generator_efficiency
-    
+    real(dp), intent(in) :: aU, bU
     ! local
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel    ! relative overlap (NxNx3)
     real(dp), dimension(nTurbines) :: a, ke, keArray, yaw
     real(dp), dimension(3) :: mmU
     real(dp) :: s, wakeEffCoeff, wakeEffCoeffPerZone, deltax
     real(dp), parameter :: pi = 3.141592653589793_dp
-    real(dp), dimension(nTurbines) :: rotorArea
     integer :: turb, turbI, zone
     
     ! out
-    real(dp), dimension(nTurbines), intent(out) :: velocitiesTurbines, wt_power
-    real(dp), intent(out) :: power
+    real(dp), dimension(nTurbines), intent(out) :: velocitiesTurbines
     
     intrinsic cos
     
@@ -429,19 +424,8 @@ subroutine floris_power(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         ! speed at turbine
         velocitiesTurbines(turbI) = velocitiesTurbines(turbI)*wakeEffCoeff
     end do
-    
-    rotorArea = pi*rotorDiameter*rotorDiameter/4.0_dp
-    
-    ! find turbine powers
-    wt_power = (velocitiesTurbines*velocitiesTurbines*velocitiesTurbines)* &
-               (0.5_dp*rho*rotorArea*Cp)*generator_efficiency
-               
-    wt_power = wt_power/1000.0_dp
-    
-    ! calculate total wind farm power
-    power = sum(wt_power)
 
-end subroutine floris_power
+end subroutine floris_velocity
 ! 
 ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! ! Begin Tapenade Code

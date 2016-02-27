@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # initialize problem
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
-                                          minSpacing=minSpacing))
+                                          minSpacing=minSpacing, differentiable=True))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()

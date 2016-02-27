@@ -397,13 +397,6 @@ class floris_velocity(Component):
                            desc='cosine factor similar to Jensen 1983')
 
         # outputs
-        # self.add_output('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s',
-        #                desc='effective hub velocity for each turbine')
-        # self.add_output('wt_power%i' % direction_id, np.zeros(nTurbines), units='kW', desc='power output of each turbine')
-        # output
-        # self.add_output('power%i' % direction_id, 0.0, units='kW', desc='total power output of the wind farm')
-
-        # add state for solver
         self.add_output('velocitiesTurbines%i' % direction_id, np.ones(nTurbines)*1, units='m/s',
                        desc='effective hub velocity for each turbine')
 
@@ -498,15 +491,15 @@ class floris_velocity(Component):
             self.p_near0 = p_near0
 
             # call to fortran code to obtain output values
-            velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction,
-                                                                axialIndProvided, useaUbU, keCorrCT, Region2CT, ke,
-                                                                Vinf, keCorrArray, turbineXw, yaw, p_near0, splineshift,
-                                                                rotorDiameter, MU, rho, aU, bU, Cp, generator_efficiency)
+            velocitiesTurbines = _floris.floris_velocity(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction,
+                                                                       axialIndProvided, useaUbU, keCorrCT, Region2CT,
+                                                                       ke, Vinf, keCorrArray, turbineXw, yaw,
+                                                                       rotorDiameter, MU, aU, bU)
         else:
-            velocitiesTurbines, wt_power, power = _florisDiscontinuous.floris_power(wakeOverlapTRel_v, Ct, axialInduction, \
+            velocitiesTurbines = _florisDiscontinuous.floris_velocity(wakeOverlapTRel_v, Ct, axialInduction, \
                                                                 axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
                                                                 Vinf, keCorrArray, turbineXw, yaw, rotorDiameter, MU, \
-                                                                rho, aU, bU, Cp, generator_efficiency)
+                                                                aU, bU)
 
         # pass outputs to self
         unknowns['velocitiesTurbines%i' % self.direction_id] = velocitiesTurbines
@@ -578,15 +571,15 @@ class floris_velocity(Component):
             # self.p_near0 = p_near0
 
             # call to fortran code to obtain output values
-            velocitiesTurbines, wt_power, power = _floris.floris_power(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction,
-                                                                axialIndProvided, useaUbU, keCorrCT, Region2CT, ke,
-                                                                Vinf, keCorrArray, turbineXw, yaw, p_near0, splineshift,
-                                                                rotorDiameter, MU, rho, aU, bU, Cp, generator_efficiency)
+            velocitiesTurbines = _floris.floris_velocity(wakeOverlapTRel_v, cosFac_v, Ct, axialInduction,
+                                                                       axialIndProvided, useaUbU, keCorrCT, Region2CT,
+                                                                       ke, Vinf, keCorrArray, turbineXw, yaw,
+                                                                       rotorDiameter, MU, aU, bU)
         else:
-            velocitiesTurbines, wt_power, power = _florisDiscontinuous.floris_power(wakeOverlapTRel_v, Ct, axialInduction, \
+            velocitiesTurbines = _florisDiscontinuous.floris_velocity(wakeOverlapTRel_v, Ct, axialInduction, \
                                                                 axialIndProvided, useaUbU, keCorrCT, Region2CT, ke, \
                                                                 Vinf, keCorrArray, turbineXw, yaw, rotorDiameter, MU, \
-                                                                rho, aU, bU, Cp, generator_efficiency)
+                                                                aU, bU)
             # print 'here'
 
         # pass outputs to self

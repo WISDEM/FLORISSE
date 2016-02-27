@@ -36,7 +36,7 @@ if __name__ == "__main__":
     wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # set up problem
-    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0))
+    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0, differentiable=True))
 
     # initialize problem
     prob.setup()
