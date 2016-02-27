@@ -112,7 +112,7 @@ class floris_wcent_wdiam(Component):
         if self.differentiable:
             wakeCentersYT_vec, wakeDiametersT_vec = _floris.floris_wcent_wdiam(kd, initialWakeDisplacement, \
                                   initialWakeAngle, ke, keCorrCT, Region2CT, yaw_deg, Ct, turbineXw, turbineYw, \
-                                  rotorDiameter, me, bd, self.splineshift, useWakeAngle, adjustInitialWakeDiamToYaw)
+                                  rotorDiameter, me, bd, useWakeAngle, adjustInitialWakeDiamToYaw)
         else:
             # print "not differentiable"
             wakeCentersYT_vec, wakeDiametersT_vec = _florisDiscontinuous.floris_wcent_wdiam(kd, initialWakeDisplacement, \
@@ -284,8 +284,7 @@ class floris_overlap(Component):
             wakeOverlapTRel_vec, cosFac_vec = _floris.floris_overlap(params['turbineXw'], params['turbineYw'],
                                                                      params['rotorDiameter'], params['wakeDiametersT'],
                                                                      params['wakeCentersYT'],
-                                                                     params['floris_params:cos_spread'],
-                                                                     self.splineshift)
+                                                                     params['floris_params:cos_spread'])
              # pass results to self in the form of a vector for use in Jacobian creation
             unknowns['wakeOverlapTRel'] = wakeOverlapTRel_vec
             unknowns['cosFac'] = cosFac_vec
