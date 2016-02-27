@@ -805,7 +805,8 @@ class DirectionGroupFLORIS(Group):
                            'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                            'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT', 'wakeOverlapTRel'])
 
-        self.add('powerComp', WindDirectionPower(nTurbines=nTurbines, direction_id=direction_id, differentiable=True),
+        self.add('powerComp', WindDirectionPower(nTurbines=nTurbines, direction_id=direction_id, differentiable=True,
+                                                 use_rotor_components=use_rotor_components),
                  promotes=['air_density', 'generator_efficiency', 'rotorDiameter',
                            'velocitiesTurbines%i' % direction_id,
                            'wt_power%i' % direction_id, 'power%i' % direction_id])

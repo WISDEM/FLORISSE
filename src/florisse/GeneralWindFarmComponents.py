@@ -1,6 +1,6 @@
 from openmdao.api import Component, Group, Problem, IndepVarComp
 from akima import Akima, akima_interp
-from utilities import smooth_min
+from utilities import smooth_min, hermite_spline
 
 import numpy as np
 from scipy import interp
@@ -714,13 +714,14 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
 
 class WindDirectionPower(Component):
 
-    def __init__(self, nTurbines, direction_id=0, differentiable=True):
+    def __init__(self, nTurbines, direction_id=0, differentiable=True, use_rotor_components=False):
 
         super(WindDirectionPower, self).__init__()
 
         self.differentiable = differentiable
         self.nTurbines = nTurbines
         self.direction_id = direction_id
+        self.use_rotor_components = use_rotor_components
 
         self.fd_options['form'] = 'central'
         self.fd_options['step_size'] = 1.0e-6
@@ -737,7 +738,7 @@ class WindDirectionPower(Component):
         self.add_param('velocitiesTurbines%i' % direction_id, np.ones(nTurbines)*1, units='m/s',
                        desc='effective hub velocity for each turbine')
 
-        self.add_param('rated_power', np.ones(nTurbines)*5.0, units='MW',
+        self.add_param('rated_power', np.ones(nTurbines)*5000., units='kW',
                        desc='rated power for each turbine', pass_by_obj=True)
 
         # outputs
@@ -746,19 +747,53 @@ class WindDirectionPower(Component):
         self.add_output('power%i' % direction_id, 0.0, units='kW', desc='total power output of the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
-
+        use_rotor_components = self.use_rotor_components
         direction_id = self.direction_id
+        nTurbines = self.nTurbines
         velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
-        rated_power = params['rated_power']*1E6
+        rated_power = params['rated_power']
         air_density = params['air_density']
         rotorArea = 0.25*np.pi*np.power(params['rotorDiameter'], 2)
         Cp = params['Cp']
         generator_efficiency = params['generator_efficiency']
 
         wt_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(velocitiesTurbines, 3))
-        # wt_power = smooth_min(wt_power, rated_power, dyd=True)
-        wt_power = np.min(np.array([wt_power, rated_power]), 0)
+
         wt_power /= 1000.0
+
+        # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
+        #
+        # dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
+        #                                                                         np.power(velocitiesTurbines, 2))
+        # dwt_power_dvelocitiesTurbines /= 1000.
+
+        if not use_rotor_components and np.any(wt_power) >= np.any(rated_power):
+            for i in range(0, nTurbines):
+                if wt_power[i] >= rated_power[i]:
+                    wt_power[i] = rated_power[i]
+
+
+        # if np.any(rated_velocity+1.) >= np.any(velocitiesTurbines) >= np.any(rated_velocity-1.) and not \
+        #         use_rotor_components:
+        #     for i in range(0, nTurbines):
+        #         if velocitiesTurbines[i] >= rated_velocity[i]+1.:
+        #             spline_start_power = generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]-1., 3))
+        #             deriv_spline_start_power = 3.*generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]-1., 2))
+        #             spline_end_power = generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]+1., 3))
+        #             wt_power[i], deriv = hermite_spline(velocitiesTurbines[i], rated_velocity[i]-1.,
+        #                                                                      rated_velocity[i]+1., spline_start_power,
+        #                                                                      deriv_spline_start_power, spline_end_power, 0.0)
+        #             dwt_power_dvelocitiesTurbines[i][i] = deriv/1000.
+        #
+        # if np.any(velocitiesTurbines) >= np.any(rated_velocity+1.) and not use_rotor_components:
+        #     for i in range(0, nTurbines):
+        #         if velocitiesTurbines[i] >= rated_velocity[i]+1.:
+        #             wt_power = rated_power
+        #             dwt_power_dvelocitiesTurbines[i][i] = 0.0
+
+
+
+        # self.dwt_power_dvelocitiesTurbines = dwt_power_dvelocitiesTurbines
 
         power = np.sum(wt_power)
 
@@ -768,6 +803,7 @@ class WindDirectionPower(Component):
     def linearize(self, params, unknowns, resids):
 
         direction_id = self.direction_id
+        use_rotor_components = self.use_rotor_components
         nTurbines = self.nTurbines
         velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
         air_density = params['air_density']
@@ -776,23 +812,40 @@ class WindDirectionPower(Component):
         Cp = params['Cp']
         generator_efficiency = params['generator_efficiency']
 
-
         dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
-                                                              np.power(velocitiesTurbines, 2))
+                                                                                np.power(velocitiesTurbines, 2))
         dwt_power_dCp = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*rotorArea*np.power(velocitiesTurbines, 3))
         dwt_power_drotorDiameter = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*(0.5*np.pi*rotorDiameter)*Cp *
-                                                         np.power(velocitiesTurbines, 3))
-        # print 'shape is', dwt_power_drotorDiameter.shape
-        # print 'array is', dwt_power_drotorDiameter
+                                                                           np.power(velocitiesTurbines, 3))
+        # dwt_power_dvelocitiesTurbines = self.dwt_power_dvelocitiesTurbines
         dwt_power_dvelocitiesTurbines /= 1000.
         dwt_power_dCp /= 1000.
         dwt_power_drotorDiameter /= 1000.
 
+        rated_power = params['rated_power']
+        wt_power = unknowns['wt_power0']
+        # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
+
+        # if np.any(rated_velocity+1.) >= np.any(velocitiesTurbines) >= np.any(rated_velocity-1.) and not \
+        #         use_rotor_components:
+        #
+        #     spline_start_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity-1., 3))
+        #     deriv_spline_start_power = 3.*generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity-1., 2))
+        #     spline_end_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity+1., 3))
+        #     wt_power, dwt_power_dvelocitiesTurbines = hermite_spline(velocitiesTurbines, rated_velocity-1.,
+        #                                                              rated_velocity+1., spline_start_power,
+        #                                                              deriv_spline_start_power, spline_end_power, 0.0)
+
+        if np.any(wt_power) >= np.any(rated_power) and not use_rotor_components:
+            for i in range(0, nTurbines):
+                if wt_power[i] >= rated_power[i]:
+                    dwt_power_dvelocitiesTurbines[i][i] = 0.0
+                    dwt_power_dCp[i][i] = 0.0
+                    dwt_power_drotorDiameter[i][i] = 0.0
+
         dpower_dvelocitiesTurbines = np.array([np.sum(dwt_power_dvelocitiesTurbines, 0)])
         dpower_dCp = np.array([np.sum(dwt_power_dCp, 0)])
         dpower_drotorDiameter = np.array([np.sum(dwt_power_drotorDiameter, 0)])
-
-        # print 'shape is', dpower_drotorDiameter.shape
 
         J = {}
 

@@ -837,6 +837,50 @@ def check_gradient(comp, fd='central', step_size=1e-6, tol=1e-6, display=False,
     return namevec, errorvec
 
 
+def hermite_spline(x, x0, x1, y0, dy0, y1, dy1):
+    #    This function produces the y and dy values for a hermite cubic spline
+    #    interpolating between two end points with known slopes
+    #
+    #    :param x: x position of output y
+    #    :param x0: x position of upwind endpoint of spline
+    #    :param x1: x position of downwind endpoint of spline
+    #    :param y0: y position of upwind endpoint of spline
+    #    :param dy0: slope at upwind endpoint of spline
+    #    :param y1: y position of downwind endpoint of spline
+    #    :param dy1: slope at downwind endpoint of spline
+    #
+    #    :return: y: y value of spline at location x
+
+    # initialize coefficients for parametric cubic spline
+    c3 = (2.0*(y1))/(x0**3 - 3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3) - \
+         (2.0*(y0))/(x0**3 - 3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3) + \
+         (dy0)/(x0**2 - 2.0*x0*x1 + x1**2) + \
+         (dy1)/(x0**2 - 2.0*x0*x1 + x1**2)
+
+    c2 = (3.0*(y0)*(x0 + x1))/(x0**3 - 3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3) - \
+         ((dy1)*(2.0*x0 + x1))/(x0**2 - 2.0*x0*x1 + x1**2) - ((dy0)*(x0 +
+         2.0*x1))/(x0**2 - 2.0*x0*x1 + x1**2) - (3.0*(y1)*(x0 + x1))/(x0**3 -
+         3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3)
+
+    c1 = ((dy0)*(x1**2 + 2.0*x0*x1))/(x0**2 - 2.0*x0*x1 + x1**2) + ((dy1)*(x0**2 +
+         2.0*x1*x0))/(x0**2 - 2.0*x0*x1 + x1**2) - (6.0*x0*x1*(y0))/(x0**3 -
+         3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3) + (6.0*x0*x1*(y1))/(x0**3 -
+         3.0*x0**2*x1 + 3.0*x0*x1**2 - x1**3)
+
+    c0 = ((y0)*(- x1**3 + 3.0*x0*x1**2))/(x0**3 - 3.0*x0**2*x1 + 3.0*x0*x1**2 -
+         x1**3) - ((y1)*(- x0**3 + 3.0*x1*x0**2))/(x0**3 - 3.0*x0**2*x1 +
+         3.0*x0*x1**2 - x1**3) - (x0*x1**2*(dy0))/(x0**2 - 2.0*x0*x1 + x1**2) - \
+         (x0**2*x1*(dy1))/(x0**2 - 2.0*x0*x1 + x1**2)
+#    print *, 'c3 = ', c3
+#    print *, 'c2 = ', c2
+#    print *, 'c1 = ', c1
+#    print *, 'c0 = ', c0
+    # Solve for y and dy values at the given point
+    y = c3*x**3 + c2*x**2 + c1*x + c0
+    dy_dx = c3*3*x**2 + c2*2*x + c1
+
+    return y, dy_dx
+
 
 # if __name__ == '__main__':
 
