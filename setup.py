@@ -9,7 +9,7 @@ module1 = Extension('_floris', sources=['src/florisse/floris.f90', 'src/florisse
 module2 = Extension('_florisDiscontinuous', sources=['src/florisse/florisDiscontinuous.f90', 'src/florisse/adStack.c', 'src/florisse/adBuffer.f'],
                    extra_compile_args=['-O2', '-c'])
 
-module3 = Extension('_florisNoHubSmooth', sources=['src/florisse/florisNoHubSmooth.f90', 'src/florisse/adStack.c', 'src/florisse/adBuffer.f'], extra_compile_args=['-O2', '-c'])
+module3 = Extension('_florisHubSmooth', sources=['src/florisse/.florisHubSmooth.f90', 'src/florisse/adStack.c', 'src/florisse/adBuffer.f'], extra_compile_args=['-O2', '-c'])
 
 setup(
     name='FLORISSE',

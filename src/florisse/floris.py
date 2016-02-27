@@ -4,9 +4,9 @@ from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, Par
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, CPCT_Interpolate_Gradients,  CPCT_Interpolate_Gradients_Smooth, WindDirectionPower
 from Parameters import FLORISParameters
-# import _floris
+import _floris
 import _florisDiscontinuous
-import _florisNoHubSmooth as _floris
+# import _florisHubSmooth as _floris
 
 
 # Components of FLORIS - for full model use FLORIS(Group)
