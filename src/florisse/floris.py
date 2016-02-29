@@ -650,7 +650,7 @@ class floris_velocity(Component):
         # velocitiesTurbinesb[:, 0] = 1.0
         # wt_powerb = np.zeros((nbdirs, nTurbines))
         # powerb = np.zeros(nbdirs)
-        print np.size(velocitiesTurbinesb), velocitiesTurbinesb
+        # print np.size(velocitiesTurbinesb), velocitiesTurbinesb
         # call to fortran to obtain gradients of velocitiesTurbines
         # wakeOverlapTRel_vb, cosFac_vb, Ctb, axialInductionb, turbineXwb, yawb, rotorDiameterb, Cpb\
         #     = _floris.floris_power_bv(wakeOverlapTRel_v, cosFac, Ct, axialInduction, axialIndProvided, useaUbU,
