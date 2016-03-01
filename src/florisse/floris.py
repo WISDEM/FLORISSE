@@ -1,7 +1,8 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup, NLGaussSeidel, LinearGaussSeidel, ScipyGMRES, Brent, Newton, DirectSolver
-
+from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
+from openmdao.api import NLGaussSeidel #, LinearGaussSeidel, ScipyGMRES, Brent, Newton
+from openmdao.api import PetscKSP
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, CPCT_Interpolate_Gradients,  CPCT_Interpolate_Gradients_Smooth, WindDirectionPower
 from Parameters import FLORISParameters
 import _floris
@@ -396,7 +397,7 @@ class floris_velocity(Component):
                            desc='cosine factor similar to Jensen 1983')
 
         # outputs
-        self.add_output('velocitiesTurbines%i' % direction_id, np.ones(nTurbines)*1, units='m/s',
+        self.add_state('velocitiesTurbines%i' % direction_id, np.ones(nTurbines)*1, units='m/s',
                        desc='effective hub velocity for each turbine')
 
         # connect floris_params
@@ -754,6 +755,50 @@ class FLORIS(Group):
                  promotes=['*'])
 
 
+class RotorSolveGroup(Group):
+
+    def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=False, datasize=0,
+                 differentiable=True, optimizingLayout=False):
+
+        super(RotorSolveGroup, self).__init__()
+
+        # self.nl_solver = NLGaussSeidel()
+        # self.ln_solver = Brent()
+        # self.nl_solver.options['atol'] = epsilon
+        # self.nl_solver.options['rtol'] = epsilon
+        # self.ln_solver = LinearGaussSeidel()
+        # self.ln_solver = ScipyGMRES()
+        # self.ln_solver = DirectSolver()
+        # self.ln_solver = DirectSolver()
+        self.nl_solver = NLGaussSeidel()
+        # self.nl_solver = Newton()
+        # self.nl_solver.options['iprint'] = 1
+        # self.nl_solver.options['maxiter'] = 200
+        self.ln_solver = PetscKSP()
+        # self.ln_solver = Backtracking()
+        # self.ln_solver = Brent()
+        # self.ln_solver.options['state_var'] = 'velocitiesTurbines%i' % direction_id
+        # self.nl_solver.options['lower_bound'] = 0.
+        # self.nl_solver.options['upper_bound'] = 100.
+        # self.ln_solver.options['atol'] = epsilon
+        # self.ln_solver.options['rtol'] = epsilon
+        # self.ln_solver.setup('direction_group%i' % direction_id)
+        # self.ln_solver.solve('velocitiesTurbines%i' % direction_id)
+
+        self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=0),
+                     promotes=['params:*', 'yaw%i' % direction_id,
+                               'velocitiesTurbines%i' % direction_id])
+
+        self.add('floris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
+                                    differentiable=differentiable, optimizingLayout=optimizingLayout),
+                 promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
+                           'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
+                           'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
+                           'wakeOverlapTRel', 'Cp'])
+        self.connect('CtCp.Ct_out', 'floris.Ct')
+        self.connect('CtCp.Cp_out', 'Cp')
+
+
 class DirectionGroupFLORIS(Group):
     """
     Group containing all necessary components for wind plant calculations
@@ -769,39 +814,23 @@ class DirectionGroupFLORIS(Group):
 
         # self.add('fp', FLORISParameters(), promotes=['*'])
         if use_rotor_components:
-            # self.nl_solver = NLGaussSeidel()
-            # self.ln_solver = Brent()
-            # self.nl_solver.options['atol'] = epsilon
-            # self.nl_solver.options['rtol'] = epsilon
-            # self.ln_solver = LinearGaussSeidel()
-            self.ln_solver = ScipyGMRES()
-            # self.ln_solver = DirectSolver()
-            # self.ln_solver = DirectSolver()
-            self.nl_solver = NLGaussSeidel()
-            # self.nl_solver = Newton()
-            # self.nl_solver.options['iprint'] = 1
-            # self.nl_solver.options['maxiter'] = 200
-            # self.ln_solver = PetscKSP()
-            # self.ln_solver = Backtracking()
-            # self.ln_solver = Brent()
-            # self.ln_solver.options['state_var'] = 'velocitiesTurbines%i' % direction_id
-            # self.nl_solver.options['lower_bound'] = 0.
-            # self.nl_solver.options['upper_bound'] = 100.
-            # self.ln_solver.options['atol'] = epsilon
-            # self.ln_solver.options['rtol'] = epsilon
-            # self.ln_solver.setup('direction_group%i' % direction_id)
-            # self.ln_solver.solve('velocitiesTurbines%i' % direction_id)
-            self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=0),
-                     promotes=['params:*', 'yaw%i' % direction_id,
-                               'velocitiesTurbines%i' % direction_id])
+            self.add('myFloris', RotorSolveGroup(nTurbines, resolution=resolution, direction_id=direction_id,
+                                                 use_rotor_components=use_rotor_components, datasize=datasize,
+                                                 differentiable=differentiable, optimizingLayout=optimizingLayout),
+                     promotes=['params:*', 'yaw%i' % direction_id, 'velocitiesTurbines%i' % direction_id,
+                               'floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
+                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter',
+                               'wakeCentersYT', 'wakeDiametersT',
+                               'wakeOverlapTRel'])
         else:
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
                      promotes=['Ct_in', 'Cp_in', 'params:*', 'floris_params:*', 'yaw%i' % direction_id])
 
-        self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id, differentiable=differentiable, optimizingLayout=optimizingLayout),
-                 promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
-                           'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
-                           'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT', 'wakeOverlapTRel'])
+            self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id, differentiable=differentiable, optimizingLayout=optimizingLayout),
+                     promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
+                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
+                               'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
+                               'wakeOverlapTRel'])
 
         self.add('powerComp', WindDirectionPower(nTurbines=nTurbines, direction_id=direction_id, differentiable=True,
                                                  use_rotor_components=use_rotor_components),
@@ -810,8 +839,6 @@ class DirectionGroupFLORIS(Group):
                            'wt_power%i' % direction_id, 'power%i' % direction_id])
 
         if use_rotor_components:
-            self.connect('CtCp.Ct_out', 'myFloris.Ct')
-            self.connect('CtCp.Cp_out', 'myFloris.Cp')
             self.connect('myFloris.Cp', 'powerComp.Cp')
         else:
             self.connect('floris_params:CTcorrected', 'params:CTcorrected')
