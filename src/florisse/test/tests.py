@@ -521,12 +521,12 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         self.J = prob.check_partial_derivatives(out_stream=None)
 
     def testCtCpRotor_Cp_out(self):
-        np.testing.assert_allclose(self.J['all_directions.direction_group0.CtCp'][('Cp_out', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.CtCp'][('Cp_out', 'yaw0')]['J_fd'], self.rtol, self.atol)
-        np.testing.assert_allclose(self.J['all_directions.direction_group0.CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fwd'], self.J['all_directions.direction_group0.CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fd'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.CtCp'][('Cp_out', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.CtCp'][('Cp_out', 'yaw0')]['J_fd'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.CtCp'][('Cp_out', 'velocitiesTurbines0')]['J_fd'], self.rtol, self.atol)
 
     def testCtCpRotor_Ct_out(self):
-        np.testing.assert_allclose(self.J['all_directions.direction_group0.CtCp'][('Ct_out', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.CtCp'][('Ct_out', 'yaw0')]['J_fd'], self.rtol, self.atol)
-        np.testing.assert_allclose(self.J['all_directions.direction_group0.CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fwd'], self.J['all_directions.direction_group0.CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fd'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.CtCp'][('Ct_out', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.CtCp'][('Ct_out', 'yaw0')]['J_fd'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.CtCp'][('Ct_out', 'velocitiesTurbines0')]['J_fd'], self.rtol, self.atol)
 
 
 class GradientTestsPower(unittest.TestCase):
