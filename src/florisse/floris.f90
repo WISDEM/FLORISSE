@@ -238,6 +238,14 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     
+!     print *, "in wake/diams"
+!     print *, "kd", kd
+!     print *, "initialWakeAngle", initialWakeAngle
+!     print *, "ad", initialWakeDisplacement
+!     print *, "bd", bd
+!     print *, "me", me
+!     print *, "ke_in", ke_in   
+    
     spline_bound = 1.0_dp
        
     ! execute
@@ -406,6 +414,10 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel_mat, wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines, 3) :: cosFac_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
+    
+    
+    ! print *, "in OL"
+!     print *, "cos spread", cos_spread
 
     ! execute    
     ! pack wakeDiametersT_v vector into a matrix
@@ -500,7 +512,13 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
     real(dp), dimension(nTurbines), intent(out) :: velocitiesTurbines
     
     intrinsic cos
-
+    
+!     print *, "in velocity"
+!     print *, "MU", MU
+!     print *, "aU", aU
+!     print *, "bU", bU
+!     print *, "ke_in", ke_in   
+    
     ! convert yaw from degrees to radians
     yaw = yaw_deg*pi/180.0_dp
 
