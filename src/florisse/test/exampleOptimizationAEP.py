@@ -120,7 +120,7 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    prob['windSpeeds'] = np.ones(nTurbs)*wind_speed
+    prob['windSpeeds'] = np.ones(windDirections.size)*wind_speed
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections
     prob['windrose_frequencies'] = windFrequencies

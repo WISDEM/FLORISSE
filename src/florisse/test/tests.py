@@ -502,9 +502,9 @@ class GradientTestsCtCpRotor(unittest.TestCase):
         prob['floris_params:FLORISoriginal'] = True
 
         # values for rotor coupling
-        prob['gen_params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
-        prob['gen_params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
-        prob['gen_params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
+        prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
+        prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
+        prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
         prob['floris_params:ke'] = 0.05
         prob['floris_params:kd'] = 0.17
         prob['floris_params:aU'] = 12.0

@@ -97,42 +97,6 @@ if __name__ == "__main__":
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
                                           minSpacing=minSpacing, use_rotor_components=use_rotor_components,
                                           datasize=datasize, optimizingLayout=optimizingLayout))
-    prob.setup(check=True)
-
-    prob['turbineX'] = turbineX
-    prob['turbineY'] = turbineY
-    for direction_id in range(0, windDirections.size):
-        prob['yaw%i' % direction_id] = yaw
-
-    # assign values to constant inputs (not design variables)
-    prob['rotorDiameter'] = rotorDiameter
-    prob['axialInduction'] = axialInduction
-    prob['generator_efficiency'] = generator_efficiency
-    prob['windSpeeds'] = np.ones(nDirections)*wind_speed
-    prob['air_density'] = air_density
-    prob['windDirections'] = windDirections
-    prob['windrose_frequencies'] = windFrequencies
-
-    if use_rotor_components:
-        # for i in range(0, nDirections):
-        #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
-        # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
-        # myFloris.windSpeedToCPCT = NREL5MWCPCT
-        prob['gen_params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
-        prob['gen_params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
-        prob['gen_params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
-        prob['floris_params:ke'] = 0.05
-        prob['floris_params:kd'] = 0.17
-        prob['floris_params:aU'] = 12.0
-        prob['floris_params:bU'] = 1.3
-        prob['floris_params:initialWakeAngle'] = 3.0
-        prob['floris_params:useaUbU'] = True
-        prob['floris_params:useWakeAngle'] = True
-        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
-    else:
-        prob['Ct_in'] = Ct
-        prob['Cp_in'] = Cp
-
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -159,6 +123,39 @@ if __name__ == "__main__":
 
     # time.sleep(10)
     # assign initial values to design variables
+    prob['turbineX'] = turbineX
+    prob['turbineY'] = turbineY
+    for direction_id in range(0, windDirections.size):
+        prob['yaw%i' % direction_id] = yaw
+
+    # assign values to constant inputs (not design variables)
+    prob['rotorDiameter'] = rotorDiameter
+    prob['axialInduction'] = axialInduction
+    prob['generator_efficiency'] = generator_efficiency
+    prob['windSpeeds'] = np.ones(nDirections)*wind_speed
+    prob['air_density'] = air_density
+    prob['windDirections'] = windDirections
+    prob['windrose_frequencies'] = windFrequencies
+
+    if use_rotor_components:
+        # for i in range(0, nDirections):
+        #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
+        # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
+        # myFloris.windSpeedToCPCT = NREL5MWCPCT
+        prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
+        prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
+        prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
+        prob['floris_params:ke'] = 0.05
+        prob['floris_params:kd'] = 0.17
+        prob['floris_params:aU'] = 12.0
+        prob['floris_params:bU'] = 1.3
+        prob['floris_params:initialWakeAngle'] = 3.0
+        prob['floris_params:useaUbU'] = True
+        prob['floris_params:useWakeAngle'] = True
+        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
+    else:
+        prob['Ct_in'] = Ct
+        prob['Cp_in'] = Cp
 
     # set options
     # prob['floris_params:FLORISoriginal'] = True
@@ -177,10 +174,10 @@ if __name__ == "__main__":
 
     for direction_id in range(0, windDirections.size):
         mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
-    for direction_id in range(0, windDirections.size):
-        mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
-    for direction_id in range(0, windDirections.size):
-        mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
+    # for direction_id in range(0, windDirections.size):
+    #     mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
+    # for direction_id in range(0, windDirections.size):
+    #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
 
     mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
     mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])

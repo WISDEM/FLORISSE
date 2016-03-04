@@ -113,6 +113,7 @@ class OptAEP(Group):
                                             datasize=datasize, differentiable=differentiable,
                                             optimizingLayout=optimizingLayout),
                  promotes=['*'])
+
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
