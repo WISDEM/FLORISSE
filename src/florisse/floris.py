@@ -864,11 +864,15 @@ class DirectionGroupFLORIS(Group):
     """
 
     def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=False, datasize=0,
-                 differentiable=True, optimizingLayout=False):
+                 differentiable=True, optimizingLayout=False, add_IdepVarComps=True):
         super(DirectionGroupFLORIS, self).__init__()
         epsilon = 1e-6
 
         # self.add('p0', IndepVarComp('wind_direction', val=0.0, units='deg'), promotes=['*'])
+
+        if add_IdepVarComps:
+            add_floris_params_IndepVarComps(self)
+            add_gen_params_IdepVarComps(self, datasize=datasize)
 
         # self.add('fp', FLORISParameters(), promotes=['*'])
         if use_rotor_components:
@@ -952,7 +956,8 @@ class AEPGroupFLORIS(Group):
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
-                                            differentiable=differentiable, optimizingLayout=optimizingLayout),
+                                            differentiable=differentiable, optimizingLayout=optimizingLayout,
+                                            add_IdepVarComps=False),
                        promotes=['gen_params:*', 'floris_params:*', 'air_density',
                                  'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY',
                                  'yaw%i' % direction_id, 'rotorDiameter', 'velocitiesTurbines%i' % direction_id,
@@ -963,7 +968,7 @@ class AEPGroupFLORIS(Group):
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
-                                            differentiable=differentiable),
+                                            differentiable=differentiable, add_IdepVarComps=False),
                        promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'axialInduction',
                                  'generator_efficiency', 'turbineX', 'turbineY', 'yaw%i' % direction_id, 'rotorDiameter',
                                  'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id,
