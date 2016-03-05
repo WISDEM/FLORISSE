@@ -248,14 +248,6 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     spline_bound = 1.0_dp
        
-    ! execute
-    !    if (CTcorrected) then
-    !        Ct = Ct_in
-    !    else
-    !        Ct = Ct_in*cos(yaw)*cos(yaw)
-    !    end if
-
-    ! convert yaw from degrees to radians
     yaw = yaw_deg*pi/180.0_dp
         
     ! calculate y-locations of wake centers in wind ref. frame
@@ -272,8 +264,9 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             deltax = turbineXw(turbI) - turbineXw(turb)
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
             
-            if (turbineXw(turb) < turbineXw(turbI)) then
-                wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
+            wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
+            
+            if (turbineXw(turb) < turbineXw(turbI)) then                
                 ! yaw-induced wake center displacement   
                 displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
                                +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
@@ -287,9 +280,6 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 end if
                 
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
-                    
-            else
-                wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
             end if
 
         end do

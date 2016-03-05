@@ -12,113 +12,196 @@ import _florisDiscontinuous
 
 
 def add_floris_parameters(openmdao_comp):
-    # original tuning parameters
-    openmdao_comp.add_param('floris_params:pP', 1.88, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:ke', 0.065, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:keCorrCT', 0.0, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:kd', 0.15)
-    openmdao_comp.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True)
+    # altering the values in this function will have no effect during optimization. TO change defaults permanently,
+    # alter the values in add_floris_IndepVarComps().
 
-    openmdao_comp.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:initialWakeAngle', 3.0, pass_by_obj=True)
+    ###################   wake deflection   ##################
 
-    openmdao_comp.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.), pass_by_obj=True)
+    ### parameters
+    # original model
+    openmdao_comp.add_param('floris_params:kd', 0.15,
+                            desc='model parameter that defines the sensitivity of the wake deflection to yaw')
+    openmdao_comp.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True,
+                            desc='defines the wake at the rotor to be slightly offset from the rotor. This is'
+                                 'necessary for tuning purposes')
+    openmdao_comp.add_param('floris_params:bd', -0.01, pass_by_obj=True,
+                            desc='defines rate of wake displacement if initialWakeAngle is not used')
+    # added
+    openmdao_comp.add_param('floris_params:initialWakeAngle', 3.0, pass_by_obj=True,
+                            desc='sets how angled the wake flow should be at the rotor')
 
-    openmdao_comp.add_param('floris_params:keCorrTI', 0.0, pass_by_obj=True)
+    ### flags
+    openmdao_comp.add_param('floris_params:useWakeAngle', True, pass_by_obj=True,
+                            desc='define whether an initial angle or initial offset should be used for wake center. '
+                                 'if True, then bd will be ignored and initialWakeAngle will'
+                                 'be used. The reverse is also true')
 
-    openmdao_comp.add_param('floris_params:baselineTI', 0.045, pass_by_obj=True)
 
-    openmdao_comp.add_param('floris_params:keCorrHR', 0.0, pass_by_obj=True) # neutral, with heating rate 0, is baseline
+    ###################   wake expansion   ##################
 
-    openmdao_comp.add_param('floris_params:keCorrHRTI', 0.0, pass_by_obj=True)
+    ### parameters
+    # original model
+    openmdao_comp.add_param('floris_params:ke', 0.065, pass_by_obj=True,
+                            desc='parameter defining overall wake expansion')
+    openmdao_comp.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
+                            desc='parameters defining relative zone expansion. Mixing zone (me[2]) must always be 1.0')
 
-    openmdao_comp.add_param('floris_params:keSaturation', 0.0, pass_by_obj=True)
+    ### flags
+    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True,
+                            desc='if True then initial wake diameter will be set to rotorDiameter*cos(yaw)')
 
-    openmdao_comp.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
 
-    openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True)
+    ###################   wake velocity   ##################
 
-    openmdao_comp.add_param('floris_params:CTcorrected', True, pass_by_obj=True,
-                   desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-
-    openmdao_comp.add_param('floris_params:CPcorrected', True, pass_by_obj=True,
-                   desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
-
-    openmdao_comp.add_param('floris_params:axialIndProvided', False, pass_by_obj=True,
-                   desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
-
-    openmdao_comp.add_param('floris_params:useWakeAngle', True, pass_by_obj=True)
-
-    openmdao_comp.add_param('floris_params:bd', -0.01, pass_by_obj=True)
-
-    openmdao_comp.add_param('floris_params:useaUbU', False, pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:aU', 5.0, units='deg', pass_by_obj=True)
-    openmdao_comp.add_param('floris_params:bU', 1.66, pass_by_obj=True)
-
-    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True)
-
-    openmdao_comp.add_param('floris_params:FLORISoriginal', False, pass_by_obj=True,
-                   desc='override all parameters and use FLORIS as original in first Wind Energy paper')
-
+    ### parameters
+    # original model
+    openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True,
+                            desc='velocity deficit decay rates for each zone. Middle zone must always be 1.0')
+    openmdao_comp.add_param('floris_params:aU', 5.0, units='deg', pass_by_obj=True,
+                            desc='zone decay adjustment parameter independent of yaw')
+    openmdao_comp.add_param('floris_params:bU', 1.66, pass_by_obj=True,
+                            desc='zone decay adjustment parameter dependent yaw')
+    # added
     openmdao_comp.add_param('floris_params:cos_spread', val=3.0, pass_by_obj=True,
-                   desc='spread of cosine smoothing factor (percent of sum of wake and rotor radii)')
+                            desc='spread of cosine smoothing factor (multiple of sum of wake and rotor radii)')
+    openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True,
+                            desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative overlap with '
+                                 'inner two zones for including array affects')
+    openmdao_comp.add_param('floris_params:keCorrCT', 0.0, pass_by_obj=True,
+                            desc='adjust ke by adding a precentage of the difference of CT and ideal CT as defined in'
+                                 'Region2CT')
+    openmdao_comp.add_param('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True,
+                            desc='defines ideal CT value for use in adjusting ke to yaw adjust CT if keCorrCT>0.0')
+
+    # flags
+    openmdao_comp.add_param('floris_params:axialIndProvided', False, pass_by_obj=True,
+                            desc='if axial induction is not provided, then it will be calculated based on CT')
+    openmdao_comp.add_param('floris_params:useaUbU', False, pass_by_obj=True,
+                            desc='if True then zone velocity decay rates (MU) will be adjusted based on yaw')
+
+
+    ###################   other   ##################
+    openmdao_comp.add_param('floris_params:FLORISoriginal', False, pass_by_obj=True,
+                            desc='override all parameters and use FLORIS as original in first Wind Energy paper')
+
+
+    ####### apply to things now external to the Floris model
+    # openmdao_comp.add_param('floris_params:CTcorrected', True, pass_by_obj=True,
+    #                desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)')
+    #
+    # openmdao_comp.add_param('floris_params:CPcorrected', True, pass_by_obj=True,
+    #                desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)')
+    # openmdao_comp.add_param('floris_params:pP', 1.88, pass_by_obj=True)
+
+    ####### unused
+    # openmdao_comp.add_param('floris_params:baselineCT', 4./3.*(1.-1./3.), pass_by_obj=True)
+    # openmdao_comp.add_param('floris_params:keCorrTI', 0.0, pass_by_obj=True)
+    # openmdao_comp.add_param('floris_params:baselineTI', 0.045, pass_by_obj=True)
+    # openmdao_comp.add_param('floris_params:keCorrHR', 0.0, pass_by_obj=True) # neutral, with heating rate 0, is baseline
+    # openmdao_comp.add_param('floris_params:keCorrHRTI', 0.0, pass_by_obj=True)
+    # openmdao_comp.add_param('floris_params:keSaturation', 0.0, pass_by_obj=True)
+    # openmdao_comp.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
 
 
 def add_floris_params_IndepVarComps(openmdao_object):
-    # original tuning parameters
-    openmdao_object.add('fp0', IndepVarComp('floris_params:pP', 1.88, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp1', IndepVarComp('floris_params:ke', 0.065, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp2', IndepVarComp('floris_params:keCorrArray', 0.0, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp3', IndepVarComp('floris_params:keCorrCT', 0.0, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp4', IndepVarComp('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp5', IndepVarComp('floris_params:kd', 0.15), promotes=['*'])
-    openmdao_object.add('fp6', IndepVarComp('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True), promotes=['*'])
+    # permanently alter defaults here
 
-    openmdao_object.add('fp7', IndepVarComp('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp8', IndepVarComp('floris_params:initialWakeAngle', 3.0, pass_by_obj=True), promotes=['*'])
+    ###################   wake deflection   ##################
 
-    openmdao_object.add('fp9', IndepVarComp('floris_params:baselineCT', 4./3.*(1.-1./3.), pass_by_obj=True), promotes=['*'])
+    ### parameters
+    # original model
+    openmdao_object.add('fp00', IndepVarComp('floris_params:kd', 0.15,
+                                             desc='model parameter that defines the sensitivity of the wake deflection '
+                                                  'to yaw'),
+                        promotes=['*'])
+    openmdao_object.add('fp01', IndepVarComp('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True,
+                                             desc='defines the wake at the rotor to be slightly offset from the rotor. '
+                                                  'This is necessary for tuning purposes'),
+                        promotes=['*'])
+    openmdao_object.add('fp02', IndepVarComp('floris_params:bd', -0.01, pass_by_obj=True,
+                                             desc='defines rate of wake displacement if initialWakeAngle is not used'),
+                        promotes=['*'])
+    # added
+    openmdao_object.add('fp03', IndepVarComp('floris_params:initialWakeAngle', 3.0, pass_by_obj=True,
+                                             desc='sets how angled the wake flow should be at the rotor'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp10', IndepVarComp('floris_params:keCorrTI', 0.0, pass_by_obj=True), promotes=['*'])
+    ### flags
+    openmdao_object.add('fp04', IndepVarComp('floris_params:useWakeAngle', True, pass_by_obj=True,
+                                             desc='define whether an initial angle or initial offset should be used for'
+                                                  'wake center. If True, then bd will be ignored and initialWakeAngle '
+                                                  'will be used. The reverse is also true'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp11', IndepVarComp('floris_params:baselineTI', 0.045, pass_by_obj=True), promotes=['*'])
 
-    openmdao_object.add('fp12', IndepVarComp('floris_params:keCorrHR', 0.0, pass_by_obj=True), promotes=['*']) # neutral, with heating rate 0, is baseline
+    ###################   wake expansion   ##################
 
-    openmdao_object.add('fp13', IndepVarComp('floris_params:keCorrHRTI', 0.0, pass_by_obj=True), promotes=['*'])
+    ### parameters
+    # original model
+    openmdao_object.add('fp05', IndepVarComp('floris_params:ke', 0.065, pass_by_obj=True,
+                                             desc='parameter defining overall wake expansion'),
+                        promotes=['*'])
+    openmdao_object.add('fp06', IndepVarComp('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
+                                             desc='parameters defining relative zone expansion. Mixing zone (me[2]) '
+                                                  'must always be 1.0'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp14', IndepVarComp('floris_params:keSaturation', 0.0, pass_by_obj=True), promotes=['*'])
+    ### flags
+    openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True,
+                                             desc='if True then initial wake diameter will be set to '
+                                                  'rotorDiameter*cos(yaw)'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp15', IndepVarComp('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True), promotes=['*'])
 
-    openmdao_object.add('fp16', IndepVarComp('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True), promotes=['*'])
+    ###################   wake velocity   ##################
 
-    openmdao_object.add('fp17', IndepVarComp('floris_params:CTcorrected', True, pass_by_obj=True,
-                   desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)'), promotes=['*'])
+    ### parameters
+    # original model
+    openmdao_object.add('fp08', IndepVarComp('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True,
+                                             desc='velocity deficit decay rates for each zone. Middle zone must always '
+                                                  'be 1.0'),
+                        promotes=['*'])
+    openmdao_object.add('fp09', IndepVarComp('floris_params:aU', 5.0, units='deg', pass_by_obj=True,
+                                             desc='zone decay adjustment parameter independent of yaw'),
+                        promotes=['*'])
+    openmdao_object.add('fp10', IndepVarComp('floris_params:bU', 1.66, pass_by_obj=True,
+                                             desc='zone decay adjustment parameter dependent yaw'),
+                        promotes=['*'])
+    # added
+    openmdao_object.add('fp11', IndepVarComp('floris_params:cos_spread', val=3.0, pass_by_obj=True,
+                                             desc='spread of cosine smoothing factor (multiple of sum of wake and rotor '
+                                                  'radii)'),
+                        promotes=['*'])
+    openmdao_object.add('fp12', IndepVarComp('floris_params:keCorrArray', 0.0, pass_by_obj=True,
+                                             desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative '
+                                                  'overlap with inner two zones for including array affects'),
+                        promotes=['*'])
+    openmdao_object.add('fp13', IndepVarComp('floris_params:keCorrCT', 0.0, pass_by_obj=True,
+                                             desc='adjust ke by adding a precentage of the difference of CT and ideal '
+                                                  'CT as defined in Region2CT'),
+                        promotes=['*'])
+    openmdao_object.add('fp14', IndepVarComp('floris_params:Region2CT', 4.0*(1.0/3.0)*(1.0-(1.0/3.0)), pass_by_obj=True,
+                                             desc='defines ideal CT value for use in adjusting ke to yaw adjust CT if '
+                                                  'keCorrCT>0.0'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp18', IndepVarComp('floris_params:CPcorrected', True, pass_by_obj=True,
-                   desc = 'CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)'), promotes=['*'])
+    # flags
+    openmdao_object.add('fp15', IndepVarComp('floris_params:axialIndProvided', False, pass_by_obj=True,
+                                             desc='if axial induction is not provided, then it will be calculated based '
+                                                  'on CT'),
+                        promotes=['*'])
+    openmdao_object.add('fp16', IndepVarComp('floris_params:useaUbU', False, pass_by_obj=True,
+                                             desc='if True then zone velocity decay rates (MU) will be adjusted based '
+                                                  'on yaw'),
+                        promotes=['*'])
 
-    openmdao_object.add('fp19', IndepVarComp('floris_params:axialIndProvided', False, pass_by_obj=True,
-                   desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)'), promotes=['*'])
 
-    openmdao_object.add('fp20', IndepVarComp('floris_params:useWakeAngle', True, pass_by_obj=True), promotes=['*'])
-
-    openmdao_object.add('fp21', IndepVarComp('floris_params:bd', -0.01, pass_by_obj=True), promotes=['*'])
-
-    openmdao_object.add('fp22', IndepVarComp('floris_params:useaUbU', False, pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp23', IndepVarComp('floris_params:aU', 5.0, units='deg', pass_by_obj=True), promotes=['*'])
-    openmdao_object.add('fp24', IndepVarComp('floris_params:bU', 1.66, pass_by_obj=True), promotes=['*'])
-
-    openmdao_object.add('fp25', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True), promotes=['*'])
-
-    openmdao_object.add('fp26', IndepVarComp('floris_params:FLORISoriginal', False, pass_by_obj=True,
-                   desc='override all parameters and use FLORIS as original in first Wind Energy paper'), promotes=['*'])
-
-    openmdao_object.add('fp27', IndepVarComp('floris_params:cos_spread', val=3.0, pass_by_obj=True,
-                   desc='spread of cosine smoothing factor (percent of sum of wake and rotor radii)'), promotes=['*'])
+    ###################   other   ##################
+    openmdao_object.add('fp17', IndepVarComp('floris_params:FLORISoriginal', False, pass_by_obj=True,
+                                             desc='override all parameters and use FLORIS as original in Gebraad et al.'
+                                                  '2014, Wind plant power optimization through yaw control using a '
+                                                  'parametric model for wake effect-a CFD simulation study'),
+                        promotes=['*'])
 
 
 # Components of FLORIS - for full model use FLORIS(Group)
@@ -902,8 +985,6 @@ class DirectionGroupFLORIS(Group):
         if use_rotor_components:
             self.connect('myFloris.Cp', 'powerComp.Cp')
         else:
-            self.connect('floris_params:CTcorrected', 'gen_params:CTcorrected')
-            self.connect('floris_params:CPcorrected', 'gen_params:CPcorrected')
             self.connect('CtCp.Ct_out', 'myFloris.Ct')
             self.connect('CtCp.Cp_out', 'myFloris.Cp')
             self.connect('myFloris.Cp', 'powerComp.Cp')
