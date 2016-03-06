@@ -1,11 +1,11 @@
 import numpy as np
 
 from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
-from openmdao.api import NLGaussSeidel, LinearGaussSeidel, ScipyGMRES, Brent, Newton
-# from openmdao.api import PetscKSP
+from openmdao.api import NLGaussSeidel, ScipyGMRES
+
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps
-from Parameters import FLORISParameters
+
 import _floris
 import _florisDiscontinuous
 # import _florisHubSmooth as _floris
