@@ -25,18 +25,21 @@ if __name__ == "__main__":
         rotorDiameter[turbI] = 126.4            # m
         axialInduction[turbI] = 1.0/3.0
         Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
-        Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
-        generator_efficiency[turbI] = 0.944
+        # Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
+        Cp[turbI] = 0.7737 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
+        generator_efficiency[turbI] = 1.0#0.944
         yaw[turbI] = 0.     # deg.
 
     # Define flow properties
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
-    wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    wind_direction = 270.-0.523599*180./np.pi    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    print wind_direction
     wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # set up problem
-    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0, differentiable=True))
+    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0, differentiable=False))
 
     # initialize problem
     prob.setup()
@@ -56,7 +59,7 @@ if __name__ == "__main__":
     prob['windrose_frequencies'] = np.array([wind_frequency])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
-    prob['floris_params:FLORISoriginal'] = False
+    prob['floris_params:FLORISoriginal'] = True
 
     # run the problem
     print 'start FLORIS run'
@@ -72,6 +75,6 @@ if __name__ == "__main__":
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
     print 'yaw (deg) = ', prob['yaw0']
     print 'Effective hub velocities (m/s) = ', prob['velocitiesTurbines0']
-    print 'Turbine powers (kW) = ', prob['wt_power0']
-    print 'wind farm power (kW): %s' % prob['power0']
+    print 'Turbine powers (kW) = ', (prob['wt_power0'])*1e3
+    print 'wind farm power (kW): %s' % (prob['power0'])
     print 'wind farm AEP for this direction and speed (kWh): %s' % prob['AEP']
