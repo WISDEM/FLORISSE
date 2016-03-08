@@ -98,7 +98,17 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
             wakeOverlapTRel_m(turbI, :, :) = wakeOverlapTRel_m(turbI, :, &
                                                          :)/((pi*rotorDiameter(turbI) &
                                                        *rotorDiameter(turbI))/4.0_dp)
+            
     end do
+    
+    ! do turbI = 1, nTurbines
+!         do turb = 1, nTurbines
+!             do zone = 1, 3
+!                 print *, "wakeOverlapTRel_m[", turbI, ", ", turb, ", ", zone, "] = ", wakeOverlapTRel_m(turbI, turb, zone)
+!             end do
+!         end do
+!     end do
+        
    
                                     
 end subroutine calcOverlapAreas
@@ -185,7 +195,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     print *, "kd = ", kd
     print *, "ke = ", ke_in
-    print *, "rotorDiameter = ", rotorDiameter(0)    
+    print *, "rotorDiameter = ", rotorDiameter(1)    
     
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
@@ -234,7 +244,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 end if
                 
 !                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
-!                 print *, "wakeCenters[", turbI, "][", turb, "] = ", wakeCentersYT_mat(turbI, turb)
+                ! checked and good 3/8/2016
+                ! print *, "wakeCenters[", turbI, "][", turb, "] = ", wakeCentersYT_mat(turbI, turb)
             end if
 
         end do
@@ -268,6 +279,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 if (turbineXw(turbI) > turbineXw(turb)) then            
                     wakeDiametersT_mat(turbI, turb, zone) = &
                         max(wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax, 0.0_dp) 
+                        ! checked and good
+!                     print *, "wakeDiameters[", turbI, "][", turb, "][", zone, "] = ", wakeDiametersT_mat(turbI, turb, zone) 
                 end if
             end do
             
@@ -328,7 +341,7 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     
     call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, wakeDiametersT_mat, &
                             wakeCentersYT_mat, wakeOverlapTRel_mat)
-                            
+    
     wakeOverlapTRel_vec = 0.0_dp
     
     ! pack relative wake overlap into a vector
@@ -390,6 +403,14 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         wakeOverlapTRel(turbI, :, 3) = wakeOverlapTRel_v(3*nTurbines*(turbI-1)+2*nTurbines+1:&
                                    3*nTurbines*(turbI-1)+3*nTurbines)
     end do
+    ! checked and good 3/8/2016
+    ! do turbI = 1, nTurbines
+!         do turb = 1, nTurbines
+!             do zone = 1, 3
+!                 print *, "wakeOverlapTRel[", turbI, ", ", turb, ", ", zone, "] = ", wakeOverlapTRel(turbI, turb, zone)
+!             end do
+!         end do
+!     end do
 
     if (axialIndProvided) then
         a = a_in
@@ -402,6 +423,8 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
 
     do turb = 1, nTurbines
         s = sum(wakeOverlapTrel(turb, :, 1) + wakeOverlapTRel(turb, :, 2))
+        ! should maybe be the following:
+        ! s = sum(wakeOverlapTrel(:, turb, 1) + wakeOverlapTRel(:, turb, 2))
         keArray(turb) = ke(turb)*(1+s*keCorrArray) 
     end do
     
@@ -416,14 +439,18 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
             wakeEffCoeffPerZone = 0.0_dp
             deltax = turbineXw(turbI) - turbineXw(turb)
             
-            if (useaUbU) then
-                mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
-            end if
+
             
             if (deltax > 0 .and. turbI /= turb) then
+                
+                if (useaUbU) then
+                    mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
+                end if
+                
                 do zone = 1, 3
                 
                     if (useaUbU) then
+!                         print *, "here"
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
                         (((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
                         *mmU(zone)*deltax))**2)*wakeOverlapTRel(turbI, turb, zone)   
@@ -444,6 +471,7 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         ! multiply the inflow speed with the wake coefficients to find effective wind 
         ! speed at turbine
         velocitiesTurbines(turbI) = velocitiesTurbines(turbI)*wakeEffCoeff
+        print *, velocitiesTurbines(turbI)
     end do
 
 end subroutine floris_velocity
