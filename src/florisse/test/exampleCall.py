@@ -28,7 +28,7 @@ if __name__ == "__main__":
         # Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
         Cp[turbI] = 0.7737 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
         generator_efficiency[turbI] = 1.0#0.944
-        yaw[turbI] = 20.     # deg.
+        yaw[turbI] = 0.     # deg.
 
     # Define flow properties
     wind_speed = 8.0        # m/s

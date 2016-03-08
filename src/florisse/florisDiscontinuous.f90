@@ -193,9 +193,9 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     ! calculate y-locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
     
-    print *, "kd = ", kd
-    print *, "ke = ", ke_in
-    print *, "rotorDiameter = ", rotorDiameter(1)    
+!     print *, "kd = ", kd
+!     print *, "ke = ", ke_in
+!     print *, "rotorDiameter = ", rotorDiameter(1)    
     
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
@@ -471,7 +471,7 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         ! multiply the inflow speed with the wake coefficients to find effective wind 
         ! speed at turbine
         velocitiesTurbines(turbI) = velocitiesTurbines(turbI)*wakeEffCoeff
-        print *, velocitiesTurbines(turbI)
+!         print *, velocitiesTurbines(turbI)
     end do
 
 end subroutine floris_velocity

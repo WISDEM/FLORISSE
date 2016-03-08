@@ -166,7 +166,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
     end do
    
                                     
-end subroutine calcOverlapAreas    
+end subroutine calcOverlapAreas
 
 
 subroutine CTtoAxialInd(CT, nTurbines, axial_induction)
@@ -264,9 +264,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             deltax = turbineXw(turbI) - turbineXw(turb)
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
             
-            wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
-            
-            if (turbineXw(turb) < turbineXw(turbI)) then                
+            if (turbineXw(turb) < turbineXw(turbI)) then
+                wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
                 ! yaw-induced wake center displacement   
                 displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
                                +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
@@ -316,10 +315,10 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             ! define centerpoint of spline
             zeroloc = turbineXw(turb) - wakeDiameter0/(2.0_dp*ke(turb)*me(zone))
             
-            if (zeroloc + spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then
+            if (zeroloc + spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then ! check this
                 wakeDiametersT_mat(turbI, turb, zone) = 0.0_dp
             
-            else if (zeroloc - spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then
+            else if (zeroloc - spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then !check this
                                
                 !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
                 
@@ -478,7 +477,6 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
     ! define precision to be the standard for a double precision ! on local system
     integer, parameter :: dp = kind(0.d0)
 
-
     ! in
     integer, intent(in) :: nTurbines                                            ! Number of turbines
     real(dp), dimension(3*nTurbines*nTurbines), intent(in) :: wakeOverlapTRel_v, cosFac_v ! relative overlap and cosine factor (vector of length 3*nTurbines**2)
@@ -557,17 +555,17 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, CosFac_v, Ct, a_in, &
                 mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
             end if
             
-            if (deltax > 0.0_dp) then
+            if (deltax > 0 .and. turbI /= turb) then
                 do zone = 1, 3
                 
                     if (useaUbU) then
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
-                        ((((rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *mmU(zone)*deltax))*(cosFac(turbI, turb, zone)))**2)*wakeOverlapTRel(turbI, turb, zone)   
+                        (((cosFac(turbI, turb, zone)*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
+                        *mmU(zone)*deltax))**2)*wakeOverlapTRel(turbI, turb, zone)   
                     else
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
-                        (((rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *MU(zone)*deltax))*(cosFac(turbI, turb, zone)))**2)*wakeOverlapTRel(turbI, turb, zone)   
+                        (((cosFac(turbI, turb, zone)*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
+                        *MU(zone)*deltax))**2)*wakeOverlapTRel(turbI, turb, zone)   
                     end if                     
                             
                 end do

@@ -176,8 +176,8 @@ if __name__ == "__main__":
     # run the problem
     mpi_print(prob, 'start FLORIS run')
     tic = time.time()
-    # cProfile.run('prob.run()')
-    prob.run()
+    cProfile.run('prob.run()')
+    # prob.run()
     toc = time.time()
 
     # print the results

@@ -296,7 +296,7 @@ class GradientTestsFLORIS(unittest.TestCase):
         prob['air_density'] = air_density
         prob['windDirections'] = np.array([wind_direction])
         prob['windrose_frequencies'] = np.array([wind_frequency])
-        prob['floris_params:FLORISoriginal'] = True
+        prob['floris_params:FLORISoriginal'] = False
 
         # run problem
         prob.run()

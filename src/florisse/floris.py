@@ -284,6 +284,7 @@ class floris_wcent_wdiam(Component):
                                   rotorDiameter, me, bd, useWakeAngle, adjustInitialWakeDiamToYaw)
         else:
             # print "not differentiable"
+            # print "ke = ", ke
             wakeCentersYT_vec, wakeDiametersT_vec = _florisDiscontinuous.floris_wcent_wdiam(kd, initialWakeDisplacement, \
                                   initialWakeAngle, ke, keCorrCT, Region2CT, yaw_deg, Ct, turbineXw, turbineYw, \
                                   rotorDiameter, me, bd, useWakeAngle, adjustInitialWakeDiamToYaw)
@@ -600,6 +601,7 @@ class floris_velocity(Component):
             useaUbU = True
             aU = 5.0
             bU = 1.66
+            axialIndProvided = True
 
         else:
             ke = params['floris_params:ke']
@@ -612,7 +614,7 @@ class floris_velocity(Component):
 
         # print 'ke, ME, aI, bU: ', ke, MU, aU, bU
 
-        axialIndProvided = params['floris_params:axialIndProvided']
+            axialIndProvided = params['floris_params:axialIndProvided']
 
         # how far in front of turbines to use overlap power calculations (in rotor diameters). This must match the
         # value used in floris_wcent_wdiam (hardcoded in fortran as 1)
@@ -676,6 +678,7 @@ class floris_velocity(Component):
             useaUbU = True
             aU = 5.0
             bU = 1.66
+            axialIndProvided = True
 
         else:
             ke = params['floris_params:ke']
@@ -688,7 +691,7 @@ class floris_velocity(Component):
 
         # print 'ke, ME, aI, bU: ', ke, MU, aU, bU
 
-        axialIndProvided = params['floris_params:axialIndProvided']
+            axialIndProvided = params['floris_params:axialIndProvided']
 
         # how far in front of turbines to use overlap power calculations (in rotor diameters). This must match the
         # value used in floris_wcent_wdiam (hardcoded in fortran as 1)
@@ -762,6 +765,7 @@ class floris_velocity(Component):
             useaUbU = True
             aU = 5.0
             bU = 1.66
+            axialIndProvided = True
 
         else:
             ke = params['floris_params:ke']
@@ -772,7 +776,7 @@ class floris_velocity(Component):
             aU = params['floris_params:aU']
             bU = params['floris_params:bU']
 
-        axialIndProvided = params['floris_params:axialIndProvided']
+            axialIndProvided = params['floris_params:axialIndProvided']
 
         # see execute(self) for explanation
         # p_near0 = self.p_near0
