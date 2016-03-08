@@ -1,37 +1,6 @@
 ! Flow field calculations have been intentionally left out to save development time.
 ! The flow field can be calculated using the pure python version of floris 
 
-subroutine CTtoAxialInd(CT, nTurbines, axial_induction)
-    
-    implicit none
-    
-    ! define precision to be the standard for a double precision ! on local system
-    integer, parameter :: dp = kind(0.d0)
-
-    ! in
-    integer, intent(in) :: nTurbines
-    real(dp), dimension(nTurbines), intent(in) :: CT
-
-    ! local
-    integer :: i
-
-    ! out
-    real(dp), dimension(nTurbines), intent(out) :: axial_induction
-
-    axial_induction = 0.0_dp
-
-    ! execute
-    do i = 1, nTurbines
-        if (CT(i) > 0.96) then  ! Glauert condition
-            axial_induction(i) = 0.143_dp + sqrt(0.0203_dp-0.6427_dp*(0.889_dp - CT(i)))
-        else
-            axial_induction(i) = 0.5_dp*(1.0_dp-sqrt(1.0_dp-CT(i)))
-        end if
-    end do
-    
-end subroutine CTtoAxialInd
-    
-
 subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDiameters, &
                             wakeCenters, wakeOverlapTRel_m)
 !    calculate overlap of rotors and wake zones (wake zone location defined by wake 
@@ -133,8 +102,38 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
    
                                     
 end subroutine calcOverlapAreas
-    
 
+
+subroutine CTtoAxialInd(CT, nTurbines, axial_induction)
+    
+    implicit none
+    
+    ! define precision to be the standard for a double precision ! on local system
+    integer, parameter :: dp = kind(0.d0)
+
+    ! in
+    integer, intent(in) :: nTurbines
+    real(dp), dimension(nTurbines), intent(in) :: CT
+
+    ! local
+    integer :: i
+
+    ! out
+    real(dp), dimension(nTurbines), intent(out) :: axial_induction
+
+    axial_induction = 0.0_dp
+
+    ! execute
+    do i = 1, nTurbines
+        if (CT(i) > 0.96) then  ! Glauert condition
+            axial_induction(i) = 0.143_dp + sqrt(0.0203_dp-0.6427_dp*(0.889_dp - CT(i)))
+        else
+            axial_induction(i) = 0.5_dp*(1.0_dp-sqrt(1.0_dp-CT(i)))
+        end if
+    end do
+    
+end subroutine CTtoAxialInd
+    
 
 subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                               initialWakeAngle, ke_in, keCorrCT, Region2CT, yaw_deg, Ct, &
@@ -179,13 +178,20 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 
 	! convert yaw from degrees to radians
 	!print *, Ct
-	yaw = yaw_deg*pi/180.0_dp
+    yaw = yaw_deg*pi/180.0_dp
 	    
     ! calculate y-locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
     
+    print *, "kd = ", kd
+    print *, "ke = ", ke_in
+    print *, "rotorDiameter = ", rotorDiameter(0)    
+    
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
+!         print *, "CTtilde = ", wakeAngleInit !correct
+!         print *, "initial wake angle = ", initialWakeAngle ! correct
+!         print *, "ad = ", initialWakeDisplacement ! correct
         
         if (useWakeAngle) then
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
@@ -196,24 +202,39 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
             
             if (turbineXw(turb) < turbineXw(turbI)) then
-                wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
-                ! yaw-induced wake center displacement   
-                displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
-                               +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
-                               (factor*factor*factor*factor*factor))/ &
-                               rotorDiameter(turb))) - (wakeAngleInit* &
-                               rotorDiameter(turb)*(15.0_dp + &
-                               (wakeAngleInit*wakeAngleInit))/(30.0_dp*kd))
-                               
+                wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
+                                                 & wakeAngleInit*(wakeAngleInit* &
+                                                 & wakeAngleInit + 15.0_dp*factor*factor* &
+                                                 factor*factor)/((30.0_dp*kd/ & 
+                                                 rotorDiameter(turb))*(factor*factor* &
+                                                 & factor*factor*factor))
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)- &
+                                                 & wakeAngleInit*(wakeAngleInit* &
+                                                 & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
+                                                 rotorDiameter(turb))
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
+                                                 & initialWakeDisplacement
+!                 print *, wakeCentersYT_mat(turbI, turb)
+                
+               !  wakeCentersYT_mat(turbI, turb) = turbineYw(turb) + initialWakeDisplacement
+!                 ! yaw-induced wake center displacement   
+!                 displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
+!                                +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
+!                                (factor*factor*factor*factor*factor))/ &
+!                                rotorDiameter(turb))) - (wakeAngleInit* &
+!                                rotorDiameter(turb)*(15.0_dp + &
+!                                (wakeAngleInit*wakeAngleInit))/(30.0_dp*kd))
+!                 
+!                                
                 if (useWakeAngle .eqv. .false.) then
-                    displacement = displacement + bd*deltax
+!                     displacement = displacement + bd*deltax
+                    wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + bd*(deltax)
 !                     print *, "displacement: ", displacement
                 end if
                 
-                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
-                
-!             else
-!                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
+!                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
+!                 print *, "wakeCenters[", turbI, "][", turb, "] = ", wakeCentersYT_mat(turbI, turb)
             end if
 
         end do
@@ -265,7 +286,6 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     
 end subroutine floris_wcent_wdiam
-
 
 
 subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
@@ -324,7 +344,6 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
 end subroutine floris_overlap
 
 
-
 subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
                  axialIndProvided, useaUbU, keCorrCT, Region2CT, ke_in, Vinf, keCorrArray, &
                  turbineXw, yaw_deg, rotorDiameter, MU, aU, bU, &
@@ -345,6 +364,7 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: MU
     real(dp), intent(in) :: aU, bU
+        
     ! local
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel    ! relative overlap (NxNx3)
     real(dp), dimension(nTurbines) :: a, ke, keArray, yaw
@@ -359,7 +379,7 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
     intrinsic cos
     
     ! convert yaw from degrees to radians
-	yaw = yaw_deg*pi/180.0_dp
+    yaw = yaw_deg*pi/180.0_dp
 
     ! pack overlap vector into a matrix
     do turbI = 1, nTurbines
@@ -370,7 +390,6 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
         wakeOverlapTRel(turbI, :, 3) = wakeOverlapTRel_v(3*nTurbines*(turbI-1)+2*nTurbines+1:&
                                    3*nTurbines*(turbI-1)+3*nTurbines)
     end do
-
 
     if (axialIndProvided) then
         a = a_in
@@ -415,7 +434,9 @@ subroutine floris_velocity(nTurbines, wakeOverlapTRel_v, Ct, a_in, &
                     end if                     
                             
                 end do
+!                 print *, "wakeEffCoeff = ", wakeEffCoeff
                 wakeEffCoeff = wakeEffCoeff + (a(turb)*wakeEffCoeffPerZone)**2
+!                 print *, "wakeEffCoeff = ", wakeEffCoeff
             end if
         end do
         wakeEffCoeff = 1.0_dp - 2.0_dp*sqrt(wakeEffCoeff)
