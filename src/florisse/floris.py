@@ -254,7 +254,7 @@ class floris_wcent_wdiam(Component):
             kd = 0.15
             me = np.array([-0.5, 0.22, 1.0])
             useWakeAngle = False
-            initialWakeDisplacement = 4.5
+            initialWakeDisplacement = -4.5
             initialWakeAngle = params['floris_params:initialWakeAngle']
             bd = -0.01
             adjustInitialWakeDiamToYaw = False
@@ -308,7 +308,7 @@ class floris_wcent_wdiam(Component):
             kd = 0.15
             me = np.array([-0.5, 0.22, 1.0])
             useWakeAngle = False
-            initialWakeDisplacement = 4.5
+            initialWakeDisplacement = -4.5
             initialWakeAngle = params['floris_params:initialWakeAngle']
             bd = -0.01
             adjustInitialWakeDiamToYaw = False
