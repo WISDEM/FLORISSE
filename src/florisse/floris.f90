@@ -263,9 +263,9 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         do turbI = 1, nTurbines
             deltax = turbineXw(turbI) - turbineXw(turb)
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
-            
+            wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
             if (turbineXw(turb) < turbineXw(turbI)) then
-                wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
+                
                 ! yaw-induced wake center displacement   
                 displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
                                +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
