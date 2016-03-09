@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 FLORISSE
 ======== 
 
@@ -84,4 +83,3 @@ README for FLORIS in OpenMDAOv1.5+
     $ python test/exampleCall.py  
     $ python test/exampleOptimizationAEP.py 2  
     $ mpirun -np 4 python test/exampleOptimizationAEP.py 2  
->>>>>>> FLORIScosine
