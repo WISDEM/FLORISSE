@@ -164,6 +164,15 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
                                                          :)/((pi*rotorDiameter(turbI) &
                                                        *rotorDiameter(turbI))/4.0_dp)
     end do
+    
+    ! do turbI = 1, nTurbines
+!         do turb = 1, nTurbines
+!             do zone = 1, 3
+!                 print *, "wakeOverlapTRel_m[", turbI, ", ", turb, ", ", zone, "] = ", wakeOverlapTRel_m(turbI, turb, zone)
+!             end do
+!         end do
+!     end do
+        
    
                                     
 end subroutine calcOverlapAreas
@@ -263,22 +272,42 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         do turbI = 1, nTurbines
             deltax = turbineXw(turbI) - turbineXw(turb)
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
-            wakeCentersYT_mat(turbI, turb) = turbineYw(turb) - initialWakeDisplacement
+            
             if (turbineXw(turb) < turbineXw(turbI)) then
+                wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
+                                                 & wakeAngleInit*(wakeAngleInit* &
+                                                 & wakeAngleInit + 15.0_dp*factor*factor* &
+                                                 factor*factor)/((30.0_dp*kd/ & 
+                                                 rotorDiameter(turb))*(factor*factor* &
+                                                 & factor*factor*factor))
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)- &
+                                                 & wakeAngleInit*(wakeAngleInit* &
+                                                 & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
+                                                 rotorDiameter(turb))
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
+                                                 & initialWakeDisplacement
+!                 print *, wakeCentersYT_mat(turbI, turb)
                 
-                ! yaw-induced wake center displacement   
-                displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
-                               +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
-                               (factor*factor*factor*factor*factor))/ &
-                               rotorDiameter(turb))) - (wakeAngleInit* &
-                               rotorDiameter(turb)*(15.0_dp + &
-                               (wakeAngleInit*wakeAngleInit))/(30.0_dp*kd))
-                               
+               !  wakeCentersYT_mat(turbI, turb) = turbineYw(turb) + initialWakeDisplacement
+!                 ! yaw-induced wake center displacement   
+!                 displacement = (wakeAngleInit*(15.0_dp*(factor*factor*factor*factor) &
+!                                +(wakeAngleInit*wakeAngleInit))/((30.0_dp*kd* &
+!                                (factor*factor*factor*factor*factor))/ &
+!                                rotorDiameter(turb))) - (wakeAngleInit* &
+!                                rotorDiameter(turb)*(15.0_dp + &
+!                                (wakeAngleInit*wakeAngleInit))/(30.0_dp*kd))
+!                 
+!                                
                 if (useWakeAngle .eqv. .false.) then
-                    displacement = displacement + bd*deltax
+!                     displacement = displacement + bd*deltax
+                    wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + bd*(deltax)
+!                     print *, "displacement: ", displacement
                 end if
                 
-                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
+!                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
+                ! checked and good 3/8/2016
+                ! print *, "wakeCenters[", turbI, "][", turb, "] = ", wakeCentersYT_mat(turbI, turb)
             end if
 
         end do
