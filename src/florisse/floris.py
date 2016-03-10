@@ -623,7 +623,7 @@ class floris_velocity(Component):
             # TODO hard code this parameter in the fortran code and remove the specifier from all functions of this component
             p_near0 = -1.0
             # p_near0 = 0.0
-            splineshift = self.splineshift
+            # splineshift = self.splineshift
 
             # pass p_near0 to self for use in gradient calculations
             self.p_near0 = p_near0
