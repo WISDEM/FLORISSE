@@ -27,7 +27,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
     
     ! local
     integer :: turb, turbI, zone
-    real(dp), parameter :: pi = 3.141592653589793_dp
+    real(dp), parameter :: pi = 3.141592653589793_dp, tol = 0.000001_dp
     real(dp) :: OVdYd, OVr, OVRR, OVL, OVz
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlap
         
@@ -42,7 +42,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
                 do zone = 1, 3
                     OVRR = wakeDiameters(turbI, turb, zone)/2.0_dp        ! wake diameter
                     OVdYd = abs(OVdYd)
-                    if (OVdYd >= 0.00000001_dp) then
+                    if (OVdYd >= 0.0_dp + tol) then
                         ! calculate the distance from the wake center to the vertical line between
                         ! the two circle intersection points
                         OVL = (-OVr*OVr+OVRR*OVRR+OVdYd*OVdYd)/(2.0_dp*OVdYd)
@@ -53,7 +53,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
                     OVz = OVRR*OVRR-OVL*OVL
 
                     ! Finish calculating the distance from the intersection line to the outer edge of the wake zone
-                    if (OVz > 0.0_dp) then
+                    if (OVz > 0.0_dp + tol) then
                         OVz = sqrt(OVz)
                     else
                         OVz = 0.0_dp
@@ -98,7 +98,6 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, rotorDiameter, wakeDi
             wakeOverlapTRel_m(turbI, :, :) = wakeOverlapTRel_m(turbI, :, &
                                                          :)/((pi*rotorDiameter(turbI) &
                                                        *rotorDiameter(turbI))/4.0_dp)
-            
     end do
     
     ! do turbI = 1, nTurbines
