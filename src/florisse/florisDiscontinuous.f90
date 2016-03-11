@@ -187,6 +187,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 
 	! convert yaw from degrees to radians
 	!print *, Ct
+! 	print *, "initialWakeDisplacement(disc.) = ", initialWakeDisplacement
     yaw = yaw_deg*pi/180.0_dp
 	    
     ! calculate y-locations of wake centers in wind ref. frame
@@ -222,6 +223,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
                                                  rotorDiameter(turb))
+!                 print *, "initialWakeDisplacement(disc.) = ", initialWakeDisplacement  
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement
 !                 print *, wakeCentersYT_mat(turbI, turb)

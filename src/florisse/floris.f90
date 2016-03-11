@@ -254,7 +254,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 !     print *, "bd", bd
 !     print *, "me", me
 !     print *, "ke_in", ke_in   
-    
+!     print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
     spline_bound = 1.0_dp
        
     yaw = yaw_deg*pi/180.0_dp
@@ -285,6 +285,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
                                                  rotorDiameter(turb))
+!                 print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement
 !                 print *, wakeCentersYT_mat(turbI, turb)
