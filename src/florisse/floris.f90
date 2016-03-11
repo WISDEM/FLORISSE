@@ -275,16 +275,19 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             
             if (turbineXw(turb) < turbineXw(turbI)) then
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
+                
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp*factor*factor* &
                                                  factor*factor)/((30.0_dp*kd/ & 
                                                  rotorDiameter(turb))*(factor*factor* &
                                                  & factor*factor*factor))
+                                                 
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)- &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
                                                  rotorDiameter(turb))
+                                                 
 !                 print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement
