@@ -271,10 +271,18 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         
         do turbI = 1, nTurbines
             deltax = turbineXw(turbI) - turbineXw(turb)
+            print *, turbineXw
+            print *, turbineYw
+            print *, deltax
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
             
             if (turbineXw(turb) < turbineXw(turbI)) then
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
+                                
+                print *, "wakeAngleInit: ", wakeAngleInit
+                print *, "factor: ", factor
+                print *, "kd: ", kd
+                print *, "rotorDiameter: ", rotorDiameter
                 
                 displacement = wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp*factor*factor* &
