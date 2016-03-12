@@ -197,7 +197,25 @@ class floris_wcent_wdiam(Component):
                 factor = (2.0*kd*deltax/rotorDiameter[turb])+1.0
                 wakeCentersYT_mat[turbI, turb] = turbineYw[turb]
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]-initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
-                displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/((30.0*kd*(factor**5.0))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
+                
+                print "wakeAngleInit: ", wakeAngleInit
+                print "factor: ", factor
+                print "kd: ", kd
+                print "rotorDiameter: ", rotorDiameter
+                
+                displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
+                ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
+                (wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
+                print "displacement 1: ", displacement
+                
+                # from fortran
+                displacement = wakeAngleInit*(wakeAngleInit*wakeAngleInit + 
+                15.0*factor**4)/((30.0*kd/rotorDiameter[turb])*
+                (factor**5))                                                 
+                displacement = displacement - wakeAngleInit*(wakeAngleInit*wakeAngleInit 
+                + 15.0)/(30.0*kd/rotorDiameter[turb])
+                
+                print "displacement 2: ", displacement
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
 
         # adjust k_e to C_T, adjusted to yaw
