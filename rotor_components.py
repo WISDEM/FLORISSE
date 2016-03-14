@@ -54,6 +54,7 @@ class CPCT_Interpolate(Component):
         
         print "in rotor, Cp = ", self.CP
         print "in rotor, Ct = ", self.CT
+        print "in rotor, pP = ", self.pP
         # print 'in CPCT interp, wind_speed_hub = ', self.wind_speed_hub
 
     def list_deriv_vars(self):
