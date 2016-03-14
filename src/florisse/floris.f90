@@ -269,6 +269,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         print *, "wakeAngleInit_in: ", wakeAngleInit
         
         if (useWakeAngle) then
+            print *, "initialWakeAngle: ", initialWakeAngle
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
         end if
         
