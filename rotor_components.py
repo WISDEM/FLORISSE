@@ -37,6 +37,9 @@ class CPCT_Interpolate(Component):
     def execute(self):
 
         #print 'in CPCT_Interpolate'
+        
+        print "first speed, first CT", self.windSpeedToCPCT.wind_speed[0], self.windSpeedToCPCT.CT[0], self.windSpeedToCPCT.CT[1]
+        print "last speed, last CT", self.windSpeedToCPCT.wind_speed[-1], self.windSpeedToCPCT.CP[-1]
 
         wind_speed_ax = np.cos(self.yaw*np.pi/180.0)**(self.pP/3.0)*self.wind_speed_hub
         # use interpolation on precalculated CP-CT curve
@@ -48,6 +51,9 @@ class CPCT_Interpolate(Component):
         # normalize on incoming wind speed to correct coefficients for yaw
         self.CP = self.CP * np.cos(self.yaw*np.pi/180.0)**self.pP
         self.CT = self.CT * np.cos(self.yaw*np.pi/180.0)**2
+        
+        print "in rotor, Cp = ", self.CP
+        print "in rotor, Ct = ", self.CT
         # print 'in CPCT interp, wind_speed_hub = ', self.wind_speed_hub
 
     def list_deriv_vars(self):
