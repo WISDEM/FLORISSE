@@ -266,6 +266,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
         print *, "Ct[", turb-1, "]: ", Ct(turb)
         print *, "yaw[", turb-1, "]: ", yaw(turb)
+        print *, "wakeAngleInit_in: ", wakeAngleInit
         
         if (useWakeAngle) then
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
@@ -273,9 +274,9 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
         
         do turbI = 1, nTurbines
             deltax = turbineXw(turbI) - turbineXw(turb)
-            print *, turbineXw
-            print *, turbineYw
-            print *, deltax
+            print *, "turbineXw", turbineXw
+            print *, "turbineYw", turbineYw
+            print *, "deltax", deltax
             factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
             
             if (turbineXw(turb) < turbineXw(turbI)) then
