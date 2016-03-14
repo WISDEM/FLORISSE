@@ -301,10 +301,10 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                                                  rotorDiameter(turb))
                 print *, "displacement: ", displacement
                                                  
-!                 print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
+                print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
-                                                 & initialWakeDisplacement - displacement
-!                 print *, wakeCentersYT_mat(turbI, turb)
+                                                 & initialWakeDisplacement + displacement
+                
                 
                !  wakeCentersYT_mat(turbI, turb) = turbineYw(turb) + initialWakeDisplacement
 !                 ! yaw-induced wake center displacement   
@@ -321,6 +321,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                     wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + bd*(deltax)
 !                     print *, "displacement: ", displacement
                 end if
+                
+                print *, "final wake center: ", wakeCentersYT_mat(turbI, turb)
                 
 !                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
                 ! checked and good 3/8/2016
