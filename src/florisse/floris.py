@@ -4,7 +4,8 @@ from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, Par
 from openmdao.api import NLGaussSeidel, ScipyGMRES
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
-    CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps
+    CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
+    CPCT_Interpolate_Gradients
 
 import _floris
 import _florisDiscontinuous
@@ -930,7 +931,11 @@ class RotorSolveGroup(Group):
         # self.ln_solver.setup('direction_group%i' % direction_id)
         # self.ln_solver.solve('velocitiesTurbines%i' % direction_id)
 
-        self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=datasize),
+        # self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=datasize),
+        #              promotes=['gen_params:*', 'yaw%i' % direction_id,
+        #                        'velocitiesTurbines%i' % direction_id])
+
+        self.add('CtCp', CPCT_Interpolate_Gradients(nTurbines, direction_id=direction_id, datasize=datasize),
                      promotes=['gen_params:*', 'yaw%i' % direction_id,
                                'velocitiesTurbines%i' % direction_id])
 
