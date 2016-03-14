@@ -180,9 +180,11 @@ class floris_wcent_wdiam(Component):
         wakeCentersYT_mat = np.zeros((nTurbines, nTurbines))
         for turb in range(0, nTurbines):
             wakeAngleInit = 0.5 * np.sin(yaw[turb]) * Ct[turb]
+            print "wakeAngleInit_in: ", wakeAngleInit 
             print "Ct[%i]: " % turb, Ct[turb]
             print "yaw[%i]: " % turb, yaw[turb]
             if useWakeAngle:
+                print "initialWakeAngle: ", initialWakeAngle
                 wakeAngleInit += initialWakeAngle*np.pi/180.0
             for loc in range(0, nSamples):  # at velX-locations
                 deltax = np.maximum(velX[loc]-turbineXw[turb], 0)
