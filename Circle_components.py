@@ -204,6 +204,7 @@ class floris_wcent_wdiam(Component):
                 
                 print "wakeAngleInit: ", wakeAngleInit
                 print "factor: ", factor
+                print "deltax: ", deltax
                 print "kd: ", kd
                 print "rotorDiameter: ", rotorDiameter
                 
