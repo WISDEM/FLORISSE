@@ -223,6 +223,9 @@ class floris_wcent_wdiam(Component):
                 
                 print "displacement 2: ", displacement
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
+                
+                
+                print "final wake center: ", wakeCentersYT_mat[turbI, turb]
 
         # adjust k_e to C_T, adjusted to yaw
         ke = ke + keCorrCT*(Ct-baselineCT) # FT = Ct*0.5*rho*A*(U*cos(yaw))^2, hence, thrust decreases with cos^2
