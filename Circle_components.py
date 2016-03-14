@@ -202,11 +202,12 @@ class floris_wcent_wdiam(Component):
                 wakeCentersYT_mat[turbI, turb] = turbineYw[turb]
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]-initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
                 
-                print "wakeAngleInit: ", wakeAngleInit
-                print "factor: ", factor
-                print "deltax: ", deltax
-                print "kd: ", kd
-                print "rotorDiameter: ", rotorDiameter
+                if turbineXw[turbI] > turbineXw[turb]:
+                    print "wakeAngleInit: ", wakeAngleInit
+                    print "factor: ", factor
+                    print "deltax: ", deltax
+                    print "kd: ", kd
+                    print "rotorDiameter: ", rotorDiameter
                 
                 displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
                 ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
