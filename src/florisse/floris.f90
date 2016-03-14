@@ -264,8 +264,8 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
-        print *, "Ct[turb]: ", Ct(turb)
-        print *, "yaw[turb]: ", yaw(turb)
+        print *, "Ct[", turb, "]: ", Ct(turb)
+        print *, "yaw[", turb, "]: ", yaw(turb)
         
         if (useWakeAngle) then
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
