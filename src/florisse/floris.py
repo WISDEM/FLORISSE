@@ -13,7 +13,7 @@ import _florisDiscontinuous
 
 
 def add_floris_parameters(openmdao_comp, original_params=True):
-    # altering the values in this function will have no effect during optimization. TO change defaults permanently,
+    # altering the values in this function will have no effect during optimization. To change defaults permanently,
     # alter the values in add_floris_IndepVarComps().
 
     ###################   wake deflection   ##################
@@ -32,7 +32,7 @@ def add_floris_parameters(openmdao_comp, original_params=True):
                             desc='sets how angled the wake flow should be at the rotor')
 
     ### flags
-    openmdao_comp.add_param('floris_params:useWakeAngle', True, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:useWakeAngle', False if original_params else True, pass_by_obj=True,
                             desc='define whether an initial angle or initial offset should be used for wake center. '
                                  'if True, then bd will be ignored and initialWakeAngle will'
                                  'be used. The reverse is also true')
@@ -48,7 +48,8 @@ def add_floris_parameters(openmdao_comp, original_params=True):
                             desc='parameters defining relative zone expansion. Mixing zone (me[2]) must always be 1.0')
 
     ### flags
-    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', False if original_params else True,
+                            pass_by_obj=True,
                             desc='if True then initial wake diameter will be set to rotorDiameter*cos(yaw)')
 
 
@@ -75,14 +76,14 @@ def add_floris_parameters(openmdao_comp, original_params=True):
                             desc='defines ideal CT value for use in adjusting ke to yaw adjust CT if keCorrCT>0.0')
 
     # flags
-    openmdao_comp.add_param('floris_params:axialIndProvided', False, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:axialIndProvided', True if original_params else False, pass_by_obj=True,
                             desc='if axial induction is not provided, then it will be calculated based on CT')
-    openmdao_comp.add_param('floris_params:useaUbU', False, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:useaUbU', True, pass_by_obj=True,
                             desc='if True then zone velocity decay rates (MU) will be adjusted based on yaw')
 
 
     ###################   other   ##################
-    openmdao_comp.add_param('floris_params:FLORISoriginal', False, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:FLORISoriginal', True, pass_by_obj=True,
                             desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
 
@@ -128,7 +129,8 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                         promotes=['*'])
 
     ### flags
-    openmdao_object.add('fp04', IndepVarComp('floris_params:useWakeAngle', True, pass_by_obj=True,
+    openmdao_object.add('fp04', IndepVarComp('floris_params:useWakeAngle', False if original_params else True,
+                                             pass_by_obj=True,
                                              desc='define whether an initial angle or initial offset should be used for'
                                                   'wake center. If True, then bd will be ignored and initialWakeAngle '
                                                   'will be used. The reverse is also true'),
@@ -148,7 +150,8 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                         promotes=['*'])
 
     ### flags
-    openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw', True, pass_by_obj=True,
+    openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw',
+                                             False if original_params else True, pass_by_obj=True,
                                              desc='if True then initial wake diameter will be set to '
                                                   'rotorDiameter*cos(yaw)'),
                         promotes=['*'])
@@ -187,11 +190,12 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                         promotes=['*'])
 
     # flags
-    openmdao_object.add('fp15', IndepVarComp('floris_params:axialIndProvided', False, pass_by_obj=True,
+    openmdao_object.add('fp15', IndepVarComp('floris_params:axialIndProvided', True if original_params else False,
+                                             pass_by_obj=True,
                                              desc='if axial induction is not provided, then it will be calculated based '
                                                   'on CT'),
                         promotes=['*'])
-    openmdao_object.add('fp16', IndepVarComp('floris_params:useaUbU', False, pass_by_obj=True,
+    openmdao_object.add('fp16', IndepVarComp('floris_params:useaUbU', True, pass_by_obj=True,
                                              desc='if True then zone velocity decay rates (MU) will be adjusted based '
                                                   'on yaw'),
                         promotes=['*'])
@@ -549,8 +553,8 @@ class floris_velocity(Component):
         self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameters of all turbine')
         self.add_param('axialInduction', np.zeros(nTurbines)+1./3., desc='axial induction of all turbines')
         self.add_param('Ct', np.zeros(nTurbines)+4.0*(1./3.)*(1.0-(1./3.)), desc='Thrust coefficient for all turbines')
-        self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
-        self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
+        # self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
+        # self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
         self.add_param('turbineXw', np.zeros(nTurbines), units='m',
                        desc='X positions of turbines in the wind direction reference frame')
         self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), units='deg',
@@ -585,37 +589,34 @@ class floris_velocity(Component):
         turbineXw = params['turbineXw']
         axialInduction = params['axialInduction']
         rotorDiameter = params['rotorDiameter']
-        rho = params['air_density']
-        generator_efficiency = params['generator_efficiency']
-        Cp = params['Cp']
         yaw = params['yaw%i' % self.direction_id]
 
         # print 'wake OL in power', wakeOverlapTRel_v
 
         # set floris parameter values
-        if params['floris_params:FLORISoriginal']:
-
-            ke = 0.065
-            keCorrCT = 0.0
-            keCorrArray = 0.0
-            MU = np.array([0.5, 1.0, 5.5])
-            useaUbU = True
-            aU = 5.0
-            bU = 1.66
-            axialIndProvided = True
-
-        else:
-            ke = params['floris_params:ke']
-            keCorrCT = params['floris_params:keCorrCT']
-            keCorrArray = params['floris_params:keCorrArray']
-            MU = params['floris_params:MU']
-            useaUbU = params['floris_params:useaUbU']
-            aU = params['floris_params:aU']
-            bU = params['floris_params:bU']
+        # if params['floris_params:FLORISoriginal']:
+        #
+        #     ke = 0.065
+        #     keCorrCT = 0.0
+        #     keCorrArray = 0.0
+        #     MU = np.array([0.5, 1.0, 5.5])
+        #     useaUbU = True
+        #     aU = 5.0
+        #     bU = 1.66
+        #     axialIndProvided = True
+        #
+        # else:
+        ke = params['floris_params:ke']
+        keCorrCT = params['floris_params:keCorrCT']
+        keCorrArray = params['floris_params:keCorrArray']
+        MU = params['floris_params:MU']
+        useaUbU = params['floris_params:useaUbU']
+        aU = params['floris_params:aU']
+        bU = params['floris_params:bU']
 
         # print 'ke, ME, aI, bU: ', ke, MU, aU, bU
 
-            axialIndProvided = params['floris_params:axialIndProvided']
+        axialIndProvided = params['floris_params:axialIndProvided']
 
         # how far in front of turbines to use overlap power calculations (in rotor diameters). This must match the
         # value used in floris_wcent_wdiam (hardcoded in fortran as 1)
@@ -938,17 +939,16 @@ class RotorSolveGroup(Group):
 
         self.add('CtCp', CPCT_Interpolate_Gradients(nTurbines, direction_id=direction_id, datasize=datasize),
                      promotes=['gen_params:*', 'yaw%i' % direction_id,
-                               'velocitiesTurbines%i' % direction_id])
+                               'velocitiesTurbines%i' % direction_id, 'Cp_out'])
 
         self.add('floris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
                                     differentiable=differentiable, optimizingLayout=optimizingLayout),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
-                           'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
+                           'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                            'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
-                           'wakeOverlapTRel', 'Cp'])
+                           'wakeOverlapTRel'])
         self.connect('CtCp.Ct_out', 'floris.Ct')
-        self.connect('CtCp.Cp_out', 'Cp')
-
+        # self.connect('CtCp.Cp_out', 'Cp')
 
 class DirectionGroupFLORIS(Group):
     """
@@ -973,16 +973,15 @@ class DirectionGroupFLORIS(Group):
                                                 differentiable=differentiable, optimizingLayout=optimizingLayout),
                      promotes=['gen_params:*', 'yaw%i' % direction_id, 'velocitiesTurbines%i' % direction_id,
                                'floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
-                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter',
-                               'wakeCentersYT', 'wakeDiametersT',
+                               'turbineX', 'turbineY', 'rotorDiameter', 'wakeCentersYT', 'wakeDiametersT',
                                'wakeOverlapTRel'])
         else:
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
-                     promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'yaw%i' % direction_id])
+                     promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'yaw%i' % direction_id])
 
             self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id, differentiable=differentiable, optimizingLayout=optimizingLayout),
                      promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
-                               'generator_efficiency', 'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
+                               'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                                'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
                                'wakeOverlapTRel'])
 
@@ -993,11 +992,10 @@ class DirectionGroupFLORIS(Group):
                            'wt_power%i' % direction_id, 'power%i' % direction_id])
 
         if use_rotor_components:
-            self.connect('myFloris.Cp', 'powerComp.Cp')
+            self.connect('myFloris.Cp_out', 'powerComp.Cp')
         else:
             self.connect('CtCp.Ct_out', 'myFloris.Ct')
-            self.connect('CtCp.Cp_out', 'myFloris.Cp')
-            self.connect('myFloris.Cp', 'powerComp.Cp')
+            self.connect('CtCp.Cp_out', 'powerComp.Cp')
 
 
 class AEPGroupFLORIS(Group):

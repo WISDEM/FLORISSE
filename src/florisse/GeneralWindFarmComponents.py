@@ -7,7 +7,7 @@ from scipy import interp
 
 
 def add_gen_params_IdepVarComps(openmdao_group, datasize):
-    openmdao_group.add('gp0', IndepVarComp('gen_params:pP', 3.0, pass_by_obj=True), promotes=['*'])
+    openmdao_group.add('gp0', IndepVarComp('gen_params:pP', 1.88, pass_by_obj=True), promotes=['*'])
     openmdao_group.add('gp1', IndepVarComp('gen_params:windSpeedToCPCT_wind_speed', np.zeros(datasize), units='m/s',
                                   desc='range of wind speeds', pass_by_obj=True), promotes=['*'])
     openmdao_group.add('gp2', IndepVarComp('gen_params:windSpeedToCPCT_CP', np.zeros(datasize),
@@ -141,7 +141,8 @@ class AdjustCtCpYaw(Component):
 
         # Explicitly size input arrays
         self.add_param('Ct_in', val=np.zeros(nTurbines), desc='Thrust coefficient for all turbines')
-        self.add_param('Cp_in', val=np.zeros(nTurbines), desc='power coefficient for all turbines')
+        self.add_param('Cp_in', val=np.zeros(nTurbines)+(0.7737/0.944) * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2),
+                       desc='power coefficient for all turbines')
         self.add_param('yaw%i' % direction_id, val=np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
 
         # Explicitly size output arrays
@@ -154,8 +155,8 @@ class AdjustCtCpYaw(Component):
                        desc='CT factor already corrected by CCBlade calculation (approximately factor cos(yaw)^2)', pass_by_obj=True)
         self.add_param('gen_params:CPcorrected', False,
                        desc='CP factor already corrected by CCBlade calculation (assumed with approximately factor cos(yaw)^3)', pass_by_obj=True)
-        self.add_param('floris_params:FLORISoriginal', True,
-                       desc='override all parameters and use FLORIS as original in first Wind Energy paper', pass_by_obj=True)
+        # self.add_param('floris_params:FLORISoriginal', True,
+        #                desc='override all parameters and use FLORIS as original in first Wind Energy paper', pass_by_obj=True)
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -168,11 +169,8 @@ class AdjustCtCpYaw(Component):
         Cp = params['Cp_in']
         yaw = params['yaw%i' % direction_id] * np.pi / 180.
         # print 'in Ct correction, Ct_in: ', Ct
-        # determine floris_parameter values
-        if params['floris_params:FLORISoriginal']:
-            pP = 1.88
-        else:
-            pP = params['gen_params:pP']
+
+        pP = params['gen_params:pP']
 
         CTcorrected = params['gen_params:CTcorrected']
         CPcorrected = params['gen_params:CPcorrected']
@@ -202,11 +200,7 @@ class AdjustCtCpYaw(Component):
         nTurbines = np.size(Ct)
         yaw = params['yaw%i' % direction_id] * np.pi / 180.
 
-        # determine floris_parameter values
-        if params['floris_params:FLORISoriginal']:
-            pP = 1.88
-        else:
-            pP = params['gen_params:pP']
+        pP = params['gen_params:pP']
 
         CTcorrected = params['gen_params:CTcorrected']
         CPcorrected = params['gen_params:CPcorrected']
@@ -746,7 +740,7 @@ class WindDirectionPower(Component):
 
         self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
         self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameters of all turbine')
-        self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
+        self.add_param('Cp', np.zeros(nTurbines)+(0.7737/0.944) * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
         self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
         self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s',
                        desc='effective hub velocity for each turbine')
@@ -769,6 +763,7 @@ class WindDirectionPower(Component):
         rotorArea = 0.25*np.pi*np.power(params['rotorDiameter'], 2)
         Cp = params['Cp']
         generator_efficiency = params['generator_efficiency']
+        # print "gen eff act = ", generator_efficiency
 
         wt_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(velocitiesTurbines, 3))
 
