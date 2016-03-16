@@ -12,7 +12,7 @@ import _florisDiscontinuous
 # import _florisHubSmooth as _floris
 
 
-def add_floris_parameters(openmdao_comp):
+def add_floris_parameters(openmdao_comp, original_params=True):
     # altering the values in this function will have no effect during optimization. TO change defaults permanently,
     # alter the values in add_floris_IndepVarComps().
 
@@ -20,7 +20,7 @@ def add_floris_parameters(openmdao_comp):
 
     ### parameters
     # original model
-    openmdao_comp.add_param('floris_params:kd', 0.15,
+    openmdao_comp.add_param('floris_params:kd', 0.15 if original_params else 0.17,
                             desc='model parameter that defines the sensitivity of the wake deflection to yaw')
     openmdao_comp.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True,
                             desc='defines the wake at the rotor to be slightly offset from the rotor. This is'
@@ -42,7 +42,7 @@ def add_floris_parameters(openmdao_comp):
 
     ### parameters
     # original model
-    openmdao_comp.add_param('floris_params:ke', 0.065, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:ke', 0.065 if original_params else 0.05, pass_by_obj=True,
                             desc='parameter defining overall wake expansion')
     openmdao_comp.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
                             desc='parameters defining relative zone expansion. Mixing zone (me[2]) must always be 1.0')
@@ -58,12 +58,12 @@ def add_floris_parameters(openmdao_comp):
     # original model
     openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True,
                             desc='velocity deficit decay rates for each zone. Middle zone must always be 1.0')
-    openmdao_comp.add_param('floris_params:aU', 5.0, units='deg', pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:aU', 5.0 if original_params else 12.0, units='deg', pass_by_obj=True,
                             desc='zone decay adjustment parameter independent of yaw')
-    openmdao_comp.add_param('floris_params:bU', 1.66, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:bU', 1.66 if original_params else 1.3, pass_by_obj=True,
                             desc='zone decay adjustment parameter dependent yaw')
     # added
-    openmdao_comp.add_param('floris_params:cos_spread', val=3.0, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:cos_spread', 1E12 if original_params else 3.0, pass_by_obj=True,
                             desc='spread of cosine smoothing factor (multiple of sum of wake and rotor radii)')
     openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True,
                             desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative overlap with '
@@ -104,14 +104,14 @@ def add_floris_parameters(openmdao_comp):
     # openmdao_comp.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
 
 
-def add_floris_params_IndepVarComps(openmdao_object):
+def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
     # permanently alter defaults here
 
     ###################   wake deflection   ##################
 
     ### parameters
     # original model
-    openmdao_object.add('fp00', IndepVarComp('floris_params:kd', 0.15,
+    openmdao_object.add('fp00', IndepVarComp('floris_params:kd', 0.15 if original_params else 0.17,
                                              desc='model parameter that defines the sensitivity of the wake deflection '
                                                   'to yaw'),
                         promotes=['*'])
@@ -139,7 +139,7 @@ def add_floris_params_IndepVarComps(openmdao_object):
 
     ### parameters
     # original model
-    openmdao_object.add('fp05', IndepVarComp('floris_params:ke', 0.065, pass_by_obj=True,
+    openmdao_object.add('fp05', IndepVarComp('floris_params:ke', 0.065 if original_params else 0.05, pass_by_obj=True,
                                              desc='parameter defining overall wake expansion'),
                         promotes=['*'])
     openmdao_object.add('fp06', IndepVarComp('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
@@ -162,14 +162,14 @@ def add_floris_params_IndepVarComps(openmdao_object):
                                              desc='velocity deficit decay rates for each zone. Middle zone must always '
                                                   'be 1.0'),
                         promotes=['*'])
-    openmdao_object.add('fp09', IndepVarComp('floris_params:aU', 5.0, units='deg', pass_by_obj=True,
+    openmdao_object.add('fp09', IndepVarComp('floris_params:aU', 5.0 if original_params else 12.0, units='deg', pass_by_obj=True,
                                              desc='zone decay adjustment parameter independent of yaw'),
                         promotes=['*'])
-    openmdao_object.add('fp10', IndepVarComp('floris_params:bU', 1.66, pass_by_obj=True,
+    openmdao_object.add('fp10', IndepVarComp('floris_params:bU', 1.66 if original_params else 1.3, pass_by_obj=True,
                                              desc='zone decay adjustment parameter dependent yaw'),
                         promotes=['*'])
     # added
-    openmdao_object.add('fp11', IndepVarComp('floris_params:cos_spread', val=3.0, pass_by_obj=True,
+    openmdao_object.add('fp11', IndepVarComp('floris_params:cos_spread', 1E12 if original_params else 3.0, pass_by_obj=True,
                                              desc='spread of cosine smoothing factor (multiple of sum of wake and rotor '
                                                   'radii)'),
                         promotes=['*'])
@@ -249,27 +249,27 @@ class floris_wcent_wdiam(Component):
 
         Region2CT = params['floris_params:Region2CT']
 
-        if params['floris_params:FLORISoriginal']:
-            ke = 0.065
-            keCorrCT = 0.0
-            kd = 0.15
-            me = np.array([-0.5, 0.22, 1.0])
-            useWakeAngle = False
-            initialWakeDisplacement = -4.5
-            initialWakeAngle = params['floris_params:initialWakeAngle']
-            bd = -0.01
-            adjustInitialWakeDiamToYaw = False
-
-        else:
-            ke = params['floris_params:ke']
-            keCorrCT = params['floris_params:keCorrCT']
-            kd = params['floris_params:kd']
-            me = params['floris_params:me']
-            initialWakeDisplacement = params['floris_params:initialWakeDisplacement']
-            useWakeAngle = params['floris_params:useWakeAngle']
-            initialWakeAngle = params['floris_params:initialWakeAngle']
-            bd = params['floris_params:bd']
-            adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
+        # if params['floris_params:FLORISoriginal']:
+        #     ke = 0.065
+        #     keCorrCT = 0.0
+        #     kd = 0.15
+        #     me = np.array([-0.5, 0.22, 1.0])
+        #     useWakeAngle = False
+        #     initialWakeDisplacement = -4.5
+        #     initialWakeAngle = params['floris_params:initialWakeAngle']
+        #     bd = -0.01
+        #     adjustInitialWakeDiamToYaw = False
+        #
+        # else:
+        ke = params['floris_params:ke']
+        keCorrCT = params['floris_params:keCorrCT']
+        kd = params['floris_params:kd']
+        me = params['floris_params:me']
+        initialWakeDisplacement = params['floris_params:initialWakeDisplacement']
+        useWakeAngle = params['floris_params:useWakeAngle']
+        initialWakeAngle = params['floris_params:initialWakeAngle']
+        bd = params['floris_params:bd']
+        adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
 
 
         # x and y positions w.r.t. the wind direction (wind = +x)
@@ -303,29 +303,29 @@ class floris_wcent_wdiam(Component):
         Ct = params['Ct']
         Region2CT = params['floris_params:Region2CT']
 
-        if params['floris_params:FLORISoriginal']:
-
-            ke = 0.065
-            keCorrCT = 0.0
-            kd = 0.15
-            me = np.array([-0.5, 0.22, 1.0])
-            useWakeAngle = False
-            initialWakeDisplacement = -4.5
-            initialWakeAngle = params['floris_params:initialWakeAngle']
-            bd = -0.01
-            adjustInitialWakeDiamToYaw = False
-
-        else:
+        # if params['floris_params:FLORISoriginal']:
+        #
+        #     ke = 0.065
+        #     keCorrCT = 0.0
+        #     kd = 0.15
+        #     me = np.array([-0.5, 0.22, 1.0])
+        #     useWakeAngle = False
+        #     initialWakeDisplacement = -4.5
+        #     initialWakeAngle = params['floris_params:initialWakeAngle']
+        #     bd = -0.01
+        #     adjustInitialWakeDiamToYaw = False
+        #
+        # else:
             # rename inputs and outputs
-            ke = params['floris_params:ke']
-            keCorrCT = params['floris_params:keCorrCT']
-            kd = params['floris_params:kd']
-            me = params['floris_params:me']
-            initialWakeDisplacement = params['floris_params:initialWakeDisplacement']
-            useWakeAngle = params['floris_params:useWakeAngle']
-            initialWakeAngle = params['floris_params:initialWakeAngle']
-            bd = params['floris_params:bd']
-            adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
+        ke = params['floris_params:ke']
+        keCorrCT = params['floris_params:keCorrCT']
+        kd = params['floris_params:kd']
+        me = params['floris_params:me']
+        initialWakeDisplacement = params['floris_params:initialWakeDisplacement']
+        useWakeAngle = params['floris_params:useWakeAngle']
+        initialWakeAngle = params['floris_params:initialWakeAngle']
+        bd = params['floris_params:bd']
+        adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
 
         # x and y positions w.r.t. the wind direction (wind = +x)
         turbineXw = params['turbineXw']
@@ -670,29 +670,30 @@ class floris_velocity(Component):
         # print 'wake OL in power', wakeOverlapTRel_v
 
         # set floris parameter values
-        if params['floris_params:FLORISoriginal']:
+        # if params['floris_params:FLORISoriginal']:
+        #
+        #     ke = 0.065
+        #     keCorrCT = 0.0
+        #     keCorrArray = 0.0
+        #     MU = np.array([0.5, 1.0, 5.5])
+        #     useaUbU = True
+        #     aU = 5.0
+        #     bU = 1.66
+        #     axialIndProvided = True
+        #
+        # else:
 
-            ke = 0.065
-            keCorrCT = 0.0
-            keCorrArray = 0.0
-            MU = np.array([0.5, 1.0, 5.5])
-            useaUbU = True
-            aU = 5.0
-            bU = 1.66
-            axialIndProvided = True
-
-        else:
-            ke = params['floris_params:ke']
-            keCorrCT = params['floris_params:keCorrCT']
-            keCorrArray = params['floris_params:keCorrArray']
-            MU = params['floris_params:MU']
-            useaUbU = params['floris_params:useaUbU']
-            aU = params['floris_params:aU']
-            bU = params['floris_params:bU']
+        ke = params['floris_params:ke']
+        keCorrCT = params['floris_params:keCorrCT']
+        keCorrArray = params['floris_params:keCorrArray']
+        MU = params['floris_params:MU']
+        useaUbU = params['floris_params:useaUbU']
+        aU = params['floris_params:aU']
+        bU = params['floris_params:bU']
 
         # print 'ke, ME, aI, bU: ', ke, MU, aU, bU
 
-            axialIndProvided = params['floris_params:axialIndProvided']
+        axialIndProvided = params['floris_params:axialIndProvided']
 
         # how far in front of turbines to use overlap power calculations (in rotor diameters). This must match the
         # value used in floris_wcent_wdiam (hardcoded in fortran as 1)
@@ -757,27 +758,27 @@ class floris_velocity(Component):
         yaw = params['yaw%i' % self.direction_id]
 
         # set floris parameter values
-        if params['floris_params:FLORISoriginal']:
+        # if params['floris_params:FLORISoriginal']:
+        #
+        #     ke = 0.065
+        #     keCorrCT = 0.0
+        #     keCorrArray = 0.0
+        #     MU = np.array([0.5, 1.0, 5.5])
+        #     useaUbU = True
+        #     aU = 5.0
+        #     bU = 1.66
+        #     axialIndProvided = True
+        #
+        # else:
+        ke = params['floris_params:ke']
+        keCorrCT = params['floris_params:keCorrCT']
+        keCorrArray = params['floris_params:keCorrArray']
+        MU = params['floris_params:MU']
+        useaUbU = params['floris_params:useaUbU']
+        aU = params['floris_params:aU']
+        bU = params['floris_params:bU']
 
-            ke = 0.065
-            keCorrCT = 0.0
-            keCorrArray = 0.0
-            MU = np.array([0.5, 1.0, 5.5])
-            useaUbU = True
-            aU = 5.0
-            bU = 1.66
-            axialIndProvided = True
-
-        else:
-            ke = params['floris_params:ke']
-            keCorrCT = params['floris_params:keCorrCT']
-            keCorrArray = params['floris_params:keCorrArray']
-            MU = params['floris_params:MU']
-            useaUbU = params['floris_params:useaUbU']
-            aU = params['floris_params:aU']
-            bU = params['floris_params:bU']
-
-            axialIndProvided = params['floris_params:axialIndProvided']
+        axialIndProvided = params['floris_params:axialIndProvided']
 
         # see execute(self) for explanation
         # p_near0 = self.p_near0
