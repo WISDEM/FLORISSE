@@ -322,7 +322,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 !                     print *, "displacement: ", displacement
                 end if
                 
-                print *, "final wake center: ", wakeCentersYT_mat(turbI, turb)
+                print *, "final wake center[", turbI, "][", turb, "]: ", wakeCentersYT_mat(turbI, turb)
                 
 !                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
                 ! checked and good 3/8/2016
