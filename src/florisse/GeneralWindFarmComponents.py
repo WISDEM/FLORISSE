@@ -534,7 +534,7 @@ class CPCT_Interpolate_Gradients(Component):
         self.add_output('Ct_out', np.zeros(nTurbines))
 
         # add variable trees
-        self.add_param('gen_params:pP', 3.0, pass_by_obj=True)
+        self.add_param('gen_params:pP', 1.88, pass_by_obj=True)
         self.add_param('gen_params:windSpeedToCPCT_wind_speed', np.zeros(datasize), units='m/s',
                        desc='range of wind speeds', pass_by_obj=True)
         self.add_param('gen_params:windSpeedToCPCT_CP', np.zeros(datasize), iotype='out',
