@@ -739,7 +739,7 @@ class WindDirectionPower(Component):
             self.fd_options['form'] = 'forward'
 
         self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameters of all turbine')
+        self.add_param('rotorDiameter', np.zeros(nTurbines) + 126.4, units='m', desc='rotor diameters of all turbine')
         self.add_param('Cp', np.zeros(nTurbines)+(0.7737/0.944) * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
         self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
         self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s',

@@ -234,8 +234,8 @@ class floris_wcent_wdiam(Component):
         self.add_param('turbineXw', np.zeros(nTurbines), units='m', desc='x coordinates of turbines in wind dir. ref. frame')
         self.add_param('turbineYw', np.zeros(nTurbines), units='m', desc='y coordinates of turbines in wind dir. ref. frame')
         self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), units='deg', desc='yaw of each turbine')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameter of each turbine')
-        self.add_param('Ct', np.zeros(nTurbines), desc='thrust coefficient of each turbine')
+        self.add_param('rotorDiameter', np.zeros(nTurbines) + 126.4, units='m', desc='rotor diameter of each turbine')
+        self.add_param('Ct', np.zeros(nTurbines)+4.0*(1./3.)*(1.0-(1./3.)), desc='thrust coefficient of each turbine')
 
         # output arrays
         self.add_output('wakeCentersYT', np.zeros(nTurbines*nTurbines), units='m', desc='wake center y position at each turbine')
@@ -427,7 +427,7 @@ class floris_overlap(Component):
                        desc='X positions of turbines wrt the wind direction')
         self.add_param('turbineYw', np.zeros(nTurbines), units='m',
                        desc='Y positions of turbines wrt the wind direction')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m',
+        self.add_param('rotorDiameter', np.zeros(nTurbines)+126.4, units='m',
                        desc='diameters of all turbine rotors')
         self.add_param('wakeCentersYT', np.zeros(nTurbines*nTurbines), units='m',
                        desc='Y positions of all wakes at each turbine')
@@ -550,7 +550,7 @@ class floris_velocity(Component):
         # inputs
         self.add_param('wind_speed', 8.0, units='m/s', desc='free stream wind velocity')
         self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
-        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameters of all turbine')
+        self.add_param('rotorDiameter', np.zeros(nTurbines)+126.4, units='m', desc='rotor diameters of all turbine')
         self.add_param('axialInduction', np.zeros(nTurbines)+1./3., desc='axial induction of all turbines')
         self.add_param('Ct', np.zeros(nTurbines)+4.0*(1./3.)*(1.0-(1./3.)), desc='Thrust coefficient for all turbines')
         # self.add_param('Cp', np.zeros(nTurbines)+0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
