@@ -209,22 +209,24 @@ class floris_wcent_wdiam(Component):
                     print "kd: ", kd
                     print "rotorDiameter: ", rotorDiameter
                 
-                    displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
-                    ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
-                    (wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
-                    print "displacement 1: ", displacement
+                displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
+                ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
+                (wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
+                print "displacement 1: ", displacement
+            
+                # from fortran
+                displacement = wakeAngleInit*(wakeAngleInit*wakeAngleInit + 
+                15.0*factor**4)/((30.0*kd/rotorDiameter[turb])*
+                (factor**5))                                                 
+                displacement = displacement - wakeAngleInit*(wakeAngleInit*wakeAngleInit 
+                + 15.0)/(30.0*kd/rotorDiameter[turb])
                 
-                    # from fortran
-                    displacement = wakeAngleInit*(wakeAngleInit*wakeAngleInit + 
-                    15.0*factor**4)/((30.0*kd/rotorDiameter[turb])*
-                    (factor**5))                                                 
-                    displacement = displacement - wakeAngleInit*(wakeAngleInit*wakeAngleInit 
-                    + 15.0)/(30.0*kd/rotorDiameter[turb])
-                
+                if turbineXw[turbI] > turbineXw[turb]:
                     print "displacement 2: ", displacement
-                    wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
                 
+                wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
                 
+                if turbineXw[turbI] > turbineXw[turb]:
                     print "final wake center[%f][%f]: " % (turbI, turb), wakeCentersYT_mat[turbI, turb]
 
         # adjust k_e to C_T, adjusted to yaw

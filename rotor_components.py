@@ -40,7 +40,7 @@ class CPCT_Interpolate(Component):
         
         print "first speed, first CT", self.windSpeedToCPCT.wind_speed[0], self.windSpeedToCPCT.CT[0], self.windSpeedToCPCT.CT[1]
         print "last speed, last CT", self.windSpeedToCPCT.wind_speed[-1], self.windSpeedToCPCT.CP[-1]
-
+        print "pP: ", self.pP
         wind_speed_ax = np.cos(self.yaw*np.pi/180.0)**(self.pP/3.0)*self.wind_speed_hub
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax = np.maximum(wind_speed_ax, self.windSpeedToCPCT.wind_speed[0])
