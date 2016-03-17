@@ -18,7 +18,7 @@ class FLORISParameters(VariableTree):
     # define initial wake displacement and angle (not determined by yaw angle)
     useWakeAngle = Bool(True, iotype = 'in')
     initialWakeDisplacement = Float(-4.5, iotype='in')
-    initialWakeAngle = Float(3.0, iotype='in')
+    initialWakeAngle = Float(0.5*3.0, iotype='in')
     bd = Float(-0.01, iotype='in')
 
     # correction recovery coefficients with yaw

@@ -52,6 +52,8 @@ class floris_windframe(Component):
 
         Vinf = self.wind_speed
         windDirection = self.wind_direction*np.pi/180.0
+        
+        print "################ Wind direction = ", windDirection
 
         #variables to satisfy verbosity
         axialInd = self.axialInduction
@@ -200,7 +202,7 @@ class floris_wcent_wdiam(Component):
                 deltax = np.maximum(turbineXw[turbI]-turbineXw[turb], 0.0)
                 factor = (2.0*kd*deltax/rotorDiameter[turb])+1.0
                 wakeCentersYT_mat[turbI, turb] = turbineYw[turb]
-                wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]-initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
+                wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]+initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
                 
                 if turbineXw[turbI] > turbineXw[turb]:
                     print "wakeAngleInit: ", wakeAngleInit
