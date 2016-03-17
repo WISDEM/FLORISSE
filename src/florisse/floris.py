@@ -28,7 +28,7 @@ def add_floris_parameters(openmdao_comp, original_params=True):
     openmdao_comp.add_param('floris_params:bd', -0.01, pass_by_obj=True,
                             desc='defines rate of wake displacement if initialWakeAngle is not used')
     # added
-    openmdao_comp.add_param('floris_params:initialWakeAngle', 3.0, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:initialWakeAngle', 0.5*3.0, pass_by_obj=True,
                             desc='sets how angled the wake flow should be at the rotor')
 
     ### flags
@@ -57,7 +57,7 @@ def add_floris_parameters(openmdao_comp, original_params=True):
 
     ### parameters
     # original model
-    openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 5.5]), pass_by_obj=True,
                             desc='velocity deficit decay rates for each zone. Middle zone must always be 1.0')
     openmdao_comp.add_param('floris_params:aU', 5.0 if original_params else 12.0, units='deg', pass_by_obj=True,
                             desc='zone decay adjustment parameter independent of yaw')
@@ -124,7 +124,7 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                                              desc='defines rate of wake displacement if initialWakeAngle is not used'),
                         promotes=['*'])
     # added
-    openmdao_object.add('fp03', IndepVarComp('floris_params:initialWakeAngle', 3.0, pass_by_obj=True,
+    openmdao_object.add('fp03', IndepVarComp('floris_params:initialWakeAngle', 0.5*3.0, pass_by_obj=True,
                                              desc='sets how angled the wake flow should be at the rotor'),
                         promotes=['*'])
 
@@ -161,7 +161,7 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
 
     ### parameters
     # original model
-    openmdao_object.add('fp08', IndepVarComp('floris_params:MU', np.array([0.5, 1.0, 10]), pass_by_obj=True,
+    openmdao_object.add('fp08', IndepVarComp('floris_params:MU', np.array([0.5, 1.0, 5.5]), pass_by_obj=True,
                                              desc='velocity deficit decay rates for each zone. Middle zone must always '
                                                   'be 1.0'),
                         promotes=['*'])

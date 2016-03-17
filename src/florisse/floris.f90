@@ -302,7 +302,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                 print *, "displacement: ", displacement
                                                  
                 print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
-                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)- &
+                wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement + displacement
                 
                 
