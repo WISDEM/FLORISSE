@@ -547,7 +547,7 @@ class CPCT_Interpolate_Gradients(Component):
         pP = self.params['gen_params:pP']
         # print "turbine 2 inflow velocity: %s" % params['velocitiesTurbines%i' % direction_id]
         # print "pP: %f" % pP
-        wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP)*self.params['velocitiesTurbines%i' % direction_id]
+        wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP/3.0)*self.params['velocitiesTurbines%i' % direction_id]
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax = np.maximum(wind_speed_ax, self.params['gen_params:windSpeedToCPCT_wind_speed'][0])
         wind_speed_ax = np.minimum(wind_speed_ax, self.params['gen_params:windSpeedToCPCT_wind_speed'][-1])
