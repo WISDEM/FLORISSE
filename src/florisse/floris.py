@@ -12,7 +12,7 @@ import _florisDiscontinuous
 # import _florisHubSmooth as _floris
 
 
-def add_floris_parameters(openmdao_comp, original_params=True):
+def add_floris_parameters(openmdao_comp, use_rotor_components=True):
     # altering the values in this function will have no effect during optimization. To change defaults permanently,
     # alter the values in add_floris_IndepVarComps().
 
@@ -20,7 +20,7 @@ def add_floris_parameters(openmdao_comp, original_params=True):
 
     ### parameters
     # original model
-    openmdao_comp.add_param('floris_params:kd', 0.15 if original_params else 0.17,
+    openmdao_comp.add_param('floris_params:kd', 0.15 if not use_rotor_components else 0.17,
                             desc='model parameter that defines the sensitivity of the wake deflection to yaw')
     openmdao_comp.add_param('floris_params:initialWakeDisplacement', -4.5, pass_by_obj=True,
                             desc='defines the wake at the rotor to be slightly offset from the rotor. This is'
@@ -32,7 +32,7 @@ def add_floris_parameters(openmdao_comp, original_params=True):
                             desc='sets how angled the wake flow should be at the rotor')
 
     ### flags
-    openmdao_comp.add_param('floris_params:useWakeAngle', False if original_params else True, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:useWakeAngle', False if not use_rotor_components else True, pass_by_obj=True,
                             desc='define whether an initial angle or initial offset should be used for wake center. '
                                  'if True, then bd will be ignored and initialWakeAngle will'
                                  'be used. The reverse is also true')
@@ -42,13 +42,14 @@ def add_floris_parameters(openmdao_comp, original_params=True):
 
     ### parameters
     # original model
-    openmdao_comp.add_param('floris_params:ke', 0.065 if original_params else 0.05, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:ke', 0.065 if not use_rotor_components else 0.05, pass_by_obj=True,
                             desc='parameter defining overall wake expansion')
-    openmdao_comp.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:me', np.array([-0.5, 0.22, 1.0]) if not use_rotor_components else np.array([-0.5, 0.3, 1.0]),
+                            pass_by_obj=True,
                             desc='parameters defining relative zone expansion. Mixing zone (me[2]) must always be 1.0')
 
     ### flags
-    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', False if original_params else True,
+    openmdao_comp.add_param('floris_params:adjustInitialWakeDiamToYaw', False if not use_rotor_components else True,
                             pass_by_obj=True,
                             desc='if True then initial wake diameter will be set to rotorDiameter*cos(yaw)')
 
@@ -59,12 +60,12 @@ def add_floris_parameters(openmdao_comp, original_params=True):
     # original model
     openmdao_comp.add_param('floris_params:MU', np.array([0.5, 1.0, 5.5]), pass_by_obj=True,
                             desc='velocity deficit decay rates for each zone. Middle zone must always be 1.0')
-    openmdao_comp.add_param('floris_params:aU', 5.0 if original_params else 12.0, units='deg', pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:aU', 5.0 if not use_rotor_components else 12.0, units='deg', pass_by_obj=True,
                             desc='zone decay adjustment parameter independent of yaw')
-    openmdao_comp.add_param('floris_params:bU', 1.66 if original_params else 1.3, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:bU', 1.66 if not use_rotor_components else 1.3, pass_by_obj=True,
                             desc='zone decay adjustment parameter dependent yaw')
     # added
-    openmdao_comp.add_param('floris_params:cos_spread', 1E12 if original_params else 3.0, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:cos_spread', 1E12 if not use_rotor_components else 2.0, pass_by_obj=True,
                             desc='spread of cosine smoothing factor (multiple of sum of wake and rotor radii)')
     openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True,
                             desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative overlap with '
@@ -76,14 +77,14 @@ def add_floris_parameters(openmdao_comp, original_params=True):
                             desc='defines ideal CT value for use in adjusting ke to yaw adjust CT if keCorrCT>0.0')
 
     # flags
-    openmdao_comp.add_param('floris_params:axialIndProvided', True if original_params else False, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:axialIndProvided', True if not use_rotor_components else False, pass_by_obj=True,
                             desc='if axial induction is not provided, then it will be calculated based on CT')
     openmdao_comp.add_param('floris_params:useaUbU', True, pass_by_obj=True,
                             desc='if True then zone velocity decay rates (MU) will be adjusted based on yaw')
 
 
     ###################   other   ##################
-    openmdao_comp.add_param('floris_params:FLORISoriginal', True, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:FLORISoriginal', False, pass_by_obj=True,
                             desc='override all parameters and use FLORIS as original in first Wind Energy paper')
 
 
@@ -105,14 +106,13 @@ def add_floris_parameters(openmdao_comp, original_params=True):
     # openmdao_comp.add_param('floris_params:kdCorrYawDirection', 0.0, pass_by_obj=True)
 
 
-def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
+def add_floris_params_IndepVarComps(openmdao_object, use_rotor_components=True):
     # permanently alter defaults here
-
     ###################   wake deflection   ##################
 
     ### parameters
     # original model
-    openmdao_object.add('fp00', IndepVarComp('floris_params:kd', 0.15 if original_params else 0.17,
+    openmdao_object.add('fp00', IndepVarComp('floris_params:kd', 0.15 if not use_rotor_components else 0.17,
                                              desc='model parameter that defines the sensitivity of the wake deflection '
                                                   'to yaw'),
                         promotes=['*'])
@@ -124,12 +124,12 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                                              desc='defines rate of wake displacement if initialWakeAngle is not used'),
                         promotes=['*'])
     # added
-    openmdao_object.add('fp03', IndepVarComp('floris_params:initialWakeAngle', 0.5*3.0, pass_by_obj=True,
+    openmdao_object.add('fp03', IndepVarComp('floris_params:initialWakeAngle', 1.5, pass_by_obj=True,
                                              desc='sets how angled the wake flow should be at the rotor'),
                         promotes=['*'])
 
     ### flags
-    openmdao_object.add('fp04', IndepVarComp('floris_params:useWakeAngle', False if original_params else True,
+    openmdao_object.add('fp04', IndepVarComp('floris_params:useWakeAngle', False if not use_rotor_components else True,
                                              pass_by_obj=True,
                                              desc='define whether an initial angle or initial offset should be used for'
                                                   'wake center. If True, then bd will be ignored and initialWakeAngle '
@@ -141,17 +141,18 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
 
     ### parameters
     # original model
-    openmdao_object.add('fp05', IndepVarComp('floris_params:ke', 0.065 if original_params else 0.05, pass_by_obj=True,
+    openmdao_object.add('fp05', IndepVarComp('floris_params:ke', 0.065 if not use_rotor_components else 0.05, pass_by_obj=True,
                                              desc='parameter defining overall wake expansion'),
                         promotes=['*'])
-    openmdao_object.add('fp06', IndepVarComp('floris_params:me', np.array([-0.5, 0.22, 1.0]), pass_by_obj=True,
+    openmdao_object.add('fp06', IndepVarComp('floris_params:me', np.array([-0.5, 0.22, 1.0]) if not use_rotor_components else np.array([-0.5, 0.3, 1.0]),
+                                             pass_by_obj=True,
                                              desc='parameters defining relative zone expansion. Mixing zone (me[2]) '
                                                   'must always be 1.0'),
                         promotes=['*'])
 
     ### flags
     openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw',
-                                             False if original_params else True, pass_by_obj=True,
+                                             False if not use_rotor_components else True, pass_by_obj=True,
                                              desc='if True then initial wake diameter will be set to '
                                                   'rotorDiameter*cos(yaw)'),
                         promotes=['*'])
@@ -165,14 +166,14 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                                              desc='velocity deficit decay rates for each zone. Middle zone must always '
                                                   'be 1.0'),
                         promotes=['*'])
-    openmdao_object.add('fp09', IndepVarComp('floris_params:aU', 5.0 if original_params else 12.0, units='deg', pass_by_obj=True,
+    openmdao_object.add('fp09', IndepVarComp('floris_params:aU', 5.0 if not use_rotor_components else 12.0, units='deg', pass_by_obj=True,
                                              desc='zone decay adjustment parameter independent of yaw'),
                         promotes=['*'])
-    openmdao_object.add('fp10', IndepVarComp('floris_params:bU', 1.66 if original_params else 1.3, pass_by_obj=True,
+    openmdao_object.add('fp10', IndepVarComp('floris_params:bU', 1.66 if not use_rotor_components else 1.3, pass_by_obj=True,
                                              desc='zone decay adjustment parameter dependent yaw'),
                         promotes=['*'])
     # added
-    openmdao_object.add('fp11', IndepVarComp('floris_params:cos_spread', 1E12 if original_params else 3.0, pass_by_obj=True,
+    openmdao_object.add('fp11', IndepVarComp('floris_params:cos_spread', 2.0, pass_by_obj=True,
                                              desc='spread of cosine smoothing factor (multiple of sum of wake and rotor '
                                                   'radii)'),
                         promotes=['*'])
@@ -190,7 +191,7 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
                         promotes=['*'])
 
     # flags
-    openmdao_object.add('fp15', IndepVarComp('floris_params:axialIndProvided', True if original_params else False,
+    openmdao_object.add('fp15', IndepVarComp('floris_params:axialIndProvided', True if not use_rotor_components else False,
                                              pass_by_obj=True,
                                              desc='if axial induction is not provided, then it will be calculated based '
                                                   'on CT'),
@@ -212,7 +213,7 @@ def add_floris_params_IndepVarComps(openmdao_object, original_params=True):
 # Components of FLORIS - for full model use FLORIS(Group)
 class floris_wcent_wdiam(Component):
 
-    def __init__(self, nTurbines, direction_id=0, differentiable=True, splineshift=0.0):
+    def __init__(self, nTurbines, direction_id=0, differentiable=True, splineshift=0.0, use_rotor_components=True):
 
         super(floris_wcent_wdiam, self).__init__()
         
@@ -242,7 +243,7 @@ class floris_wcent_wdiam(Component):
         self.add_output('wakeDiametersT', np.zeros(3*nTurbines*nTurbines), units='m', desc='wake diameter of each zone of each wake at each turbine')
 
         # FLORIS parameters
-        add_floris_parameters(self)
+        add_floris_parameters(self, use_rotor_components=use_rotor_components)
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -274,7 +275,7 @@ class floris_wcent_wdiam(Component):
         initialWakeAngle = params['floris_params:initialWakeAngle']
         bd = params['floris_params:bd']
         adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
-
+        print "ke = %f, kd = %f" % (ke, kd)
 
         # x and y positions w.r.t. the wind direction (wind = +x)
         turbineXw = params['turbineXw']
@@ -405,7 +406,7 @@ class floris_wcent_wdiam(Component):
 class floris_overlap(Component):
     """ Calculates the overlap between each turbine rotor and the existing turbine wakes """
 
-    def __init__(self, nTurbines, differentiable=True, splineshift=0.0):
+    def __init__(self, nTurbines, differentiable=True, splineshift=0.0, use_rotor_components=True):
 
         super(floris_overlap, self).__init__()
 
@@ -443,7 +444,7 @@ class floris_overlap(Component):
                             desc='cosine factor similar to Jensen 1983')
 
         # FLORIS parameters
-        add_floris_parameters(self)
+        add_floris_parameters(self, use_rotor_components=use_rotor_components)
 
         # etc
         self.nTurbines = nTurbines
@@ -527,7 +528,7 @@ class floris_overlap(Component):
 class floris_velocity(Component):
     """ Calculates the turbine power and effective wind speed for each turbine """
 
-    def __init__(self, nTurbines, direction_id=0, differentiable=True, splineshift=0.0):
+    def __init__(self, nTurbines, direction_id=0, differentiable=True, splineshift=0.0, use_rotor_components=True):
 
         super(floris_velocity, self).__init__()
 
@@ -574,7 +575,7 @@ class floris_velocity(Component):
                        desc='effective hub velocity for each turbine')
 
         # FLORIS parameters
-        add_floris_parameters(self)
+        add_floris_parameters(self, use_rotor_components=use_rotor_components)
 
     def solve_nonlinear(self, params, unknowns, resids):
         # print 'entering power - tapenade'
@@ -663,9 +664,9 @@ class floris_velocity(Component):
         turbineXw = params['turbineXw']
         axialInduction = params['axialInduction']
         rotorDiameter = params['rotorDiameter']
-        rho = params['air_density']
-        generator_efficiency = params['generator_efficiency']
-        Cp = params['Cp']
+        # rho = params['air_density']
+        # generator_efficiency = params['generator_efficiency']
+        # Cp = params['Cp']
         yaw = params['yaw%i' % self.direction_id]
 
         # print 'wake OL in power', wakeOverlapTRel_v
@@ -753,9 +754,9 @@ class floris_velocity(Component):
         turbineXw = params['turbineXw']
         axialInduction = params['axialInduction']
         rotorDiameter = params['rotorDiameter']
-        rho = params['air_density']
-        generator_efficiency = params['generator_efficiency']
-        Cp = params['Cp']
+        # rho = params['air_density']
+        # generator_efficiency = params['generator_efficiency']
+        # Cp = params['Cp']
         yaw = params['yaw%i' % self.direction_id]
 
         # set floris parameter values
@@ -881,7 +882,8 @@ class floris_velocity(Component):
 class FLORIS(Group):
     """ Group containing all necessary components of the floris model """
 
-    def __init__(self, nTurbines, resolution, direction_id=0, differentiable=True, optimizingLayout=False):
+    def __init__(self, nTurbines, resolution, direction_id=0, differentiable=True, optimizingLayout=False,
+                 use_rotor_components=True):
         super(FLORIS, self).__init__()
         splineshift = 0.0
 
@@ -890,19 +892,21 @@ class FLORIS(Group):
         if optimizingLayout:
             splineshift = 1.0
         self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable), promotes=['*'])
-        self.add('f_2', floris_wcent_wdiam(nTurbines, direction_id=direction_id, differentiable=differentiable, splineshift=splineshift),
+        self.add('f_2', floris_wcent_wdiam(nTurbines, direction_id=direction_id, differentiable=differentiable,
+                                           splineshift=splineshift, use_rotor_components=use_rotor_components),
                  promotes=['*'])
-        self.add('f_3', floris_overlap(nTurbines, differentiable=differentiable, splineshift=splineshift),
+        self.add('f_3', floris_overlap(nTurbines, differentiable=differentiable, splineshift=splineshift,
+                                       use_rotor_components=use_rotor_components),
                  promotes=['*'])
         self.add('f_4', floris_velocity(nTurbines, direction_id=direction_id, differentiable=differentiable,
-                                     splineshift=splineshift),
+                                     splineshift=splineshift, use_rotor_components=use_rotor_components),
                  promotes=['*'])
 
 
 class RotorSolveGroup(Group):
 
     def __init__(self, nTurbines, resolution=0, direction_id=0, datasize=0,
-                 differentiable=True, optimizingLayout=False):
+                 differentiable=True, optimizingLayout=False, use_rotor_components=True):
 
         super(RotorSolveGroup, self).__init__()
         epsilon = 1E-12
@@ -942,7 +946,8 @@ class RotorSolveGroup(Group):
                                'velocitiesTurbines%i' % direction_id, 'Cp_out'])
 
         self.add('floris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
-                                    differentiable=differentiable, optimizingLayout=optimizingLayout),
+                                  differentiable=differentiable, optimizingLayout=optimizingLayout,
+                                  use_rotor_components=use_rotor_components),
                  promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                            'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                            'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
@@ -950,27 +955,29 @@ class RotorSolveGroup(Group):
         self.connect('CtCp.Ct_out', 'floris.Ct')
         # self.connect('CtCp.Cp_out', 'Cp')
 
+
 class DirectionGroupFLORIS(Group):
     """
     Group containing all necessary components for wind plant calculations
     in a single direction
     """
 
-    def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=False, datasize=0,
+    def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=True, datasize=0,
                  differentiable=True, optimizingLayout=False, add_IdepVarComps=True):
         super(DirectionGroupFLORIS, self).__init__()
         epsilon = 1e-6
 
         # self.add('p0', IndepVarComp('wind_direction', val=0.0, units='deg'), promotes=['*'])
-
         if add_IdepVarComps:
-            add_floris_params_IndepVarComps(self)
+            add_floris_params_IndepVarComps(self, use_rotor_components=use_rotor_components)
             add_gen_params_IdepVarComps(self, datasize=datasize)
 
         # self.add('fp', FLORISParameters(), promotes=['*'])
         if use_rotor_components:
-            self.add('myFloris', RotorSolveGroup(nTurbines, resolution=resolution, direction_id=direction_id, datasize=datasize,
-                                                differentiable=differentiable, optimizingLayout=optimizingLayout),
+            self.add('myFloris', RotorSolveGroup(nTurbines, resolution=resolution, direction_id=direction_id,
+                                                 datasize=datasize, differentiable=differentiable,
+                                                 optimizingLayout=optimizingLayout,
+                                                 use_rotor_components=use_rotor_components),
                      promotes=['gen_params:*', 'yaw%i' % direction_id, 'velocitiesTurbines%i' % direction_id,
                                'floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                                'turbineX', 'turbineY', 'rotorDiameter', 'wakeCentersYT', 'wakeDiametersT',
@@ -979,7 +986,9 @@ class DirectionGroupFLORIS(Group):
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
                      promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'yaw%i' % direction_id])
 
-            self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id, differentiable=differentiable, optimizingLayout=optimizingLayout),
+            self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
+                                        differentiable=differentiable, optimizingLayout=optimizingLayout,
+                                        use_rotor_components=use_rotor_components),
                      promotes=['floris_params:*', 'wind_speed', 'wind_direction', 'air_density', 'axialInduction',
                                'turbineX', 'turbineY', 'rotorDiameter', 'yaw%i' % direction_id,
                                'velocitiesTurbines%i' % direction_id, 'wakeCentersYT', 'wakeDiametersT',
@@ -1003,7 +1012,7 @@ class AEPGroupFLORIS(Group):
     Group containing all necessary components for wind plant AEP calculations using the FLORIS model
     """
 
-    def __init__(self, nTurbines, resolution=0, nDirections=1, use_rotor_components=False, datasize=0,
+    def __init__(self, nTurbines, resolution=0, nDirections=1, use_rotor_components=True, datasize=0,
                  differentiable=True, optimizingLayout=False):
 
         super(AEPGroupFLORIS, self).__init__()
@@ -1027,7 +1036,7 @@ class AEPGroupFLORIS(Group):
         self.add('dv8', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
 
         # add variable tree IndepVarComps
-        add_floris_params_IndepVarComps(self)
+        add_floris_params_IndepVarComps(self, use_rotor_components=use_rotor_components)
         add_gen_params_IdepVarComps(self, datasize=datasize)
 
         if not use_rotor_components:

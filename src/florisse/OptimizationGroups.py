@@ -19,12 +19,13 @@ from Parameters import FLORISParameters
 class OptPowerOneDir(Group):
     """ Group connecting the floris model for optimization with one wind direction"""
 
-    def __init__(self, nTurbines, resolution=0, minSpacing=2., differentiable=True):
+    def __init__(self, nTurbines, resolution=0, minSpacing=2., differentiable=True, use_rotor_components=True):
 
         super(OptPowerOneDir, self).__init__()
 
         # add major components
-        self.add('dirComp', AEPGroupFLORIS(nTurbines, resolution=0, differentiable=differentiable), promotes=['*'])
+        self.add('dirComp', AEPGroupFLORIS(nTurbines, resolution=0, differentiable=differentiable,
+                                           use_rotor_components=use_rotor_components), promotes=['*'])
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
@@ -102,7 +103,7 @@ class OptAEP(Group):
 
     """
 
-    def __init__(self, nTurbines, resolution=0, nDirections=1, minSpacing=2., use_rotor_components=False,
+    def __init__(self, nTurbines, resolution=0, nDirections=1, minSpacing=2., use_rotor_components=True,
                  datasize=0, differentiable=True, optimizingLayout=False):
 
         super(OptAEP, self).__init__()
