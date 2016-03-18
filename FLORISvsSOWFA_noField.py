@@ -15,6 +15,7 @@ from Circle_assembly import floris_assembly_opt_AEP
 
 # select what plots to generate
 just_SOWFA = True
+plot_prefix = ""
 
 # Load steady-state power data from SOWFA 
 ICOWESdata = loadmat('YawPosResults.mat')
@@ -115,6 +116,12 @@ axesPower[1].plot(posrange, FLORISpower[:,1], 'b-', posrange, SOWFApower[:,1], '
 axesPower[1].plot(posrange, FLORISpower[:,0]+FLORISpower[:,1], 'k-', posrange, SOWFApower[:,0]+SOWFApower[:,1], 'ko')
 axesPower[1].set_xlabel('back turbine displacement (m)')
 axesPower[1].set_ylabel('power (kW)')
+lgd = axesPower[0].legend(loc='lower left', bbox_to_anchor=(0.0, 1.05),
+          fancybox=False, shadow=False, ncol=2)
+plt.tight_layout()
+
+if not plot_prefix == "":
+    plt.savefig(plot_prefix+"SOWFA.pdf", bbox_extra_artists=(lgd,))#, bbox_inches='tight')
 # plt.savefig("masterSowfaFloris.pdf")
 
 # ############
@@ -148,18 +155,20 @@ if not just_SOWFA:
     FLORISpower = np.array(FLORISpower)
     FLORISvelocity = np.array(FLORISvelocity)
 
-    axes[1].plot(posrange/rotorDiameter, FLORISpower[:, 1], '#7CFC00', label='FLORIS-Cosine')
-    axes[1].plot(np.array([7, 7]), np.array([0, 1800]), '--k', label='tuning point')
+    axes[1].plot(posrange/rotorDiameter, FLORISpower[:, 1], '#7CFC00', label='FLORIS model')
+    axes[1].plot(np.array([7, 7]), np.array([0, 1800]), '--k', label='Tuning point')
     axes[1].set_xlabel('x/D')
     axes[1].set_ylabel('Power (kW)')
     axes[1].legend(loc=4)
 
-    axes[0].plot(posrange/rotorDiameter, FLORISvelocity[:, 1], '#7CFC00', label='FLORIS-Cosine')
-    axes[0].plot(np.array([7, 7]), np.array([2, 9]), '--k', label='tuning point')
+    axes[0].plot(posrange/rotorDiameter, FLORISvelocity[:, 1], '#7CFC00', label='FLORIS model')
+    axes[0].plot(np.array([7, 7]), np.array([2, 9]), '--k', label='Tuning point')
     axes[0].set_xlabel('x/D')
     axes[0].set_ylabel('Valocity (m/s)')
     axes[0].legend(loc=4)
     # plt.show()
+    if not plot_prefix == "":
+        plt.savefig(plot_prefix+"DownwindVelocity.pdf", bbox_extra_artists=(lgd,))#, bbox_inches='tight')
 #     plt.savefig("masterPowerVelocityDownwindCorrected.pdf")
 
     plt.tight_layout()
@@ -258,7 +267,8 @@ if not just_SOWFA:
     axes[1, 1].set_xlabel('x/D')
     axes[1, 1].set_ylabel('Power (kW)')
     axes[1, 1].legend(loc=4)
-    
+    if not plot_prefix == "":
+        plt.savefig(plot_prefix+"WakeProfile.pdf", bbox_extra_artists=(lgd,))#, bbox_inches='tight')
 #     plt.savefig("masterWakeProfile.pdf")
 #####################
 plt.show()
