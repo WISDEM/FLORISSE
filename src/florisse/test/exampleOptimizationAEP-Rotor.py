@@ -157,31 +157,32 @@ if __name__ == "__main__":
     prob.run()
     toc = time.time()
 
-    # print the results
-    mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
+    if prob.root.comm.rank == 0:
+        # print the results
+        mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
 
-    for direction_id in range(0, windDirections.size):
-        mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
-    # for direction_id in range(0, windDirections.size):
-    #     mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
-    # for direction_id in range(0, windDirections.size):
-    #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
+        for direction_id in range(0, windDirections.size):
+            mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
+        # for direction_id in range(0, windDirections.size):
+        #     mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
+        # for direction_id in range(0, windDirections.size):
+        #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
 
-    mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
-    mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
-    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['power_directions'])
-    mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
+        mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
+        mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
+        mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['power_directions'])
+        mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
 
-    xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
-    ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
+        xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
+        ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
 
-    plt.figure()
-    plt.plot(turbineX, turbineY, 'ok', label='Original')
-    plt.plot(prob['turbineX'], prob['turbineY'], 'og', label='Optimized')
-    plt.plot(xbounds, ybounds, ':k')
-    for i in range(0, nTurbs):
-        plt.plot([turbineX[i], prob['turbineX'][i]], [turbineY[i], prob['turbineY'][i]], '--k')
-    plt.legend()
-    plt.xlabel('Turbine X Position (m)')
-    plt.ylabel('Turbine Y Position (m)')
-    plt.show()
+        plt.figure()
+        plt.plot(turbineX, turbineY, 'ok', label='Original')
+        plt.plot(prob['turbineX'], prob['turbineY'], 'og', label='Optimized')
+        plt.plot(xbounds, ybounds, ':k')
+        for i in range(0, nTurbs):
+            plt.plot([turbineX[i], prob['turbineX'][i]], [turbineY[i], prob['turbineY'][i]], '--k')
+        plt.legend()
+        plt.xlabel('Turbine X Position (m)')
+        plt.ylabel('Turbine Y Position (m)')
+        plt.show()
