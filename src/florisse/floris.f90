@@ -264,12 +264,12 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
     
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
-        print *, "Ct[", turb-1, "]: ", Ct(turb)
-        print *, "yaw[", turb-1, "]: ", yaw(turb)
-        print *, "wakeAngleInit_in: ", wakeAngleInit
+!         print *, "Ct[", turb-1, "]: ", Ct(turb)
+!         print *, "yaw[", turb-1, "]: ", yaw(turb)
+!         print *, "wakeAngleInit_in: ", wakeAngleInit
         
         if (useWakeAngle) then
-            print *, "initialWakeAngle: ", initialWakeAngle
+!             print *, "initialWakeAngle: ", initialWakeAngle
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
         end if
         
@@ -280,14 +280,14 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
             
             if (turbineXw(turb) < turbineXw(turbI)) then
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
-                print *, "turbineXw", turbineXw
-                print *, "turbineYw", turbineYw
-                print *, "deltax", deltax
-                                
-                print *, "wakeAngleInit: ", wakeAngleInit
-                print *, "factor: ", factor
-                print *, "kd: ", kd
-                print *, "rotorDiameter: ", rotorDiameter
+!                 print *, "turbineXw", turbineXw
+!                 print *, "turbineYw", turbineYw
+!                 print *, "deltax", deltax
+!                                 
+!                 print *, "wakeAngleInit: ", wakeAngleInit
+!                 print *, "factor: ", factor
+!                 print *, "kd: ", kd
+!                 print *, "rotorDiameter: ", rotorDiameter
                 
                 displacement = wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp*factor*factor* &
@@ -299,9 +299,9 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
                                                  rotorDiameter(turb))
-                print *, "displacement: ", displacement
-                                                 
-                print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
+!                 print *, "displacement: ", displacement
+!                                                  
+!                 print *, "initialWakeDisplacement(smooth) = ", initialWakeDisplacement
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement + displacement
                 
@@ -322,7 +322,7 @@ subroutine floris_wcent_wdiam(nTurbines, kd, initialWakeDisplacement, &
 !                     print *, "displacement: ", displacement
                 end if
                 
-                print *, "final wake center[", turbI, "][", turb, "]: ", wakeCentersYT_mat(turbI, turb)
+!                 print *, "final wake center[", turbI, "][", turb, "]: ", wakeCentersYT_mat(turbI, turb)
                 
 !                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + displacement
                 ! checked and good 3/8/2016
