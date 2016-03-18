@@ -66,17 +66,17 @@ if __name__ == "__main__":
     prob['floris_params:FLORISoriginal'] = False
 
     if use_rotor_components:
-        prob['params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
-        prob['params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
-        prob['params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
-        prob['floris_params:ke'] = 0.05
-        prob['floris_params:kd'] = 0.17
-        prob['floris_params:aU'] = 12.0
-        prob['floris_params:bU'] = 1.3
-        prob['floris_params:initialWakeAngle'] = 3.0
-        prob['floris_params:useaUbU'] = True
-        prob['floris_params:useWakeAngle'] = True
-        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
+        prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
+        prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
+        prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
+        # prob['floris_params:ke'] = 0.05
+        # prob['floris_params:kd'] = 0.17
+        # prob['floris_params:aU'] = 12.0
+        # prob['floris_params:bU'] = 1.3
+        # prob['floris_params:initialWakeAngle'] = 1.5
+        # prob['floris_params:useaUbU'] = True
+        # prob['floris_params:useWakeAngle'] = True
+        # prob['floris_params:adjustInitialWakeDiamToYaw'] = False
     else:
         prob['Ct_in'] = Ct
         prob['Cp_in'] = Cp

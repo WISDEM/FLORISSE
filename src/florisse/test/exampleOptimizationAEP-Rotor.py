@@ -138,21 +138,9 @@ if __name__ == "__main__":
     prob['windrose_frequencies'] = windFrequencies
 
     if use_rotor_components:
-        # for i in range(0, nDirections):
-        #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
-        # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
-        # myFloris.windSpeedToCPCT = NREL5MWCPCT
         prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
         prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
         prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
-        prob['floris_params:ke'] = 0.05
-        prob['floris_params:kd'] = 0.17
-        prob['floris_params:aU'] = 12.0
-        prob['floris_params:bU'] = 1.3
-        prob['floris_params:initialWakeAngle'] = 3.0
-        prob['floris_params:useaUbU'] = True
-        prob['floris_params:useWakeAngle'] = True
-        prob['floris_params:adjustInitialWakeDiamToYaw'] = False
     else:
         prob['Ct_in'] = Ct
         prob['Cp_in'] = Cp

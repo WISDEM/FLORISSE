@@ -43,7 +43,7 @@ if __name__ == "__main__":
     wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # initialize problem
-    prob = Problem(root=OptPowerOneDir(nTurbs, resolution=0))
+    prob = Problem(root=OptPowerOneDir(nTurbs, resolution=0, use_rotor_components=False))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -79,8 +79,8 @@ if __name__ == "__main__":
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = True
-    prob['floris_params:CPcorrected'] = False
-    prob['floris_params:CTcorrected'] = False
+    prob['gen_params:CPcorrected'] = False
+    prob['gen_params:CTcorrected'] = False
 
     # run the problem
     print 'start FLORIS run'
