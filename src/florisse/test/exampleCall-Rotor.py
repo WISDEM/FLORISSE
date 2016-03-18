@@ -11,7 +11,8 @@ if __name__ == "__main__":
     use_rotor_components = True
 
     if use_rotor_components:
-        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        # NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
         datasize = NREL5MWCPCT['CP'].size
     else:
         datasize = 0

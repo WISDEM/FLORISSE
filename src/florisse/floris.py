@@ -275,7 +275,7 @@ class floris_wcent_wdiam(Component):
         initialWakeAngle = params['floris_params:initialWakeAngle']
         bd = params['floris_params:bd']
         adjustInitialWakeDiamToYaw = params['floris_params:adjustInitialWakeDiamToYaw']
-        print "ke = %f, kd = %f" % (ke, kd)
+        # print "ke = %f, kd = %f" % (ke, kd)
 
         # x and y positions w.r.t. the wind direction (wind = +x)
         turbineXw = params['turbineXw']
@@ -937,13 +937,13 @@ class RotorSolveGroup(Group):
         # self.ln_solver.setup('direction_group%i' % direction_id)
         # self.ln_solver.solve('velocitiesTurbines%i' % direction_id)
 
-        # self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=datasize),
-        #              promotes=['gen_params:*', 'yaw%i' % direction_id,
-        #                        'velocitiesTurbines%i' % direction_id])
-
-        self.add('CtCp', CPCT_Interpolate_Gradients(nTurbines, direction_id=direction_id, datasize=datasize),
+        self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=datasize),
                      promotes=['gen_params:*', 'yaw%i' % direction_id,
                                'velocitiesTurbines%i' % direction_id, 'Cp_out'])
+
+        # self.add('CtCp', CPCT_Interpolate_Gradients(nTurbines, direction_id=direction_id, datasize=datasize),
+        #              promotes=['gen_params:*', 'yaw%i' % direction_id,
+        #                        'velocitiesTurbines%i' % direction_id, 'Cp_out'])
 
         self.add('floris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
                                   differentiable=differentiable, optimizingLayout=optimizingLayout,

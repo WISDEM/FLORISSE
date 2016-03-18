@@ -689,7 +689,7 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
         Cp_out = CP*np.cos(yaw*np.pi/180.)**pP
         Ct_out = CT*np.cos(yaw*np.pi/180.)**2.
 
-        print "in rotor, Cp = [%f. %f], Ct = [%f, %f]" % (Cp_out[0], Cp_out[1], Ct_out[0], Ct_out[1])
+        # print "in rotor, Cp = [%f. %f], Ct = [%f, %f]" % (Cp_out[0], Cp_out[1], Ct_out[0], Ct_out[1])
 
         self.dCp_out_dyaw = (-np.sin(yaw*np.pi/180.))*(np.pi/180.)*pP*CP*np.cos(yaw*np.pi/180.)**(pP-1.)
         self.dCp_out_dvel = dCPdvel*np.cos(yaw*np.pi/180.)**pP
