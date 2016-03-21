@@ -53,8 +53,6 @@ class floris_windframe(Component):
         Vinf = self.wind_speed
         windDirection = self.wind_direction*np.pi/180.0
         
-        print "################ Wind direction = ", windDirection
-
         #variables to satisfy verbosity
         axialInd = self.axialInduction
         Cp = self.Cp
@@ -97,7 +95,6 @@ class floris_windframe(Component):
         # print turbineLocations
         self.turbineXw = np.zeros(turbineX.size)
         self.turbineYw = np.zeros(turbineX.size)
-        # print self.turbineXw
         self.turbineXw = turbineLocations[0]
         self.turbineYw = turbineLocations[1]
 
@@ -167,7 +164,6 @@ class floris_wcent_wdiam(Component):
         turbineXw = self.turbineXw
         turbineYw = self.turbineYw
         yaw = self.yaw*np.pi/180.0
-        # print yaw
         nTurbines = turbineXw.size
 
         velX = self.wsw_position[0][:]
@@ -182,16 +178,12 @@ class floris_wcent_wdiam(Component):
         wakeCentersYT_mat = np.zeros((nTurbines, nTurbines))
         for turb in range(0, nTurbines):
             wakeAngleInit = 0.5 * np.sin(yaw[turb]) * Ct[turb]
-            print "wakeAngleInit_in: ", wakeAngleInit 
-            print "Ct[%i]: " % turb, Ct[turb]
-            print "yaw[%i]: " % turb, yaw[turb]
             if useWakeAngle:
-                print "initialWakeAngle: ", initialWakeAngle
                 wakeAngleInit += initialWakeAngle*np.pi/180.0
             for loc in range(0, nSamples):  # at velX-locations
                 deltax = np.maximum(velX[loc]-turbineXw[turb], 0)
                 factor = (2.0*kd*deltax/rotorDiameter[turb])+1.0
-                wakeCentersY[loc, turb] = turbineYw[turb]-initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
+                wakeCentersY[loc, turb] = turbineYw[turb]+initialWakeDisplacement # initial displacement for no yaw (positive to the left looking downstream)
                 displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/((30.0*kd*(factor**5.0))/rotorDiameter[turb]))-(wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced deflection
                 if not useWakeAngle:
                     displacement += bd*deltax
@@ -202,35 +194,14 @@ class floris_wcent_wdiam(Component):
                 deltax = np.maximum(turbineXw[turbI]-turbineXw[turb], 0.0)
                 factor = (2.0*kd*deltax/rotorDiameter[turb])+1.0
                 wakeCentersYT_mat[turbI, turb] = turbineYw[turb]
-                wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]+initialWakeDisplacement # initial displacement for no yaw (positive to the right looking downstream)
-                
-                if turbineXw[turbI] > turbineXw[turb]:
-                    print "wakeAngleInit: ", wakeAngleInit
-                    print "factor: ", factor
-                    print "deltax: ", deltax
-                    print "kd: ", kd
-                    print "rotorDiameter: ", rotorDiameter
-                
+                wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb]+initialWakeDisplacement # initial displacement for no yaw (positive to the left looking downstream)
+                                
                 displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
                 ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
                 (wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
-                print "displacement 1: ", displacement
-            
-                # from fortran
-                displacement = wakeAngleInit*(wakeAngleInit*wakeAngleInit + 
-                15.0*factor**4)/((30.0*kd/rotorDiameter[turb])*
-                (factor**5))                                                 
-                displacement = displacement - wakeAngleInit*(wakeAngleInit*wakeAngleInit 
-                + 15.0)/(30.0*kd/rotorDiameter[turb])
-                
-                if turbineXw[turbI] > turbineXw[turb]:
-                    print "displacement 2: ", displacement
                 
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
                 
-                if turbineXw[turbI] > turbineXw[turb]:
-                    print "final wake center[%f][%f]: " % (turbI, turb), wakeCentersYT_mat[turbI, turb]
-
         # adjust k_e to C_T, adjusted to yaw
         ke = ke + keCorrCT*(Ct-baselineCT) # FT = Ct*0.5*rho*A*(U*cos(yaw))^2, hence, thrust decreases with cos^2
                                                            #   Should ke increase directly with thrust? ==>No - Turbulence characteristics in wind-turbine wakes, A. Crespo"'*, J. Hern'andez b
@@ -399,12 +370,9 @@ class floris_power(Component):
 
         turbineXw = self.turbineXw
         nTurbines = turbineXw.size
-        #print 'number of turbines is: ', nTurbines
 
         # wakeOverlapTRel = self.wakeOverlapTRel
         wakeOverlapTRel = np.zeros((nTurbines, nTurbines, 3))
-
-        # print 'wakeOverlapTRel = %s' %wakeOverlapTRel
 
         # convert the input vector to the array used for calculations
         for i in range(0, nTurbines):
@@ -413,7 +381,6 @@ class floris_power(Component):
             wakeOverlapTRel[i, :, 2] = self.wakeOverlapTRel[3*nTurbines*i+2*nTurbines:3*nTurbines*i+3*nTurbines]
 
         ke = self.parameters.ke
-        #print 'ke is: ', ke
         keCorrArray = self.parameters.keCorrArray
         keCorrCT = self.parameters.keCorrCT
         baselineCT = self.parameters.baselineCT
@@ -471,7 +438,6 @@ class floris_power(Component):
         keArray = np.zeros(nTurbines)
         for turb in range(0, nTurbines):
             s = np.sum(wakeOverlapTRel[turb, :, 0]+wakeOverlapTRel[turb, :, 1])
-            # print 's = %s' %s
             keArray[turb] = ke[turb]*(1+s*keCorrArray)
 
         # calculate velocities in full flow field (optional)
@@ -531,7 +497,6 @@ class floris_power(Component):
                     wakeEffCoeff = wakeEffCoeff + np.power(axialInd[turb]*wakeEffCoeffPerZone, 2.0)
 
             wakeEffCoeff = (1 - 2 * np.sqrt(wakeEffCoeff))
-            #print wakeEffCoeff
 
             # multiply the inflow speed with the wake coefficients to find effective wind speed at turbine
             self.velocitiesTurbines[turbI] *= wakeEffCoeff
@@ -550,8 +515,7 @@ class floris_power(Component):
             print "powers turbines %s [kW]" % self.wt_power
 
         self.power = np.sum(self.wt_power)
-        # print'in power, ws_array is ', self.ws_array
-
+        
 
 def CTtoAxialInd(CT):
     if CT > 0.96: # Glauert condition
