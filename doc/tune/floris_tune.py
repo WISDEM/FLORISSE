@@ -507,27 +507,19 @@ if __name__ == '__main__':
     air_density = 1.1716        # kg/m^3
     wind_direction = 270.-0.523599*180./np.pi    # deg (N = 0 deg., using direction FROM, as in met-mast data)
     print wind_direction, -0.523599*180./np.pi
-    # quit()
-    # set up problem
+
+    # initialize problem
     global prob
     prob = Problem(root=Group())
 
     prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbines, resolution=0, use_rotor_components=rotor,
                                                  datasize=datasize, differentiable=differentiable), promotes=['*'])
-    #
-    # # initialize problem
+
+    # set up problem
     prob.setup(check=False)
     print 'setup complete'
 
-    # if not differentiable:
-    #     prob['floris_params:FLORISoriginal'] = True
-
     if rotor:
-        # for i in range(0, nDirections):
-        #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
-        # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
-        # myFloris.windSpeedToCPCT = NREL5MWCPCT
-        # print np.flipud(NREL5MWCPCT['CP'])
         prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
         prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
         prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
@@ -541,7 +533,6 @@ if __name__ == '__main__':
         prob['floris_params:useWakeAngle'] = True
         prob['floris_params:adjustInitialWakeDiamToYaw'] = False
         prob['floris_params:useaUbU'] = True
-        # prob['floris_params:FLORISoriginal'] = False
 
     if rotor:
         prob['floris_params:useWakeAngle'] = True
@@ -549,12 +540,6 @@ if __name__ == '__main__':
         prob['floris_params:axialIndProvided'] = False
         prob['floris_params:useaUbU'] = True
 
-
-    # if not inputvalues:
-    #     params = np.array([1.88, 0.15,  3.0, -0.01, 0.065, -0.5, 0.22, 1.0, 0.5, 1.0, 10.0, 5.0, 1.66, 1.0])
-    #
-    #
-    # print params
 
     # set tuning variables
     prob['gen_params:pP'] = params[0]
@@ -564,23 +549,15 @@ if __name__ == '__main__':
     prob['floris_params:bd'] = params[3]
     prob['floris_params:ke'] = params[4]
     prob['floris_params:me'] = np.append(params[5:7], me[2])
-    # print prob['floris_params:me']
     prob['floris_params:MU'] = np.insert(params[7:9], 1, MU[1])
-    # print prob['floris_params:MU']
     prob['floris_params:aU'] = params[9]
     prob['floris_params:bU'] = params[10]
     prob['floris_params:cos_spread'] = params[11]
-
-
-
-
-    # prob['floris_params:useaUbU'] = True
 
     # assign values to constant inputs
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generator_efficiency'] = generator_efficiency
-    print "gen eff given = ", prob['generator_efficiency']
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
     prob['wind_direction'] = wind_direction
@@ -604,25 +581,7 @@ if __name__ == '__main__':
 
         optProb.addVarGroup('xvars', 12, lower=lower, upper=upper, value=value)
 
-        # if Fcos:
-        #     lower = [0.0, 0.0, -10.0,               -1.0, 0.0,  -10.,     0.,   0.0,   1.5,   0.,  0.0,         0.0]
-        #     upper = [5.0, 1.0,  10.0,                1.0, 1.0,    0.,    0.3,   1.0,  20.0,  20.,  5.0,         2.0]
-        #     value = [pP,   kd,    bd,   initialWakeAngle,  ke, me[0],  me[1], MU[0], MU[2],   aU,   bU,  cos_spread]
-        #     # value = np.array([1.88,0.187048009721,4.77533082803,-0.0100000000006,0.0520337716793,-3.12753111122,0.899789468231,1.0,0.461174204453,1.0,5.43461182219,12.0,1.3,1.17361904411])
-        #
-        #     # lower = [-5., 0.0, 0.1, 0., 0.0, 0., 0.0]
-        #     # upper = [0., .5, 5., 10., 10., 10., 10.]
-        #     # value = [-0.5, 0.22, 1.0, 0.5, 1.0, 5.5, 1.0]
-        #     optProb.addVarGroup('xvars', 12, lower=lower, upper=upper, value=value)
-        # else:
-        #     lower = [-5, 0.0, 0.1, 0., 0.0, 0.]
-        #     upper = [5, .5, 5, 10, 10, 10]
-        #     value = [-0.5, 0.22, 1.0, 0.5, 1.0, 5.5]
-        #     # value = [-0.101831, 0.095223, 0.095255, 0.5, 0.510440, 5.500000]
-        #     optProb.addVarGroup('xvars', 6, lower=lower, upper=upper, value=value)
-
         # Objective
-
         optProb.addObj('obj')
 
         # Optimizer
@@ -653,125 +612,10 @@ if __name__ == '__main__':
         prob['floris_params:bd'] = params[3]
         prob['floris_params:ke'] = params[4]
         prob['floris_params:me'] = np.append(params[5:7], me[2])
-        # print prob['floris_params:me']
         prob['floris_params:MU'] = np.insert(params[7:9], 1, MU[1])
-        # print prob['floris_params:MU']
         prob['floris_params:aU'] = params[9]
         prob['floris_params:bU'] = params[10]
         prob['floris_params:cos_spread'] = params[11]
 
-    # print params
-    # # error = 732.606
-    # # params = [1.88, 0.219262,  4.337022, -0.010000, 0.049250, -0.568488, 0.086552, 0.576118, 0.271987, 1.545557, 3.493744, 13.666842, 1.700705, 8.389354]
-    # params = [1.88, 0.15,  3.0, -0.01, 0.065, -0.5, 0.22, 1.0, 0.5, 1.0, 10.0, 5.0, 1.66, 1.0]
-    # params = [1.88, 0.15,  3.0, -0.01, 0.065, -0.5, 0.22, 1.0, 0.5, 1.0, 10.0, 5.0, 1.66, 2.0]
-
-    # tuned w/o rotor coupling
-    # params = np.array([1.88000000e+00, 1.94690916e-01, 4.88952110e+00, -1.00000000e-02, 4.98845211e-02,
-    #                    -1.81809460e+00,  9.98014171e-01,   5.00745983e-01,  9.53971872e-01, 1.04252107e+00,
-    #                    1.00588607e+01, 5.00000000e+00, 1.66000000e+00,   1.35449129e+00])
-    # tuned w/o rotor coupling - better
-    # params = np.array([1.88,        0.19177698,  4.81971718, -0.01,       0.03997436, -2.84446224,
-    #         0.89976724,  1.27846907,  0.49498389,  1.30100639,  1.5,         5.,          1.66,
-    #         1.16832215])
-    #
-    # params = np.array([1.88,0.187048009721,4.77533082803,-0.0100000000006,0.0520337716793,-3.12753111122,0.899789468231,1.0,0.461174204453,1.0,5.43461182219,12.0,1.3,1.17361904411])
-    # params = np.array([1.88000000e+00,   1.87048010e-01,   4.77533083e+00,  -1.00000000e-02,
-    #                    5.20337717e-02,  -3.12753111e+00,   8.99789468e-01,   1.00000000e+00,
-    #                    4.61174204e-01,   1.00000000e+00,   5.43461182e+00,  1.20000000e+01,
-    #                    1.30000000e+00,   1.17361904e+00])
-    # tuned w/o rotor coupling NSGA2
-  #   [  3.69417774   0.1855651    4.7238335   -0.63530381   0.11017243
-  # -6.54394401   0.46545969   0.90816474   0.33989696   0.46994967
-  # 19.11565949   8.64014545   3.74161795   0.91737382]
-
-    #tuned w/o cosine (cos_spread = 1e6)
-    # params = np.arry([1.88000000e+00, 3.16292979e-01, 7.70598680e+00,-1.00000000e-02, 4.96054648e-02, -2.76381788e-01,  2.10736120e-01,  1.00000000e+00,
-    # 9.99750140e-01,  1.00000000e+00, 1.45333587e+01, 1.20000000e+01,
-    # 1.30000000e+00, 2.00000000e+00])
-
-    # tuned with non-differentiable model
-    #     [  1.88000000e+00   3.85643834e-01   8.50894816e+00  -1.00000000e-02
-    #    4.96755421e-02  -6.44550637e-01   1.82752207e-01   1.00000000e+00
-    #    1.00000000e+00   1.00000000e+00   2.00000000e+01   1.20000000e+01
-    #    1.30000000e+00   2.00000000e+00]
-
-
     # params = value
     plotSOWFAvsFLORIS(prob, just_SOWFA=just_SOWFA, plot_prefix=plot_file_prefix)
-
-    #
-    #
-    #
-    #
-    # global use_rotor_components
-    # global differentiable
-    # global optimizingLayout
-    #
-    # if use_rotor_components:
-    #     NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
-    #     datasize = NREL5MWCPCT['CP'].size
-    # else:
-    #     datasize = 0
-    #
-    # # initialize input variable arrays
-    # nTurbines = 2
-    # rotorDiameter = np.zeros(nTurbines)
-    # axialInduction = np.zeros(nTurbines)
-    # Ct = np.zeros(nTurbines)
-    # Cp = np.zeros(nTurbines)
-    # generator_efficiency = np.zeros(nTurbines)
-    # yaw = np.zeros(nTurbines)
-    #
-    # # define initial values
-    # for turbI in range(0, nTurbines):
-    #     rotorDiameter[turbI] = 126.4            # m
-    #     axialInduction[turbI] = 1.0/3.0
-    #     Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
-    #     Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1. - 1.0/3.0), 2)
-    #     # generator_efficiency[turbI] = 0.944
-    #     generator_efficiency[turbI] = 0.768
-    #     yaw[turbI] = 0.     # deg.
-    #
-    # # Define flow properties
-    # wind_speed = 8.0        # m/s
-    # air_density = 1.1716    # kg/m^3
-    # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
-    #
-    # # set up problem
-    # prob = Problem(root=Group())
-    # prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbines, resolution=0, use_rotor_components=use_rotor_components,
-    #                                              datasize=datasize, differentiable=differentiable,
-    #                                              optimizingLayout=optimizingLayout), promotes=['*'])
-    #
-    # # initialize problem
-    # prob.setup(check=False)
-    #
-    # if use_rotor_components:
-    #     # for i in range(0, nDirections):
-    #     #     exec('myFloris.initVelocitiesTurbines_%d = np.ones_like(turbineX)*windrose_speeds[%d]' % (i, i))
-    #     # myFloris.initVelocitiesTurbines = np.ones_like(turbineX)*windrose_speeds
-    #     # myFloris.windSpeedToCPCT = NREL5MWCPCT
-    #     prob['params:windSpeedToCPCT:CP'] = NREL5MWCPCT['CP']
-    #     prob['params:windSpeedToCPCT:CT'] = NREL5MWCPCT['CT']
-    #     prob['params:windSpeedToCPCT:wind_speed'] = NREL5MWCPCT['wind_speed']
-    #     prob['floris_params:useaUbU'] = True
-    #     prob['floris_params:useWakeAngle'] = True
-    #     prob['floris_params:adjustInitialWakeDiamToYaw'] = False
-    #     prob['floris_params:CTcorrected'] = True
-    #     prob['floris_params:CPcorrected'] = True
-    # else:
-    #     prob['Ct_in'] = Ct
-    #     prob['Cp_in'] = Cp
-    #     prob['gen_params:CTcorrected'] = False
-    #     prob['gen_params:CPcorrected'] = False
-    #     prob['floris_params:useaUbU'] = True
-    #     prob['floris_params:useWakeAngle'] = True
-    #
-    # if not differentiable:
-    #     prob['floris_params:useaUbU'] = True
-    #     prob['floris_params:useWakeAngle'] = False
-    #     prob['floris_params:adjustInitialWakeDiamToYaw'] = False
-    #     prob['floris_params:initialWakeDisplacement'] = -4.5
-    #
-    #
