@@ -104,7 +104,7 @@ class OptAEP(Group):
     """
 
     def __init__(self, nTurbines, resolution=0, nDirections=1, minSpacing=2., use_rotor_components=True,
-                 datasize=0, differentiable=True, optimizingLayout=False):
+                 datasize=0, differentiable=True, optimizingLayout=False, forcefd=False):
 
         super(OptAEP, self).__init__()
 
@@ -112,7 +112,7 @@ class OptAEP(Group):
         self.add('AEPgroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections,
                                             use_rotor_components=use_rotor_components,
                                             datasize=datasize, differentiable=differentiable,
-                                            optimizingLayout=optimizingLayout),
+                                            optimizingLayout=optimizingLayout, forcefd=forcefd),
                  promotes=['*'])
 
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])

@@ -963,9 +963,11 @@ class DirectionGroupFLORIS(Group):
     """
 
     def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=True, datasize=0,
-                 differentiable=True, optimizingLayout=False, add_IdepVarComps=True):
+                 differentiable=True, optimizingLayout=False, add_IdepVarComps=True, forcefd=False):
         super(DirectionGroupFLORIS, self).__init__()
         epsilon = 1e-6
+
+        self.fd_options['force_fd'] = forcefd
 
         # self.add('p0', IndepVarComp('wind_direction', val=0.0, units='deg'), promotes=['*'])
         if add_IdepVarComps:
@@ -1013,7 +1015,7 @@ class AEPGroupFLORIS(Group):
     """
 
     def __init__(self, nTurbines, resolution=0, nDirections=1, use_rotor_components=True, datasize=0,
-                 differentiable=True, optimizingLayout=False):
+                 differentiable=True, optimizingLayout=False, forcefd=False):
 
         super(AEPGroupFLORIS, self).__init__()
 
@@ -1055,7 +1057,7 @@ class AEPGroupFLORIS(Group):
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
                                             differentiable=differentiable, optimizingLayout=optimizingLayout,
-                                            add_IdepVarComps=False),
+                                            add_IdepVarComps=False, forcefd=forcefd),
                        promotes=['gen_params:*', 'floris_params:*', 'air_density',
                                  'axialInduction', 'generator_efficiency', 'turbineX', 'turbineY',
                                  'yaw%i' % direction_id, 'rotorDiameter', 'velocitiesTurbines%i' % direction_id,
@@ -1066,7 +1068,7 @@ class AEPGroupFLORIS(Group):
                 pg.add('direction_group%i' % direction_id,
                        DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
-                                            differentiable=differentiable, add_IdepVarComps=False),
+                                            differentiable=differentiable, add_IdepVarComps=False, forcefd=forcefd),
                        promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'axialInduction',
                                  'generator_efficiency', 'turbineX', 'turbineY', 'yaw%i' % direction_id, 'rotorDiameter',
                                  'velocitiesTurbines%i' % direction_id, 'wt_power%i' % direction_id,
