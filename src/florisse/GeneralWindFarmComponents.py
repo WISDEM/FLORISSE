@@ -14,6 +14,10 @@ def add_gen_params_IdepVarComps(openmdao_group, datasize):
                                   desc='power coefficients', pass_by_obj=True), promotes=['*'])
     openmdao_group.add('gp3', IndepVarComp('gen_params:windSpeedToCPCT_CT', np.zeros(datasize),
                                   desc='thrust coefficients', pass_by_obj=True), promotes=['*'])
+    openmdao_group.add('gp4', IndepVarComp('gen_params:CPcorrected', False,
+                                  pass_by_obj=True), promotes=['*'])
+    openmdao_group.add('gp5', IndepVarComp('gen_params:CTcorrected', False,
+                                  pass_by_obj=True), promotes=['*'])
 
 
 class WindFrame(Component):
