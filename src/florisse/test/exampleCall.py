@@ -39,7 +39,7 @@ if __name__ == "__main__":
     wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # set up problem
-    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0, differentiable=False, use_rotor_components=False))
+    prob = Problem(root=AEPGroupFLORIS(nTurbs, resolution=0, differentiable=True, use_rotor_components=False))
 
     # initialize problem
     prob.setup()
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = True
     prob['floris_params:cos_spread'] = 1E12         # turns off cosine spread (just needs to be very large)
-
+    # prob['floris_params:useWakeAngle'] = True
     # run the problem
     print 'start FLORIS run'
     tic = time.time()

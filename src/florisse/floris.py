@@ -284,6 +284,7 @@ class floris_wcent_wdiam(Component):
         # yaw in degrees
         yaw_deg = params['yaw%i' % self.direction_id]
         # print yaw_deg, Ct
+        # print "differentiable? ", self.differentiable
         if self.differentiable:
             wakeCentersYT_vec, wakeDiametersT_vec = _floris.floris_wcent_wdiam(kd, initialWakeDisplacement, \
                                   initialWakeAngle, ke, keCorrCT, Region2CT, yaw_deg, Ct, turbineXw, turbineYw, \
