@@ -435,12 +435,17 @@ subroutine floris_overlap(nTurbines, turbineXw, turbineYw, rotorDiameter, &
     ! calculate cosine factor
     do turbI = 1, nTurbines
         do turb = 1, nTurbines
-            do zone = 1, 3
-                rmax = cos_spread*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
-                cosFac_mat(turbI, turb, zone) = 0.5_dp*(1.0_dp + cos(pi*dabs( &
-                    wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))
-                !cosFac_mat(turbI, turb, zone) = 1.0_dp
-            end do
+            if (turbineXw(turb) < turbineXw(turbI)) then
+                do zone = 1, 3
+                    rmax = cos_spread*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
+                    cosFac_mat(turbI, turb, zone) = 0.5_dp*(1.0_dp + cos(pi*dabs( &
+                        wakeCentersYT_mat(turbI, turb)-turbineYw(turbI))/rmax))
+                    !cosFac_mat(turbI, turb, zone) = 1.0_dp
+            
+                end do
+            else
+                cosFac_mat(turbI, turb, :) = 1.0_dp               
+            end if            
         end do
     end do
     
@@ -1503,7 +1508,7 @@ SUBROUTINE FLORIS_OVERLAP_BV(nturbines, turbinexw, turbineyw, turbineywb&
 & wakediameterst_vecb, wakecentersyt_vec, wakecentersyt_vecb, cos_spread&
 & , wakeoverlaptrel_vecb, cosfac_vecb, &
 & nbdirs)
-!  USE DIFFSIZES
+
 !  Hint: nbdirs should be the maximum number of differentiation directions
   IMPLICIT NONE
 ! define precision to be the standard for a double precision ! on local system
@@ -1571,18 +1576,23 @@ SUBROUTINE FLORIS_OVERLAP_BV(nturbines, turbinexw, turbineyw, turbineywb&
 ! calculate cosine factor
   DO turbi=1,nturbines
     DO turb=1,nturbines
-      DO zone=1,3
-        IF (wakecentersyt_mat(turbi, turb) - turbineyw(turbi) .GE. 0.) &
-&       THEN
-          CALL PUSHREAL8(dabs0)
-          dabs0 = wakecentersyt_mat(turbi, turb) - turbineyw(turbi)
-          CALL PUSHCONTROL1B(0)
-        ELSE
-          CALL PUSHREAL8(dabs0)
-          dabs0 = -(wakecentersyt_mat(turbi, turb)-turbineyw(turbi))
-          CALL PUSHCONTROL1B(1)
-        END IF
-      END DO
+      IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
+        DO zone=1,3
+          IF (wakecentersyt_mat(turbi, turb) - turbineyw(turbi) .GE. 0.&
+&         ) THEN
+            CALL PUSHREAL8(dabs0)
+            dabs0 = wakecentersyt_mat(turbi, turb) - turbineyw(turbi)
+            CALL PUSHCONTROL1B(0)
+          ELSE
+            CALL PUSHREAL8(dabs0)
+            dabs0 = -(wakecentersyt_mat(turbi, turb)-turbineyw(turbi))
+            CALL PUSHCONTROL1B(1)
+          END IF
+        END DO
+        CALL PUSHCONTROL1B(1)
+      ELSE
+        CALL PUSHCONTROL1B(0)
+      END IF
     END DO
   END DO
   DO nd=1,nbdirs
@@ -1631,47 +1641,54 @@ SUBROUTINE FLORIS_OVERLAP_BV(nturbines, turbinexw, turbineyw, turbineywb&
   END DO
   DO turbi=nturbines,1,-1
     DO turb=nturbines,1,-1
-      DO zone=3,1,-1
-        rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
-&         rotordiameter(turbi))
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
         DO nd=1,nbdirs
-          tempb0(nd) = -(pi*SIN(pi*(dabs0/rmax))*0.5_dp*cosfac_matb(nd, &
-&           turbi, turb, zone)/rmax)
-          dabs0b(nd) = tempb0(nd)
-          rmaxb(nd) = -(dabs0*tempb0(nd)/rmax)
-          cosfac_matb(nd, turbi, turb, zone) = 0.0
+          cosfac_matb(nd, turbi, turb, :) = 0.0
         END DO
-        CALL POPCONTROL1B(branch)
-        IF (branch .EQ. 0) THEN
-          CALL POPREAL8(dabs0)
+      ELSE
+        DO zone=3,1,-1
+          rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
+&           rotordiameter(turbi))
           DO nd=1,nbdirs
-            wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(nd&
-&             , turbi, turb) + dabs0b(nd)
-            turbineywb(nd, turbi) = turbineywb(nd, turbi) - dabs0b(nd)
+            tempb0(nd) = -(pi*SIN(pi*(dabs0/rmax))*0.5_dp*cosfac_matb(nd&
+&             , turbi, turb, zone)/rmax)
+            dabs0b(nd) = tempb0(nd)
+            rmaxb(nd) = -(dabs0*tempb0(nd)/rmax)
+            cosfac_matb(nd, turbi, turb, zone) = 0.0
           END DO
-        ELSE
-          CALL POPREAL8(dabs0)
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(dabs0)
+            DO nd=1,nbdirs
+              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
+&               nd, turbi, turb) + dabs0b(nd)
+              turbineywb(nd, turbi) = turbineywb(nd, turbi) - dabs0b(nd)
+            END DO
+          ELSE
+            CALL POPREAL8(dabs0)
+            DO nd=1,nbdirs
+              turbineywb(nd, turbi) = turbineywb(nd, turbi) + dabs0b(nd)
+              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
+&               nd, turbi, turb) - dabs0b(nd)
+            END DO
+          END IF
           DO nd=1,nbdirs
-            turbineywb(nd, turbi) = turbineywb(nd, turbi) + dabs0b(nd)
-            wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(nd&
-&             , turbi, turb) - dabs0b(nd)
+            tempb(nd) = cos_spread*0.5_dp*rmaxb(nd)
+            wakediameterst_matb(nd, turbi, turb, 3) = &
+&             wakediameterst_matb(nd, turbi, turb, 3) + tempb(nd)
+            rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + &
+&             tempb(nd)
           END DO
-        END IF
-        DO nd=1,nbdirs
-          tempb(nd) = cos_spread*0.5_dp*rmaxb(nd)
-          wakediameterst_matb(nd, turbi, turb, 3) = wakediameterst_matb(&
-&           nd, turbi, turb, 3) + tempb(nd)
-          rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + tempb(&
-&           nd)
         END DO
-      END DO
+      END IF
     END DO
   END DO
-  CALL CALCOVERLAPAREAS_BV(nturbines, turbinexw, turbineyw, turbineywb, &
-&                    rotordiameter, rotordiameterb, wakediameterst_mat, &
-&                    wakediameterst_matb, wakecentersyt_mat, &
-&                    wakecentersyt_matb, wakeoverlaptrel_mat, &
-&                    wakeoverlaptrel_matb, nbdirs)
+  CALL CALCOVERLAPAREAS_BV(nturbines, turbinexw, turbineyw, turbineywb&
+&                     , rotordiameter, rotordiameterb, &
+&                     wakediameterst_mat, wakediameterst_matb, &
+&                     wakecentersyt_mat, wakecentersyt_matb, &
+&                     wakeoverlaptrel_mat, wakeoverlaptrel_matb, nbdirs)
   DO nd=1,nbdirs
     wakecentersyt_vecb(nd, :) = 0.0
   END DO
