@@ -108,11 +108,13 @@ class OptAEP(Group):
 
         super(OptAEP, self).__init__()
 
+        self.fd_options['force_fd'] = forcefd
+
         # add major components and groups
         self.add('AEPgroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections,
                                             use_rotor_components=use_rotor_components,
                                             datasize=datasize, differentiable=differentiable,
-                                            optimizingLayout=optimizingLayout, forcefd=forcefd),
+                                            optimizingLayout=optimizingLayout),
                  promotes=['*'])
 
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])

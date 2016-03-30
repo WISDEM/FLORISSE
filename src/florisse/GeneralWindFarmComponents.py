@@ -1,6 +1,7 @@
 from openmdao.api import Component, Group, Problem, IndepVarComp
 from akima import Akima, akima_interp
 from utilities import smooth_min, hermite_spline
+import config
 
 import numpy as np
 from scipy import interp
@@ -237,7 +238,7 @@ class AdjustCtCpYaw(Component):
 class WindFarmAEP(Component):
     """ Estimate the AEP based on power production for each direction and weighted by wind direction frequency  """
 
-    def __init__(self, nDirections):
+    def __init__(self, nDirections, rec_func_calls=True):
 
         super(WindFarmAEP, self).__init__()
 
@@ -256,6 +257,9 @@ class WindFarmAEP(Component):
         # define output
         self.add_output('AEP', val=0.0, units='kWh', desc='total annual energy output of wind farm')
 
+        # pass bool for function call recording
+        self.rec_func_calls = rec_func_calls
+
     def solve_nonlinear(self, params, unknowns, resids):
 
         # # print 'in AEP'
@@ -273,7 +277,11 @@ class WindFarmAEP(Component):
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
-        print 'In AEP, AEP %s' % unknowns['AEP']
+        # print 'In AEP, AEP %s' % unknowns['AEP']
+
+        # increase function call count
+        if self.rec_func_calls:
+            config.obj_func_calls += 1
 
     def linearize(self, params, unknowns, resids):
 
@@ -296,6 +304,10 @@ class WindFarmAEP(Component):
 
         J['AEP', 'power_directions'] = np.array([dAEP_dpower])
         J['AEP', 'windrose_frequencies'] = np.array([dAEP_dwindrose_frequencies])
+
+        # increase function call count
+        if self.rec_func_calls:
+            config.sens_func_calls += 1
 
         return J
 
