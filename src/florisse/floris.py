@@ -11,6 +11,7 @@ from florisse import config
 import _floris
 import _florisDiscontinuous
 import _florisUnified
+import _florisUnifiedDiscontinuous
 # import _florisHubSmooth as _floris
 
 
@@ -973,14 +974,22 @@ class floris_unified(Component):
         keCorrArray = params['floris_params:keCorrArray']
         axialIndProvided = params['floris_params:axialIndProvided']
 
-
-        # call to fortran code to obtain output values
-        velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-            _florisUnified.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
-                                           Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
-                                           Region2CT, keCorrArray, useWakeAngle,
-                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+        if self.differentiable:
+            # call to fortran code to obtain output values
+            velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
+                _florisUnified.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
+                                               Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                               MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                               Region2CT, keCorrArray, useWakeAngle,
+                                               adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+        else:
+             # call to fortran code to obtain output values
+            velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
+                _florisUnifiedDiscontinuous.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
+                                                           Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                           Region2CT, keCorrArray, useWakeAngle,
+                                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
 
         # pass outputs to self
         unknowns['velocitiesTurbines%i' % self.direction_id] = velocitiesTurbines
@@ -1027,13 +1036,22 @@ class floris_unified(Component):
         keCorrArray = params['floris_params:keCorrArray']
         axialIndProvided = params['floris_params:axialIndProvided']
 
-        # call to fortran code to obtain output values
-        velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-            _florisUnified.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
-                                           Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
-                                           Region2CT, keCorrArray, useWakeAngle,
-                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+        if self.differentiable:
+            # call to fortran code to obtain output values
+            velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
+                _florisUnified.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
+                                               Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                               MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                               Region2CT, keCorrArray, useWakeAngle,
+                                               adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+        else:
+             # call to fortran code to obtain output values
+            velocitiesTurbines, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
+                _florisUnifiedDiscontinuous.floris_unified(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
+                                                           Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                           Region2CT, keCorrArray, useWakeAngle,
+                                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
         # pass outputs to self
         resids['velocitiesTurbines%i' % self.direction_id] = \
             velocitiesTurbines - unknowns['velocitiesTurbines%i' % self.direction_id]
@@ -1086,27 +1104,79 @@ class floris_unified(Component):
         nTurbines = len(turbineXw)
         nbdirs = nTurbines
 
-        # input array to direct differentiation
-        velocitiesTurbinesb = np.eye(nbdirs, nTurbines)
-
-        # call to fortran code to obtain output values
-        turbineXwb, turbineYwb, yaw_degb, rotorDiameterb, Ctb, axialInductionb = \
-            _florisUnified.floris_unified_bv(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
-                                             Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                             MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
-                                             Region2CT, keCorrArray, useWakeAngle,
-                                             adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
-                                             velocitiesTurbinesb)
+        BV = config.BV
 
         J = {}
 
-        # collect values of the jacobian
-        J['velocitiesTurbines%i' % direction_id, 'turbineXw'] = turbineXwb
-        J['velocitiesTurbines%i' % direction_id, 'turbineYw'] = turbineYwb
-        J['velocitiesTurbines%i' % direction_id, 'yaw%i' % direction_id] = yaw_degb
-        J['velocitiesTurbines%i' % direction_id, 'rotorDiameter'] = rotorDiameterb
-        J['velocitiesTurbines%i' % direction_id, 'Ct'] = Ctb
-        J['velocitiesTurbines%i' % direction_id, 'axialInduction'] = axialInductionb
+        if BV:
+            # input array to direct differentiation
+            velocitiesTurbinesb = np.eye(nbdirs, nTurbines)
+            # call to fortran code to obtain output values
+            turbineXwb, turbineYwb, yaw_degb, rotorDiameterb, Ctb, axialInductionb = \
+                _florisUnified.floris_unified_bv(turbineXw, turbineYw, yaw_deg, rotorDiameter, Vinf,
+                                                 Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
+                                                 velocitiesTurbinesb)
+
+
+            # collect values of the jacobian
+            J['velocitiesTurbines%i' % direction_id, 'turbineXw'] = turbineXwb
+            J['velocitiesTurbines%i' % direction_id, 'turbineYw'] = turbineYwb
+            J['velocitiesTurbines%i' % direction_id, 'yaw%i' % direction_id] = yaw_degb
+            J['velocitiesTurbines%i' % direction_id, 'rotorDiameter'] = rotorDiameterb
+            J['velocitiesTurbines%i' % direction_id, 'Ct'] = Ctb
+            J['velocitiesTurbines%i' % direction_id, 'axialInduction'] = axialInductionb
+
+        else:
+
+            dx_dx = np.eye(nTurbines)
+            zero_array = np.zeros([nbdirs, nTurbines])
+
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, dx_dx, turbineYw, zero_array, yaw_deg, zero_array, rotorDiameter, zero_array, Vinf,
+                                                 Ct, zero_array, axialInduction, zero_array, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'turbineXw'] = np.transpose(dy_dx)
+
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, zero_array, turbineYw, dx_dx, yaw_deg, zero_array, rotorDiameter, zero_array, Vinf,
+                                                 Ct, zero_array, axialInduction, zero_array, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'turbineYw'] = np.transpose(dy_dx)
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, zero_array, turbineYw, zero_array, yaw_deg, dx_dx, rotorDiameter, zero_array, Vinf,
+                                                 Ct, zero_array, axialInduction, zero_array, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'yaw%i' % direction_id] = np.transpose(dy_dx)
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, zero_array, turbineYw, zero_array, yaw_deg, zero_array, rotorDiameter, dx_dx, Vinf,
+                                                 Ct, zero_array, axialInduction, zero_array, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'rotorDiameter'] = np.transpose(dy_dx)
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, zero_array, turbineYw, zero_array, yaw_deg, zero_array, rotorDiameter, zero_array, Vinf,
+                                                 Ct, dx_dx, axialInduction, zero_array, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'Ct'] = np.transpose(dy_dx)
+            dy_dx = \
+                _florisUnified.floris_unified_dv(turbineXw, zero_array, turbineYw, zero_array, yaw_deg, zero_array, rotorDiameter, zero_array, Vinf,
+                                                 Ct, zero_array, axialInduction, dx_dx, ke, kd, me, initialWakeDisplacement, bd,
+                                                 MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                 Region2CT, keCorrArray, useWakeAngle,
+                                                 adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
+            J['velocitiesTurbines%i' % direction_id, 'axialInduction'] = np.transpose(dy_dx)
 
         return J
 

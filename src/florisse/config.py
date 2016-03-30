@@ -8,3 +8,4 @@ obj_func_calls = 0
 sens_func_calls = 0
 
 floris_single_component = False
+BV = True
