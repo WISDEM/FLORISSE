@@ -385,6 +385,68 @@ class SpacingComp(Component):
         return J
 
 
+class BoundaryComp(Component):
+
+    def __init__(self, nVertices, nTurbines):
+
+        super(BoundaryComp, self).__init__()
+
+        self.nTurbines = nTurbines
+
+        # Explicitly size input arrays
+        self.add_param('AX', np.zeros(nVertices))
+        self.add_param('AY', np.zeros(nVertices))
+        self.add_param('b', np.zeros(nVertices))
+
+        self.add_param('turbineXw', np.zeros(nTurbines), iotype='in',
+                       desc='x coordinates of turbines in wind dir. ref. frame')
+        self.add_param('turbineYw', np.zeros(nTurbines), iotype='in',
+                       desc='y coordinates of turbines in wind dir. ref. frame')
+
+        # Explicitly size output array
+        # (vector with positive elements if turbines outside of hull)
+        self.add_output('inout', np.zeros(nVertices*nTurbines))
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        #print 'in hull const'
+        # tictot = time.time()
+        nTurbines = self.nTurbines
+
+        AX = params['AX']
+        AY = params['AY']
+        b = params['b']
+        turbineXw = params['turbineXw']
+        turbineYw = params['turbineY']
+
+        J = np.concatenate((np.kron(np.eye(nTurbines), AX).transpose(), np.kron(np.eye(nTurbines), AY).transpose()), 1)
+
+        unknowns['inout'] = (np.dot(J, np.concatenate((turbineXw, turbineYw))) - np.tile(b, (1, nTurbines))).flatten()
+
+        # toctot = time.time()
+        #print 'done %s' % (toctot-tictot)
+
+    def linearize(self, params, unknowns, resids):
+
+        #print 'in hull const - provide J'
+        # tictot = time.time()
+
+        nTurbines = self.nTurbines
+
+        AX = params['AX']
+        AY = params['AY']
+
+        J = {}
+
+        J['inout', 'turbineXw'] = np.kron(np.eye(nTurbines), AX).transpose()
+        J['inout', 'turbineYw'] = np.kron(np.eye(nTurbines), AY).transpose()
+
+        # toctot = time.time()
+        #print 'done %s' % (toctot-tictot)
+
+        return J
+
+
 class MUX(Component):
     """ Connect input elements into a single array  """
 
