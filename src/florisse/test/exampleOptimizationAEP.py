@@ -2,6 +2,7 @@ from __future__ import print_function
 
 from openmdao.api import Problem, pyOptSparseDriver
 from florisse.OptimizationGroups import OptAEP
+from florisse import config
 
 import time
 import numpy as np
@@ -13,6 +14,8 @@ import cProfile
 import sys
 
 if __name__ == "__main__":
+
+    config.floris_single_component = True
 
     ######################### for MPI functionality #########################
     from openmdao.core.mpi_wrap import MPI

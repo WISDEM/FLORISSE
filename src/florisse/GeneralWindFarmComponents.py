@@ -24,7 +24,7 @@ def add_gen_params_IdepVarComps(openmdao_group, datasize):
 class WindFrame(Component):
     """ Calculates the locations of each turbine in the wind direction reference frame """
 
-    def __init__(self, nTurbines, resolution=0, differentiable=True):
+    def __init__(self, nTurbines, resolution=0, differentiable=True, nSamples=0):
 
         # print 'entering windframe __init__ - analytic'
 
@@ -40,6 +40,7 @@ class WindFrame(Component):
             self.fd_options['form'] = 'forward'
 
         self.nTurbines = nTurbines
+        self.nSamples = nSamples
 
         # flow property variables
         self.add_param('wind_speed', val=8.0, units='m/s', desc='free stream wind velocity')
@@ -50,17 +51,25 @@ class WindFrame(Component):
         self.add_param('turbineX', val=np.zeros(nTurbines), units='m', desc='x positions of turbines in original ref. frame')
         self.add_param('turbineY', val=np.zeros(nTurbines), units='m', desc='y positions of turbines in original ref. frame')
 
-        # variables for testing wind speed at various locations
-        self.add_param('ws_position', val=np.zeros(resolution * resolution), units='m',
-                       desc='position of desired measurements in original ref. frame')
-
-        # Explicitly size output arrays
-        self.add_param('wsw_position', val=np.zeros(resolution * resolution), units='m',
-                       desc='position of desired measurements in wind ref. frame')
-
         # add output
         self.add_output('turbineXw', val=np.zeros(nTurbines), units='m', desc='downwind coordinates of turbines')
         self.add_output('turbineYw', val=np.zeros(nTurbines), units='m', desc='crosswind coordinates of turbines')
+
+        # ############################ visualization arrays ##################################
+        if nSamples > 0:
+            # visualization input
+            self.add_param('ws_positionX', np.zeros(nSamples), units='m', pass_by_object=True,
+                           desc='X position of desired measurements in original ref. frame')
+            self.add_param('ws_positionY', np.zeros(nSamples), units='m', pass_by_object=True,
+                           desc='Y position of desired measurements in original ref. frame')
+            self.add_param('ws_positionZ', np.zeros(nSamples), units='m', pass_by_object=True,
+                           desc='Z position of desired measurements in original ref. frame')
+
+            # visualization output
+            self.add_output('wsw_positionX', np.zeros(nSamples), units='m', pass_by_object=True,
+                            desc='position of desired measurements in wind ref. frame')
+            self.add_output('wsw_positionY', np.zeros(nSamples), units='m', pass_by_object=True,
+                            desc='position of desired measurements in wind ref. frame')
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -70,27 +79,23 @@ class WindFrame(Component):
         turbineX = params['turbineX']
         turbineY = params['turbineY']
 
-        # print "in windframe", turbineX, turbineY
+        if self.nSamples > 0:
+            velX = params['ws_positionX']
+            velY = params['ws_positionY']
 
-        # if self.ws_position.any():
-        #     velX = self.ws_position[:, 0]
-        #     velY = self.ws_position[:, 1]
-        # else:
-        #     velX = np.zeros([0, 0])
-        #     velY = np.zeros([0, 0])
-
-        # convert to downwind(x)-crosswind(y) coordinates
+        # adjust directions
         windDirectionDeg = 270. - windDirectionDeg
         if windDirectionDeg < 0.:
             windDirectionDeg += 360.
-        windDirectionRad = np.pi*windDirectionDeg/180.0             # inflow wind direction in radians
-        # rotationMatrix = np.array([(np.cos(-windDirectionRad), -np.sin(-windDirectionRad)),
-        #                            (np.sin(-windDirectionRad), np.cos(-windDirectionRad))])
-        turbineXw = turbineX*np.cos(-windDirectionRad)-turbineY*np.sin(-windDirectionRad)
-        turbineYw = turbineX*np.sin(-windDirectionRad)+turbineY*np.cos(-windDirectionRad)
+        windDirectionRad = np.pi*windDirectionDeg/180.0    # inflow wind direction in radians
 
-        unknowns['turbineXw'] = turbineXw
-        unknowns['turbineYw'] = turbineYw
+        # convert to downwind(x)-crosswind(y) coordinates
+        unknowns['turbineXw'] = turbineX*np.cos(-windDirectionRad)-turbineY*np.sin(-windDirectionRad)
+        unknowns['turbineYw'] = turbineX*np.sin(-windDirectionRad)+turbineY*np.cos(-windDirectionRad)
+
+        if self.nSamples > 0:
+            unknowns['wsw_positionX'] = velX*np.cos(-windDirectionRad)-velY*np.sin(-windDirectionRad)
+            unknowns['wsw_positionY'] = velX*np.sin(-windDirectionRad)+velY*np.cos(-windDirectionRad)
 
     def linearize(self, params, unknowns, resids):
 
