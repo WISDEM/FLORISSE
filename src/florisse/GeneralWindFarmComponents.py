@@ -891,6 +891,8 @@ class WindDirectionPower(Component):
         unknowns['wt_power%i' % direction_id] = wt_power
         unknowns['power%i' % direction_id] = power
 
+        # print wt_power
+
     def linearize(self, params, unknowns, resids):
 
         direction_id = self.direction_id

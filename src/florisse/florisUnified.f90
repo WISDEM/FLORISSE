@@ -516,7 +516,7 @@ subroutine floris_unified(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     ws_array = Vinf
     
     ! apply shear profile to visualization
-    ws_array = ws_array*(velZ/shearZh)*shearCoefficientAlpha*shearCoefficientAlpha
+    ws_array = ws_array*(velZ/shearZh)**shearCoefficientAlpha
     
     ! initialize axial induction values    
     if (axialIndProvided) then
@@ -615,6 +615,11 @@ subroutine floris_unified(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
         end do
         
     end do
+    
+!     print *, "ws_array: ", ws_array
+!     print *, "hubHeight: ", hubHeight
+!     print *, "velZ: ", velZ
+!     print *, ws_array
         
     ! pack desired matrices into vectors for output
     do turbI = 1, nTurbines

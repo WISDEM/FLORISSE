@@ -1275,7 +1275,7 @@ class floris_unified(Component):
 class FLORIS(Group):
     """ Group containing all necessary components of the floris model """
 
-    def __init__(self, nTurbines, resolution, direction_id=0, differentiable=True, optimizingLayout=False,
+    def __init__(self, nTurbines, direction_id=0, differentiable=True, optimizingLayout=False,
                  use_rotor_components=True, nSamples=0):
         super(FLORIS, self).__init__()
         splineshift = 0.0
@@ -1284,7 +1284,7 @@ class FLORIS(Group):
         # print differentiable
         # print 'in myFloris direction %i' % direction_id
         if floris_single_component:
-            self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable, nSamples=nSamples),
+            self.add('f_1', WindFrame(nTurbines, differentiable=differentiable, nSamples=nSamples),
                      promotes=['*'])
             self.add('f_0', floris_unified(nTurbines, direction_id=direction_id, differentiable=differentiable,
                                            use_rotor_components=use_rotor_components, nSamples=nSamples),
@@ -1292,7 +1292,7 @@ class FLORIS(Group):
         else:
             if optimizingLayout:
                 splineshift = 1.0
-            self.add('f_1', WindFrame(nTurbines, resolution, differentiable=differentiable, nSamples=nSamples),
+            self.add('f_1', WindFrame(nTurbines, differentiable=differentiable, nSamples=nSamples),
                      promotes=['*'])
             self.add('f_2', floris_wcent_wdiam(nTurbines, direction_id=direction_id, differentiable=differentiable,
                                                splineshift=splineshift, use_rotor_components=use_rotor_components,
@@ -1309,7 +1309,7 @@ class FLORIS(Group):
 
 class RotorSolveGroup(Group):
 
-    def __init__(self, nTurbines, resolution=0, direction_id=0, datasize=0, differentiable=True,
+    def __init__(self, nTurbines, direction_id=0, datasize=0, differentiable=True,
                  optimizingLayout=False, use_rotor_components=True, nSamples=0):
 
         super(RotorSolveGroup, self).__init__()
@@ -1323,7 +1323,7 @@ class RotorSolveGroup(Group):
                  promotes=['gen_params:*', 'yaw%i' % direction_id,
                            'velocitiesTurbines%i' % direction_id, 'Cp_out'])
 
-        self.add('floris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
+        self.add('floris', FLORIS(nTurbines, direction_id=direction_id,
                                   differentiable=differentiable, optimizingLayout=optimizingLayout,
                                   use_rotor_components=use_rotor_components, nSamples=nSamples),
                  promotes=(['floris_params:*', 'wind_speed', 'wind_direction', 'axialInduction',
@@ -1345,7 +1345,7 @@ class DirectionGroupFLORIS(Group):
     in a single direction
     """
 
-    def __init__(self, nTurbines, resolution=0, direction_id=0, use_rotor_components=True, datasize=0,
+    def __init__(self, nTurbines, direction_id=0, use_rotor_components=True, datasize=0,
                  differentiable=True, optimizingLayout=False, add_IdepVarComps=True, nSamples=0):
         super(DirectionGroupFLORIS, self).__init__()
         epsilon = 1e-6
@@ -1357,7 +1357,7 @@ class DirectionGroupFLORIS(Group):
 
         # self.add('fp', FLORISParameters(), promotes=['*'])
         if use_rotor_components:
-            self.add('myFloris', RotorSolveGroup(nTurbines, resolution=resolution, direction_id=direction_id,
+            self.add('myFloris', RotorSolveGroup(nTurbines, direction_id=direction_id,
                                                  datasize=datasize, differentiable=differentiable,
                                                  optimizingLayout=optimizingLayout, nSamples=nSamples,
                                                  use_rotor_components=use_rotor_components),
@@ -1375,7 +1375,7 @@ class DirectionGroupFLORIS(Group):
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
                      promotes=['Ct_in', 'Cp_in', 'gen_params:*', 'yaw%i' % direction_id])
 
-            self.add('myFloris', FLORIS(nTurbines, resolution=resolution, direction_id=direction_id,
+            self.add('myFloris', FLORIS(nTurbines, direction_id=direction_id,
                                         differentiable=differentiable, optimizingLayout=optimizingLayout,
                                         use_rotor_components=use_rotor_components, nSamples=nSamples),
                      promotes=(['floris_params:*', 'wind_speed', 'wind_direction', 'axialInduction',
@@ -1407,7 +1407,7 @@ class AEPGroupFLORIS(Group):
     Group containing all necessary components for wind plant AEP calculations using the FLORIS model
     """
 
-    def __init__(self, nTurbines, resolution=0, nDirections=1, use_rotor_components=True, datasize=0,
+    def __init__(self, nTurbines, nDirections=1, use_rotor_components=True, datasize=0,
                  differentiable=True, optimizingLayout=False, nSamples=0):
 
         super(AEPGroupFLORIS, self).__init__()
@@ -1449,7 +1449,7 @@ class AEPGroupFLORIS(Group):
             for direction_id in np.arange(0, nDirections):
                 # print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
-                       DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
+                       DirectionGroupFLORIS(nTurbines=nTurbines, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
                                             differentiable=differentiable, optimizingLayout=optimizingLayout,
                                             add_IdepVarComps=False, nSamples=nSamples),
@@ -1467,7 +1467,7 @@ class AEPGroupFLORIS(Group):
             for direction_id in np.arange(0, nDirections):
                 # print 'assigning direction group %i' % direction_id
                 pg.add('direction_group%i' % direction_id,
-                       DirectionGroupFLORIS(nTurbines=nTurbines, resolution=resolution, direction_id=direction_id,
+                       DirectionGroupFLORIS(nTurbines=nTurbines, direction_id=direction_id,
                                             use_rotor_components=use_rotor_components, datasize=datasize,
                                             differentiable=differentiable, add_IdepVarComps=False, nSamples=nSamples),
                        promotes=(['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'axialInduction',
