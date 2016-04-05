@@ -121,7 +121,7 @@ if __name__ == "__main__":
     #
     # initialize problem
     prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=nDirections, resolution=0,
-                                          minSpacing=minSpacing, differentiable=True))
+                                          minSpacing=minSpacing, differentiable=True, use_rotor_components=False))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -176,8 +176,8 @@ if __name__ == "__main__":
     # run the problem
     mpi_print(prob, 'start FLORIS run')
     tic = time.time()
-    cProfile.run('prob.run()')
-    # prob.run()
+    # cProfile.run('prob.run()')
+    prob.run()
     toc = time.time()
 
     # print the results
