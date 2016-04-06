@@ -23,7 +23,7 @@ class OptPowerOneDir(Group):
         super(OptPowerOneDir, self).__init__()
 
         # add major components
-        self.add('dirComp', AEPGroupFLORIS(nTurbines, resolution=0, differentiable=differentiable,
+        self.add('dirComp', AEPGroup(nTurbines, differentiable=differentiable,
                                            use_rotor_components=use_rotor_components), promotes=['*'])
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
@@ -35,7 +35,7 @@ class OptPowerOneDir(Group):
                  promotes=['*'])
 
         # add objective component
-        self.add('obj_comp', ExecComp('obj = -1.*dir_power0', power0=0.0), promotes=['*'])
+        self.add('obj_comp', ExecComp('obj = -1.*dir_power0', dir_power0=0.0), promotes=['*'])
 
         # initialize design variables for optimization
         # self.add('p1', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])

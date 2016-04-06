@@ -100,7 +100,7 @@ if __name__ == "__main__":
     axialInduction = np.zeros(nTurbs)
     Ct = np.zeros(nTurbs)
     Cp = np.zeros(nTurbs)
-    generator_efficiency = np.zeros(nTurbs)
+    generatorEfficiency = np.zeros(nTurbs)
     yaw = np.zeros(nTurbs)
     minSpacing = 2.                         # number of rotor diameters
 
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         axialInduction[turbI] = 1.0/3.0
         Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
         Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
-        generator_efficiency[turbI] = 0.944
+        generatorEfficiency[turbI] = 0.944
         yaw[turbI] = 0.     # deg.
 
     # Define flow properties
@@ -120,8 +120,9 @@ if __name__ == "__main__":
     # windFrequencies = np.ones_like(windDirections)*1.0/size
     #
     # initialize problem
-    prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=nDirections, resolution=0,
-                                          minSpacing=minSpacing, differentiable=True, use_rotor_components=False))
+    prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=nDirections,
+                                          minSpacing=minSpacing, differentiable=True,
+                                          use_rotor_components=False))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -160,11 +161,11 @@ if __name__ == "__main__":
     # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
-    prob['generator_efficiency'] = generator_efficiency
+    prob['generatorEfficiency'] = generatorEfficiency
     prob['windSpeeds'] = windSpeeds
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections
-    prob['windrose_frequencies'] = windFrequencies
+    prob['windFrequencies'] = windFrequencies
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
 
@@ -192,7 +193,7 @@ if __name__ == "__main__":
 
     mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
     mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
-    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['power_directions'])
+    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
     mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]

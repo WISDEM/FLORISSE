@@ -655,7 +655,7 @@ class AEPGroup(Group):
         direction_units = 'deg'
         wind_speed_units = 'm/s'
 
-        print 'SAMPLES: ', nSamples
+        # print 'SAMPLES: ', nSamples
 
         # add necessary inputs for group
         self.add('dv0', IndepVarComp('windDirections', np.zeros(nDirections), units=direction_units), promotes=['*'])

@@ -517,7 +517,7 @@ subroutine floris_unified(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     
     ! apply shear profile to visualization
     ws_array = ws_array*(velZ/shearZh)**shearCoefficientAlpha
-    print *, ws_array
+!     print *, ws_array
     ! initialize axial induction values    
     if (axialIndProvided) then
         a = a_in

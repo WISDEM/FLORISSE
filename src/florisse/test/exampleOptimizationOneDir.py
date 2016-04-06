@@ -24,7 +24,7 @@ if __name__ == "__main__":
     axialInduction = np.zeros(nTurbs)
     Ct = np.zeros(nTurbs)
     Cp = np.zeros(nTurbs)
-    generator_efficiency = np.zeros(nTurbs)
+    generatorEfficiency  = np.zeros(nTurbs)
     yaw = np.zeros(nTurbs)
 
     # define initial values
@@ -33,7 +33,7 @@ if __name__ == "__main__":
         axialInduction[turbI] = 1.0/3.0
         Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
         Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
-        generator_efficiency[turbI] = 0.944
+        generatorEfficiency[turbI] = 0.944
         yaw[turbI] = 10.     # deg.
 
     # Define flow properties
@@ -43,7 +43,7 @@ if __name__ == "__main__":
     wind_frequency = 0.1    # probability of wind in this direction at this speed
 
     # initialize problem
-    prob = Problem(root=OptPowerOneDir(nTurbs, resolution=0, use_rotor_components=False))
+    prob = Problem(root=OptPowerOneDir(nTurbs, use_rotor_components=False))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
@@ -71,11 +71,11 @@ if __name__ == "__main__":
     # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
-    prob['generator_efficiency'] = generator_efficiency
+    prob['generatorEfficiency'] = generatorEfficiency
     prob['windSpeeds'] = np.array([wind_speed])
     prob['air_density'] = air_density
     prob['windDirections'] = np.array([wind_direction])
-    prob['windrose_frequencies'] = np.array([wind_frequency])
+    prob['windFrequencies'] = np.array([wind_frequency])
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
     prob['floris_params:FLORISoriginal'] = True
@@ -90,12 +90,12 @@ if __name__ == "__main__":
 
     # print the results
     print('FLORIS Opt. calculation took %.03f sec.' % (toc-tic))
-    print 'turbine powers (kW): %s' % prob['wt_power0']
+    print 'turbine powers (kW): %s' % prob['wtPower0']
     print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
     print 'yaw (deg) = ', prob['yaw0']
-    print 'effective wind speeds (m/s): %s' % prob['velocitiesTurbines0']
-    print 'wind farm power (kW): %s' % prob['power0']
+    print 'effective wind speeds (m/s): %s' % prob['wtVelocity0']
+    print 'wind farm power (kW): %s' % prob['dir_power0']
 
     # data = prob.check_partial_derivatives()
 
