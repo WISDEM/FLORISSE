@@ -102,8 +102,8 @@ class OptAEP(Group):
 
     """
 
-    def __init__(self, nTurbines, resolution=0, nDirections=1, minSpacing=2., use_rotor_components=True,
-                 datasize=0, differentiable=True, optimizingLayout=False, force_fd=False):
+    def __init__(self, nTurbines, nDirections=1, minSpacing=2., use_rotor_components=True,
+                 datasize=0, differentiable=True, force_fd=False):
 
         super(OptAEP, self).__init__()
 
@@ -112,8 +112,7 @@ class OptAEP(Group):
         # add major components and groups
         self.add('AEPgroup', AEPGroup(nTurbines=nTurbines, nDirections=nDirections,
                                             use_rotor_components=use_rotor_components,
-                                            datasize=datasize, differentiable=differentiable,
-                                            optimizingLayout=optimizingLayout),
+                                            datasize=datasize, differentiable=differentiable),
                  promotes=['*'])
 
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
