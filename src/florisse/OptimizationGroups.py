@@ -11,9 +11,8 @@ import numpy as np
 
 from openmdao.api import Group, IndepVarComp, ExecComp
 
-from floris import DirectionGroupFLORIS, AEPGroupFLORIS
+from florisse.floris import DirectionGroup, AEPGroup
 from GeneralWindFarmComponents import SpacingComp
-from Parameters import FLORISParameters
 
 
 class OptPowerOneDir(Group):
@@ -29,14 +28,14 @@ class OptPowerOneDir(Group):
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
-        self.add('spacing_con', ExecComp('sc = separation_squared-(minSpacing*rotorDiameter[0])**2',
+        self.add('spacing_con', ExecComp('sc = wtSeparationSquared-(minSpacing*rotorDiameter[0])**2',
                                          minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbines),
                                          sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-                                         separation_squared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
+                                         wtSeparationSquared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
                  promotes=['*'])
 
         # add objective component
-        self.add('obj_comp', ExecComp('obj = -1.*power0', power0=0.0), promotes=['*'])
+        self.add('obj_comp', ExecComp('obj = -1.*dir_power0', power0=0.0), promotes=['*'])
 
         # initialize design variables for optimization
         # self.add('p1', IndepVarComp('turbineX', np.zeros(nTurbines)), promotes=['*'])
@@ -104,14 +103,14 @@ class OptAEP(Group):
     """
 
     def __init__(self, nTurbines, resolution=0, nDirections=1, minSpacing=2., use_rotor_components=True,
-                 datasize=0, differentiable=True, optimizingLayout=False, forcefd=False):
+                 datasize=0, differentiable=True, optimizingLayout=False, force_fd=False):
 
         super(OptAEP, self).__init__()
 
-        self.fd_options['force_fd'] = forcefd
+        self.fd_options['force_fd'] = force_fd
 
         # add major components and groups
-        self.add('AEPgroup', AEPGroupFLORIS(nTurbines=nTurbines, nDirections=nDirections,
+        self.add('AEPgroup', AEPGroup(nTurbines=nTurbines, nDirections=nDirections,
                                             use_rotor_components=use_rotor_components,
                                             datasize=datasize, differentiable=differentiable,
                                             optimizingLayout=optimizingLayout),
@@ -120,10 +119,10 @@ class OptAEP(Group):
         self.add('spacing_comp', SpacingComp(nTurbines=nTurbines), promotes=['*'])
 
         # add constraint definitions
-        self.add('spacing_con', ExecComp('sc = separation_squared-(minSpacing*rotorDiameter[0])**2',
+        self.add('spacing_con', ExecComp('sc = wtSeparationSquared-(minSpacing*rotorDiameter[0])**2',
                                          minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbines),
                                          sc=np.zeros(((nTurbines-1.)*nTurbines/2.)),
-                                         separation_squared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
+                                         wtSeparationSquared=np.zeros(((nTurbines-1.)*nTurbines/2.))),
                  promotes=['*'])
 
         # add objective component

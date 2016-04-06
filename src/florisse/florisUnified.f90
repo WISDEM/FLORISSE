@@ -517,7 +517,7 @@ subroutine floris_unified(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     
     ! apply shear profile to visualization
     ws_array = ws_array*(velZ/shearZh)**shearCoefficientAlpha
-    
+    print *, ws_array
     ! initialize axial induction values    
     if (axialIndProvided) then
         a = a_in
@@ -588,7 +588,7 @@ subroutine floris_unified(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
             deltax = velX(loc) - turbineXw(turb)
             deltay = velY(loc) - wakeCentersY(loc, turb)
             deltaz = velZ(loc) - wakeCentersZ(loc, turb)
-            radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)
+            radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)            
             axialIndAndNearRotor = 2.0_dp*a(turb)
 
             if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 1)/2.0_dp) then   ! check if in zone 1

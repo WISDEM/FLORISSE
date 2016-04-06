@@ -58,17 +58,17 @@ class WindFrame(Component):
         # ############################ visualization arrays ##################################
         if nSamples > 0:
             # visualization input
-            self.add_param('ws_positionX', np.zeros(nSamples), units='m', pass_by_object=True,
+            self.add_param('wsPositionX', np.zeros(nSamples), units='m', pass_by_object=True,
                            desc='X position of desired measurements in original ref. frame')
-            self.add_param('ws_positionY', np.zeros(nSamples), units='m', pass_by_object=True,
+            self.add_param('wsPositionY', np.zeros(nSamples), units='m', pass_by_object=True,
                            desc='Y position of desired measurements in original ref. frame')
-            self.add_param('ws_positionZ', np.zeros(nSamples), units='m', pass_by_object=True,
+            self.add_param('wPositionZ', np.zeros(nSamples), units='m', pass_by_object=True,
                            desc='Z position of desired measurements in original ref. frame')
 
             # visualization output
-            self.add_output('wsw_positionX', np.zeros(nSamples), units='m', pass_by_object=True,
+            self.add_output('wsPositionXw', np.zeros(nSamples), units='m', pass_by_object=True,
                             desc='position of desired measurements in wind ref. frame')
-            self.add_output('wsw_positionY', np.zeros(nSamples), units='m', pass_by_object=True,
+            self.add_output('wsPositionYw', np.zeros(nSamples), units='m', pass_by_object=True,
                             desc='position of desired measurements in wind ref. frame')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -80,8 +80,8 @@ class WindFrame(Component):
         turbineY = params['turbineY']
 
         if self.nSamples > 0:
-            velX = params['ws_positionX']
-            velY = params['ws_positionY']
+            velX = params['wsPositionX']
+            velY = params['wsPositionY']
 
         # adjust directions
         windDirectionDeg = 270. - windDirectionDeg
@@ -94,38 +94,37 @@ class WindFrame(Component):
         unknowns['turbineYw'] = turbineX*np.sin(-windDirectionRad)+turbineY*np.cos(-windDirectionRad)
 
         if self.nSamples > 0:
-            unknowns['wsw_positionX'] = velX*np.cos(-windDirectionRad)-velY*np.sin(-windDirectionRad)
-            unknowns['wsw_positionY'] = velX*np.sin(-windDirectionRad)+velY*np.cos(-windDirectionRad)
+            unknowns['wsPositionXw'] = velX*np.cos(-windDirectionRad)-velY*np.sin(-windDirectionRad)
+            unknowns['wsPositionYw'] = velX*np.sin(-windDirectionRad)+velY*np.cos(-windDirectionRad)
 
     def linearize(self, params, unknowns, resids):
 
-        # print 'entering windframe - provideJ'
-
+        # obtain necessary inputs
         nTurbines = self.nTurbines
-
         windDirectionDeg = params['wind_direction']
 
+        # convert from meteorological polar system (CW, 0 deg.=N) to standard polar system (CCW, 0 deg.=E)
         windDirectionDeg = 270. - windDirectionDeg
         if windDirectionDeg < 0.:
             windDirectionDeg += 360.
 
-        windDirectionRad = np.pi*windDirectionDeg/180.0             # inflow wind direction in radians
+        # convert inflow wind direction to radians
+        windDirectionRad = np.pi*windDirectionDeg/180.0
 
+        # calculate gradients of conversion to wind direction reference frame
         dturbineXw_dturbineX = np.eye(nTurbines, nTurbines)*np.cos(-windDirectionRad)
         dturbineXw_dturbineY = np.eye(nTurbines, nTurbines)*(-np.sin(-windDirectionRad))
         dturbineYw_dturbineX = np.eye(nTurbines, nTurbines)*np.sin(-windDirectionRad)
         dturbineYw_dturbineY = np.eye(nTurbines, nTurbines)*np.cos(-windDirectionRad)
 
-        # print dturbineXw_dturbineY.shape
+        # initialize Jacobian dict
         J = {}
 
+        # populate Jacobian dict
         J[('turbineXw', 'turbineX')] = dturbineXw_dturbineX
         J[('turbineXw', 'turbineY')] = dturbineXw_dturbineY
         J[('turbineYw', 'turbineX')] = dturbineYw_dturbineX
         J[('turbineYw', 'turbineY')] = dturbineYw_dturbineY
-
-
-        # print 'end windframe jacobian'
 
         return J
 
@@ -200,10 +199,9 @@ class AdjustCtCpYaw(Component):
             unknowns['Cp_out'] = Cp
 
     def linearize(self, params, unknowns, resids):
-        #TODO check derivatives
+
         direction_id = self.direction_id
 
-        # print 'entering CtCp linearize'
         # collect inputs
         Ct = params['Ct_in']
         Cp = params['Cp_in']
@@ -215,13 +213,15 @@ class AdjustCtCpYaw(Component):
         CTcorrected = params['gen_params:CTcorrected']
         CPcorrected = params['gen_params:CPcorrected']
 
-        # calculate gradients
+        # initialize Jacobian dict
         J = {}
 
+        # calculate gradients and populate Jacobian dict
         if not CTcorrected:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines) * np.cos(yaw) * np.cos(yaw)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
-            J[('Ct_out', 'yaw%i' % direction_id)] = np.eye(nTurbines) * Ct * (-2. * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
+            J[('Ct_out', 'yaw%i' % direction_id)] = np.eye(nTurbines) * Ct * (
+                -2. * np.sin(yaw) * np.cos(yaw)) * np.pi / 180.
         else:
             J[('Ct_out', 'Ct_in')] = np.eye(nTurbines, nTurbines)
             J[('Ct_out', 'Cp_in')] = np.zeros((nTurbines, nTurbines))
@@ -253,9 +253,9 @@ class WindFarmAEP(Component):
         self.fd_options['step_type'] = 'relative'
 
         # define inputs
-        self.add_param('power_directions', np.zeros(nDirections), units='kW',
+        self.add_param('dirPowers', np.zeros(nDirections), units='kW',
                        desc='vector containing the power production at each wind direction ccw from north')
-        self.add_param('windrose_frequencies', np.zeros(nDirections),
+        self.add_param('windFrequencies', np.zeros(nDirections),
                        desc='vector containing the weighted frequency of wind at each direction ccw from east using '
                             'direction too')
 
@@ -267,24 +267,20 @@ class WindFarmAEP(Component):
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        # # print 'in AEP'
-
         # locally name input values
-        power_directions = params['power_directions']
-        windrose_frequencies = params['windrose_frequencies']
+        dirPowers = params['dirPowers']
+        windFrequencies = params['windFrequencies']
 
         # number of hours in a year
         hours = 8760.0
 
         # calculate approximate AEP
-        AEP = sum(power_directions*windrose_frequencies)*hours
+        AEP = sum(dirPowers*windFrequencies)*hours
 
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
-        # print 'In AEP, AEP %s' % unknowns['AEP']
-
-        # increase function call count
+        # increase objective function call count
         if self.rec_func_calls:
             config.obj_func_calls += 1
 
@@ -293,24 +289,25 @@ class WindFarmAEP(Component):
         # # print 'entering AEP - provideJ'
 
         # assign params to local variables
-        windrose_frequencies = params['windrose_frequencies']
-        power_directions = params['power_directions']
-        ndirs = np.size(windrose_frequencies)
+        windFrequencies = params['windFrequencies']
+        # dirPowers = params['dirPowers']
+        nDirs = np.size(windFrequencies)
 
         # number of hours in a year
         hours = 8760.0
 
-        # calculate the derivative of outputs w.r.t. each wind direction
-        dAEP_dpower = np.ones(ndirs)*windrose_frequencies*hours
-        dAEP_dwindrose_frequencies = np.ones(ndirs)*power_directions*hours
+        # calculate the derivative of outputs w.r.t. the power in each wind direction
+        dAEP_dpower = np.ones(nDirs)*windFrequencies*hours
+        # dAEP_dwindrose_frequencies = np.ones(ndirs)*power_directions*hours
 
-        # print 'dAEP = ', dAEP_dpower
+        # initialize Jacobian dict
         J = {}
 
-        J['AEP', 'power_directions'] = np.array([dAEP_dpower])
-        J['AEP', 'windrose_frequencies'] = np.array([dAEP_dwindrose_frequencies])
+        # populate Jacobian dict
+        J['AEP', 'dirPowers'] = np.array([dAEP_dpower])
+        # J['AEP', 'windFrequencies'] = np.array([dAEP_dwindrose_frequencies])
 
-        # increase function call count
+        # increase gradient function call count
         if self.rec_func_calls:
             config.sens_func_calls += 1
 
@@ -323,8 +320,6 @@ class SpacingComp(Component):
     """
 
     def __init__(self, nTurbines):
-
-        # print 'entering dist_const __init__
 
         super(SpacingComp, self).__init__()
 
@@ -340,7 +335,7 @@ class SpacingComp(Component):
                        desc='y coordinates of turbines in wind dir. ref. frame')
 
         # Explicitly size output array
-        self.add_output('separation_squared', val=np.zeros((nTurbines-1.)*nTurbines/2.),
+        self.add_output('wtSeparationSquared', val=np.zeros((nTurbines-1.)*nTurbines/2.),
                         desc='spacing of all turbines in the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -356,20 +351,24 @@ class SpacingComp(Component):
             for j in range(i+1, nTurbines):
                 separation_squared[k] = (turbineX[j]-turbineX[i])**2+(turbineY[j]-turbineY[i])**2
                 k += 1
-        unknowns['separation_squared'] = separation_squared
+        unknowns['wtSeparationSquared'] = separation_squared
 
     def linearize(self, params, unknowns, resids):
-        # print 'entering dist const - linearize'
+
+        # obtain necessary inputs
         turbineX = params['turbineX']
         turbineY = params['turbineY']
-        # print turbineX
-        # print turbineY
-        nTurbines = turbineX.size
-        dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
-        k = 0
-        # print 'in dist_const, turbineX = ', turbineX
-        # print 'in dist_const, turbineY = ', turbineY
 
+        # get number of turbines
+        nTurbines = turbineX.size
+
+        # initialize gradient calculation array
+        dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
+
+        # set turbine pair counter to zero
+        k = 0
+
+        # calculate the gradient of the distance between each pair of turbines w.r.t. turbineX and turbineY
         for i in range(0, nTurbines):
             for j in range(i+1, nTurbines):
                 # separation wrt Xj
@@ -380,13 +379,16 @@ class SpacingComp(Component):
                 dS[k, j+nTurbines] = 2*(turbineY[j]-turbineY[i])
                 # separation wrt Yi
                 dS[k, i+nTurbines] = -2*(turbineY[j]-turbineY[i])
+                # increment turbine pair counter
                 k += 1
 
+        # initialize Jacobian dict
         J = {}
 
-        J['separation_squared', 'turbineX'] = dS[:, :nTurbines]
-        J['separation_squared', 'turbineY'] = dS[:, nTurbines:]
-        # print J
+        # populate Jacobian dict
+        J['wtSeparationSquared', 'turbineX'] = dS[:, :nTurbines]
+        J['wtSeparationSquared', 'turbineY'] = dS[:, nTurbines:]
+
         return J
 
 
@@ -464,38 +466,38 @@ class MUX(Component):
         self.fd_options['step_size'] = 1.0e-5
         self.fd_options['step_type'] = 'relative'
 
+        # define necessary class attributes
+        self.nElements = nElements
+
         # define inputs
-        if units == None:
+        if units is None:
             for i in range(0, nElements):
                 self.add_param('input%i' % i, val=0.0, desc='scalar input')
         else:
             for i in range(0, nElements):
                 self.add_param('input%i' % i, val=0.0, units=units, desc='scalar input')
 
-        # define output
-        if units == None:
+        # define output array
+        if units is None:
             self.add_output('Array', np.zeros(nElements), desc='ndArray of all the scalar inputs')
         else:
             self.add_output('Array', np.zeros(nElements), units=units, desc='ndArray of all the scalar inputs')
 
-        self.nElements = nElements
-
     def solve_nonlinear(self, params, unknowns, resids):
 
-        # print 'in MUX'
-
-        # assign input values to the output array
+        # assign input values to elements of the output array
         for i in range(0, self.nElements):
             exec("unknowns['Array'][%i] = params['input%i']" % (i, i))
 
-        # print unknowns['Array']
-
     def linearize(self, params, unknowns, resids):
 
+        # initialize gradient calculation array
         dArray_dInput = np.zeros(self.nElements)
 
+        # initialize Jacobian dict
         J = {}
 
+        # calculate gradient and populate Jacobian dict
         for i in range(0, self.nElements):
             dArray_dInput[i] = 1.0
             J['Array', 'input%i' % i] = np.array(dArray_dInput)
@@ -516,80 +518,40 @@ class DeMUX(Component):
         self.fd_options['step_size'] = 1.0e-5
         self.fd_options['step_type'] = 'relative'
 
+        # initialize necessary class attributes
+        self.nElements = nElements
+
         # define input
-        if units == None:
+        if units is None:
             self.add_param('Array', np.zeros(nElements), desc='ndArray of scalars')
         else:
             self.add_param('Array', np.zeros(nElements), units=units, desc='ndArray of scalars')
 
         # define outputs
-        if units == None:
+        if units is None:
             for i in range(0, nElements):
                 self.add_output('output%i' % i, val=0.0, desc='scalar output')
         else:
             for i in range(0, nElements):
                 self.add_output('output%i' % i, val=0.0, units=units, desc='scalar output')
-        # print 'demux elements: ', nElements
-        self.nElements = nElements
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        # print 'in MUX'
-
-        # assign input values to the output array
+        # assign elements of the input array to outputs
         for i in range(0, self.nElements):
             exec("unknowns['output%i'] = params['Array'][%i]" % (i, i))
 
-        # print unknowns['Array']
-
     def linearize(self, params, unknowns, resids):
 
+        # initialize gradient calculation array
         doutput_dArray = np.eye(self.nElements)
 
+        # intialize Jacobian dict
         J = {}
 
+        # calculate the gradients and populate the Jacobian dict
         for i in range(0, self.nElements):
-            # print doutput_dArray
             J['output%i' % i, 'Array'] = np.reshape(doutput_dArray[i, :], (1, self.nElements))
-
-        return J
-
-
-class DeMUX2D(Component):
-    """ split a given 2D array into individual rows """
-    # TODO FINISH THIS COMPONENT
-    def __init__(self, ArrayShape):
-
-        super(DeMUX2D, self).__init__()
-
-        # define input
-        self.add_param('Array', np.zeros(ArrayShape), desc='ndArray of scalars')
-
-        # define outputs
-        for i in range(0, ArrayShape[0]):
-            self.add_output('output%i' % i, np.zeros(ArrayShape[1]), desc='scalar output')
-        # print 'demux rows: ', ArrayShape[0]
-        self.ArrayShape = ArrayShape
-
-    def solve_nonlinear(self, params, unknowns, resids):
-
-        # print 'in MUX'
-
-        # assign input values to the output array
-        for i in range(0, self.ArrayShape[0]):
-            exec("unknowns['output%i[:]'] = params['Array'][%i, :]" % (i, i))
-
-        # print unknowns['Array']
-
-    def linearize(self, params, unknowns, resids):
-
-        doutput_dArray = np.eye(self.ArrayShape)
-
-        J = {}
-
-        for i in range(0, self.ArrayShape[0]):
-            # print doutput_dArray
-            J['output%i' % i, 'Array'] = np.reshape(doutput_dArray[i, :], (1, 2))
 
         return J
 
@@ -606,13 +568,14 @@ class CPCT_Interpolate_Gradients(Component):
         self.fd_options['step_size'] = 1.0e-5
         self.fd_options['step_type'] = 'relative'
 
+        # define class attributes
         self.nTurbines = nTurbines
         self.direction_id = direction_id
         self.datasize = datasize
 
         # add inputs and outputs
         self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), desc='yaw error', units='deg')
-        self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
+        self.add_param('wtVelocity%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
         self.add_output('Cp_out', np.zeros(nTurbines))
         self.add_output('Ct_out', np.zeros(nTurbines))
 
@@ -626,11 +589,12 @@ class CPCT_Interpolate_Gradients(Component):
                        desc='thrust coefficients', pass_by_obj=True)
 
     def solve_nonlinear(self, params, unknowns, resids):
+
+        # obtain necessary inputs
         direction_id = self.direction_id
         pP = self.params['gen_params:pP']
-        # print "turbine 2 inflow velocity: %s" % params['velocitiesTurbines%i' % direction_id]
-        # print "pP: %f" % pP
-        wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP/3.0)*self.params['velocitiesTurbines%i' % direction_id]
+
+        wind_speed_ax = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(pP/3.0)*self.params['wtVelocity%i' % direction_id]
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax = np.maximum(wind_speed_ax, self.params['gen_params:windSpeedToCPCT_wind_speed'][0])
         wind_speed_ax = np.minimum(wind_speed_ax, self.params['gen_params:windSpeedToCPCT_wind_speed'][-1])
@@ -642,7 +606,7 @@ class CPCT_Interpolate_Gradients(Component):
         # normalize on incoming wind speed to correct coefficients for yaw
         self.unknowns['Cp_out'] = self.unknowns['Cp_out'] * np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**pP
         self.unknowns['Ct_out'] = self.unknowns['Ct_out'] * np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**2
-        # print 'in CPCT interp, wind_speed_hub = ', self.params['velocitiesTurbines%i' % direction_id]
+        # print 'in CPCT interp, wind_speed_hub = ', self.params['wtVelocity%i' % direction_id]
         # print 'in CPCT: ', params['velocitiesTurbines0']
 
     def linearize(self, params, unknowns, resids):  # standard central differencing
@@ -651,10 +615,10 @@ class CPCT_Interpolate_Gradients(Component):
         direction_id = self.direction_id
 
         # calculate upper and lower function values
-        wind_speed_ax_high_yaw = np.cos((self.params['yaw%i' % direction_id]+h)*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
-        wind_speed_ax_low_yaw = np.cos((self.params['yaw%i' % direction_id]-h)*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*self.params['velocitiesTurbines%i' % direction_id]
-        wind_speed_ax_high_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]+h)
-        wind_speed_ax_low_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*(self.params['velocitiesTurbines%i' % direction_id]-h)
+        wind_speed_ax_high_yaw = np.cos((self.params['yaw%i' % direction_id]+h)*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*self.params['wtVelocity%i' % direction_id]
+        wind_speed_ax_low_yaw = np.cos((self.params['yaw%i' % direction_id]-h)*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*self.params['wtVelocity%i' % direction_id]
+        wind_speed_ax_high_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*(self.params['wtVelocity%i' % direction_id]+h)
+        wind_speed_ax_low_wind = np.cos(self.params['yaw%i' % direction_id]*np.pi/180.0)**(self.params['gen_params:pP']/3.0)*(self.params['wtVelocity%i' % direction_id]-h)
 
         # use interpolation on precalculated CP-CT curve
         wind_speed_ax_high_yaw = np.maximum(wind_speed_ax_high_yaw, self.params['gen_params:windSpeedToCPCT_wind_speed'][0])
@@ -697,9 +661,9 @@ class CPCT_Interpolate_Gradients(Component):
         # compile Jacobian dict from sub-matrices
         J = {}
         J['Cp_out', 'yaw%i' % direction_id] = dCP_dyaw
-        J['Cp_out', 'velocitiesTurbines%i' % direction_id] = dCP_dwind
+        J['Cp_out', 'wtVelocity%i' % direction_id] = dCP_dwind
         J['Ct_out', 'yaw%i' % direction_id] = dCT_dyaw
-        J['Ct_out', 'velocitiesTurbines%i' % direction_id] = dCT_dwind
+        J['Ct_out', 'wtVelocity%i' % direction_id] = dCT_dwind
 
         return J
 
@@ -715,13 +679,14 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
         self.fd_options['step_size'] = 1.0e-6
         self.fd_options['step_type'] = 'relative'
 
+        # define class attributes
         self.nTurbines = nTurbines
         self.direction_id = direction_id
         self.datasize = datasize
 
         # add inputs and outputs
         self.add_param('yaw%i' % direction_id, np.zeros(nTurbines), desc='yaw error', units='deg')
-        self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
+        self.add_param('wtVelocity%i' % direction_id, np.zeros(nTurbines), units='m/s', desc='hub height wind speed') # Uhub
         self.add_output('Cp_out', np.zeros(nTurbines))
         self.add_output('Ct_out', np.zeros(nTurbines))
 
@@ -763,8 +728,8 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
 
         # n = 500
         # x = np.linspace(0.0, 30., n)
-        CP, dCPdvel, _, _ = CPspline.interp(params['velocitiesTurbines%i' % direction_id])
-        CT, dCTdvel, _, _ = CTspline.interp(params['velocitiesTurbines%i' % direction_id])
+        CP, dCPdvel, _, _ = CPspline.interp(params['wtVelocity%i' % direction_id])
+        CT, dCTdvel, _, _ = CTspline.interp(params['wtVelocity%i' % direction_id])
 
         # print 'in solve_nonlinear', dCPdvel, dCTdvel
         # pP = 3.0
@@ -788,16 +753,15 @@ class CPCT_Interpolate_Gradients_Smooth(Component):
 
     def linearize(self, params, unknowns, resids):  # standard central differencing
 
+        # obtain necessary inputs
         direction_id = self.direction_id
-
-        # print 'in linearize', self.dCp_out_dyaw, self.dCp_out_dvel
 
         # compile Jacobian dict
         J = {}
         J['Cp_out', 'yaw%i' % direction_id] = np.eye(self.nTurbines)*self.dCp_out_dyaw
-        J['Cp_out', 'velocitiesTurbines%i' % direction_id] = np.eye(self.nTurbines)*self.dCp_out_dvel
+        J['Cp_out', 'wtVelocity%i' % direction_id] = np.eye(self.nTurbines)*self.dCp_out_dvel
         J['Ct_out', 'yaw%i' % direction_id] = np.eye(self.nTurbines)*self.dCt_out_dyaw
-        J['Ct_out', 'velocitiesTurbines%i' % direction_id] = np.eye(self.nTurbines)*self.dCt_out_dvel
+        J['Ct_out', 'wtVelocity%i' % direction_id] = np.eye(self.nTurbines)*self.dCt_out_dvel
 
         return J
 
@@ -808,11 +772,13 @@ class WindDirectionPower(Component):
 
         super(WindDirectionPower, self).__init__()
 
+        # define class attributes
         self.differentiable = differentiable
         self.nTurbines = nTurbines
         self.direction_id = direction_id
         self.use_rotor_components = use_rotor_components
 
+        # set finite difference options (only used for testing)
         self.fd_options['form'] = 'central'
         self.fd_options['step_size'] = 1.0e-6
         self.fd_options['step_type'] = 'relative'
@@ -824,131 +790,144 @@ class WindDirectionPower(Component):
         self.add_param('air_density', 1.1716, units='kg/(m*m*m)', desc='air density in free stream')
         self.add_param('rotorDiameter', np.zeros(nTurbines) + 126.4, units='m', desc='rotor diameters of all turbine')
         self.add_param('Cp', np.zeros(nTurbines)+(0.7737/0.944) * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2), desc='power coefficient for all turbines')
-        self.add_param('generator_efficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
-        self.add_param('velocitiesTurbines%i' % direction_id, np.zeros(nTurbines), units='m/s',
+        self.add_param('generatorEfficiency', np.zeros(nTurbines)+0.944, desc='generator efficiency of all turbines')
+        self.add_param('wtVelocity%i' % direction_id, np.zeros(nTurbines), units='m/s',
                        desc='effective hub velocity for each turbine')
 
         self.add_param('rated_power', np.ones(nTurbines)*5000., units='kW',
                        desc='rated power for each turbine', pass_by_obj=True)
 
         # outputs
-        self.add_output('wt_power%i' % direction_id, np.zeros(nTurbines), units='kW', desc='power output of each turbine')
-        # output
-        self.add_output('power%i' % direction_id, 0.0, units='kW', desc='total power output of the wind farm')
+        self.add_output('wtPower%i' % direction_id, np.zeros(nTurbines), units='kW', desc='power output of each turbine')
+        self.add_output('dir_power%i' % direction_id, 0.0, units='kW', desc='total power output of the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
+
+        # obtain necessary inputs
         use_rotor_components = self.use_rotor_components
         direction_id = self.direction_id
         nTurbines = self.nTurbines
-        velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
+        wtVelocity = self.params['wtVelocity%i' % direction_id]
         rated_power = params['rated_power']
         air_density = params['air_density']
         rotorArea = 0.25*np.pi*np.power(params['rotorDiameter'], 2)
         Cp = params['Cp']
-        generator_efficiency = params['generator_efficiency']
-        # print "gen eff act = ", generator_efficiency
+        generatorEfficiency = params['generatorEfficiency']
 
-        wt_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(velocitiesTurbines, 3))
+        # calculate initial values for wtPower (W)
+        wtPower = generatorEfficiency*(0.5*air_density*rotorArea*Cp*np.power(wtVelocity, 3))
 
-        wt_power /= 1000.0
+        # adjust units from W to kW
+        wtPower /= 1000.0
 
         # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
         #
         # dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
-        #                                                                         np.power(velocitiesTurbines, 2))
+        #                                                                         np.power(wtVelocity, 2))
         # dwt_power_dvelocitiesTurbines /= 1000.
 
-        if not use_rotor_components and np.any(wt_power) >= np.any(rated_power):
+        # adjust wt power based on rated power
+        if not use_rotor_components and np.any(wtPower) >= np.any(rated_power):
             for i in range(0, nTurbines):
-                if wt_power[i] >= rated_power[i]:
-                    wt_power[i] = rated_power[i]
+                if wtPower[i] >= rated_power[i]:
+                    wtPower[i] = rated_power[i]
 
 
-        # if np.any(rated_velocity+1.) >= np.any(velocitiesTurbines) >= np.any(rated_velocity-1.) and not \
+        # if np.any(rated_velocity+1.) >= np.any(wtVelocity) >= np.any(rated_velocity-1.) and not \
         #         use_rotor_components:
         #     for i in range(0, nTurbines):
-        #         if velocitiesTurbines[i] >= rated_velocity[i]+1.:
+        #         if wtVelocity[i] >= rated_velocity[i]+1.:
         #             spline_start_power = generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]-1., 3))
         #             deriv_spline_start_power = 3.*generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]-1., 2))
         #             spline_end_power = generator_efficiency[i]*(0.5*air_density*rotorArea[i]*Cp[i]*np.power(rated_velocity[i]+1., 3))
-        #             wt_power[i], deriv = hermite_spline(velocitiesTurbines[i], rated_velocity[i]-1.,
+        #             wtPower[i], deriv = hermite_spline(wtVelocity[i], rated_velocity[i]-1.,
         #                                                                      rated_velocity[i]+1., spline_start_power,
         #                                                                      deriv_spline_start_power, spline_end_power, 0.0)
         #             dwt_power_dvelocitiesTurbines[i][i] = deriv/1000.
         #
-        # if np.any(velocitiesTurbines) >= np.any(rated_velocity+1.) and not use_rotor_components:
+        # if np.any(wtVelocity) >= np.any(rated_velocity+1.) and not use_rotor_components:
         #     for i in range(0, nTurbines):
-        #         if velocitiesTurbines[i] >= rated_velocity[i]+1.:
-        #             wt_power = rated_power
+        #         if wtVelocity[i] >= rated_velocity[i]+1.:
+        #             wtPower = rated_power
         #             dwt_power_dvelocitiesTurbines[i][i] = 0.0
 
 
 
         # self.dwt_power_dvelocitiesTurbines = dwt_power_dvelocitiesTurbines
 
-        power = np.sum(wt_power)
+        # calculate total power for this direction
+        dir_power = np.sum(wtPower)
 
-        unknowns['wt_power%i' % direction_id] = wt_power
-        unknowns['power%i' % direction_id] = power
+        # pass out results
+        unknowns['wtPower%i' % direction_id] = wtPower
+        unknowns['dir_power%i' % direction_id] = dir_power
 
-        # print wt_power
+        # print wtPower
 
     def linearize(self, params, unknowns, resids):
 
+        # obtain necessary inputs
         direction_id = self.direction_id
         use_rotor_components = self.use_rotor_components
         nTurbines = self.nTurbines
-        velocitiesTurbines = self.params['velocitiesTurbines%i' % direction_id]
+        wtVelocity = self.params['wtVelocity%i' % direction_id]
         air_density = params['air_density']
         rotorDiameter = params['rotorDiameter']
         rotorArea = 0.25*np.pi*np.power(rotorDiameter, 2)
         Cp = params['Cp']
-        generator_efficiency = params['generator_efficiency']
-
-        dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
-                                                                                np.power(velocitiesTurbines, 2))
-        dwt_power_dCp = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*rotorArea*np.power(velocitiesTurbines, 3))
-        dwt_power_drotorDiameter = np.eye(nTurbines)*generator_efficiency*(0.5*air_density*(0.5*np.pi*rotorDiameter)*Cp *
-                                                                           np.power(velocitiesTurbines, 3))
-        # dwt_power_dvelocitiesTurbines = self.dwt_power_dvelocitiesTurbines
-        dwt_power_dvelocitiesTurbines /= 1000.
-        dwt_power_dCp /= 1000.
-        dwt_power_drotorDiameter /= 1000.
-
+        generatorEfficiency = params['generatorEfficiency']
         rated_power = params['rated_power']
-        wt_power = unknowns['wt_power%i' % direction_id]
+        wtPower = unknowns['wtPower%i' % direction_id]
+
+        # calcuate initial gradient values
+        dwtPower_dwtVelocity = np.eye(nTurbines)*generatorEfficiency*(1.5*air_density*rotorArea*Cp *
+                                                                                np.power(wtVelocity, 2))
+        dwtPower_dCp = np.eye(nTurbines)*generatorEfficiency*(0.5*air_density*rotorArea*np.power(wtVelocity, 3))
+        dwtPower_drotorDiameter = np.eye(nTurbines)*generatorEfficiency*(0.5*air_density*(0.5*np.pi*rotorDiameter)*Cp *
+                                                                           np.power(wtVelocity, 3))
+        # dwt_power_dvelocitiesTurbines = self.dwt_power_dvelocitiesTurbines
+
+        # adjust gradients for unit conversion from W to kW
+        dwtPower_dwtVelocity /= 1000.
+        dwtPower_dCp /= 1000.
+        dwtPower_drotorDiameter /= 1000.
+
         # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
 
-        # if np.any(rated_velocity+1.) >= np.any(velocitiesTurbines) >= np.any(rated_velocity-1.) and not \
+        # if np.any(rated_velocity+1.) >= np.any(wtVelocity) >= np.any(rated_velocity-1.) and not \
         #         use_rotor_components:
         #
         #     spline_start_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity-1., 3))
         #     deriv_spline_start_power = 3.*generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity-1., 2))
         #     spline_end_power = generator_efficiency*(0.5*air_density*rotorArea*Cp*np.power(rated_velocity+1., 3))
-        #     wt_power, dwt_power_dvelocitiesTurbines = hermite_spline(velocitiesTurbines, rated_velocity-1.,
+        #     wtPower, dwt_power_dvelocitiesTurbines = hermite_spline(wtVelocity, rated_velocity-1.,
         #                                                              rated_velocity+1., spline_start_power,
         #                                                              deriv_spline_start_power, spline_end_power, 0.0)
 
-        if np.any(wt_power) >= np.any(rated_power) and not use_rotor_components:
+        # set gradients for turbines above rated power to zero
+        if np.any(wtPower) >= np.any(rated_power) and not use_rotor_components:
             for i in range(0, nTurbines):
-                if wt_power[i] >= rated_power[i]:
-                    dwt_power_dvelocitiesTurbines[i][i] = 0.0
-                    dwt_power_dCp[i][i] = 0.0
-                    dwt_power_drotorDiameter[i][i] = 0.0
+                if wtPower[i] >= rated_power[i]:
+                    dwtPower_dwtVelocity[i][i] = 0.0
+                    dwtPower_dCp[i][i] = 0.0
+                    dwtPower_drotorDiameter[i][i] = 0.0
 
-        dpower_dvelocitiesTurbines = np.array([np.sum(dwt_power_dvelocitiesTurbines, 0)])
-        dpower_dCp = np.array([np.sum(dwt_power_dCp, 0)])
-        dpower_drotorDiameter = np.array([np.sum(dwt_power_drotorDiameter, 0)])
+        # compile elements of Jacobian
+        ddir_power_dwtVelocity = np.array([np.sum(dwtPower_dwtVelocity, 0)])
+        ddir_power_dCp = np.array([np.sum(dwtPower_dCp, 0)])
+        ddir_power_drotorDiameter = np.array([np.sum(dwtPower_drotorDiameter, 0)])
 
+        # initialize Jacobian dict
         J = {}
 
-        J['wt_power%i' % direction_id, 'velocitiesTurbines%i' % direction_id] = dwt_power_dvelocitiesTurbines
-        J['wt_power%i' % direction_id, 'Cp'] = dwt_power_dCp
-        J['wt_power%i' % direction_id, 'rotorDiameter'] = dwt_power_drotorDiameter
+        # populate Jacobian dict
+        J['wtPower%i' % direction_id, 'wtVelocity%i' % direction_id] = dwtPower_dwtVelocity
+        J['wtPower%i' % direction_id, 'Cp'] = dwtPower_dCp
+        J['wtPower%i' % direction_id, 'rotorDiameter'] = dwtPower_drotorDiameter
 
-        J['power%i' % direction_id, 'velocitiesTurbines%i' % direction_id] = dpower_dvelocitiesTurbines
-        J['power%i' % direction_id, 'Cp'] = dpower_dCp
-        J['power%i' % direction_id, 'rotorDiameter'] = dpower_drotorDiameter
+        J['dir_power%i' % direction_id, 'wtVelocity%i' % direction_id] = ddir_power_dwtVelocity
+        J['dir_power%i' % direction_id, 'Cp'] = ddir_power_dCp
+        J['dir_power%i' % direction_id, 'rotorDiameter'] = ddir_power_drotorDiameter
 
         return J
 
