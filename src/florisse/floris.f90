@@ -209,17 +209,17 @@ subroutine CTtoAxialInd(CT, nTurbines, axial_induction)
 end subroutine CTtoAxialInd
     
 
-subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
+subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
                           & rotorDiameter, hubHeight, Vinf, Ct, a_in, ke_in, kd, me, &
                           & initialWakeDisplacement, bd, MU, aU, bU, initialWakeAngle, &
                           & cos_spread, keCorrCT, Region2CT, keCorrArray, useWakeAngle, &
                           & adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, &
-                          & wsw_position, shearCoefficientAlpha, shearZh, &
-                          & velocitiesTurbines, ws_array, &
+                          & wsPositionXYZw, shearCoefficientAlpha, shearZh, &
+                          & wtVelocity, wsArray, &
                           & wakeCentersYT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec)
     
-    ! independent variables: yaw_deg Ct turbineXw turbineYw rotorDiameter a_in    
-    ! dependent variables: velocitiesTurbines
+    ! independent variables: yawDeg Ct turbineXw turbineYw rotorDiameter a_in    
+    ! dependent variables: wtVelocity
     
     implicit none
     
@@ -231,13 +231,13 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     integer :: nSamples
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
     real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray
-    real(dp), dimension(nTurbines), intent(in) :: yaw_deg, Ct, a_in, turbineXw, turbineYw
+    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter, hubHeight
     real(dp), dimension(3), intent(in) :: me, MU
     real(dp), intent(in) :: aU, bU, shearCoefficientAlpha, shearZh
     logical, intent(in) :: useWakeAngle, adjustInitialWakeDiamToYaw, axialIndProvided, &
                            & useaUbU
-    real(dp), dimension(3, nSamples), intent(in) :: wsw_position
+    real(dp), dimension(3, nSamples), intent(in) :: wsPositionXYZw
                            
     ! local (General)
     real(dp), dimension(nTurbines) :: ke, yaw
@@ -273,7 +273,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     real(dp) :: deltay, deltaz, radiusLoc, axialIndAndNearRotor, reductionFactor
     
     ! model out
-    real(dp), dimension(nTurbines), intent(out) :: velocitiesTurbines
+    real(dp), dimension(nTurbines), intent(out) :: wtVelocity
     
     ! test out
     real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec
@@ -281,7 +281,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeOverlapTRel_vec
     
     ! visualization out
-    real(dp), dimension(nSamples), intent(out) :: ws_array
+    real(dp), dimension(nSamples), intent(out) :: wsArray
     
     intrinsic cos, atan, max
     
@@ -289,11 +289,11 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
         nSamples = 0
     end if
     
-    yaw = yaw_deg*pi/180.0_dp
+    yaw = yawDeg*pi/180.0_dp
     
-    velX(:) = wsw_position(1, :)
-    velY(:) = wsw_position(2, :)
-    velZ(:) = wsw_position(3, :)
+    velX(:) = wsPositionXYZw(1, :)
+    velY(:) = wsPositionXYZw(2, :)
+    velZ(:) = wsPositionXYZw(3, :)
         
             
     !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
@@ -513,11 +513,11 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
     ! initialize velocities in full flow field (optional)
-    ws_array = Vinf
+    wsArray = Vinf
     
     ! apply shear profile to visualization
-    ws_array = ws_array*(velZ/shearZh)**shearCoefficientAlpha
-!     print *, ws_array
+    wsArray = wsArray*(velZ/shearZh)**shearCoefficientAlpha
+!     print *, wsArray
     ! initialize axial induction values    
     if (axialIndProvided) then
         a = a_in
@@ -534,7 +534,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
     end do
     
     ! find effective wind speeds at downstream turbines
-    velocitiesTurbines = Vinf
+    wtVelocity = Vinf
     do turbI = 1, nTurbines
         wakeEffCoeff = 0.0_dp
         
@@ -572,7 +572,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
         
         ! multiply the inflow speed with the wake coefficients to find effective wind 
         ! speed at turbine
-        velocitiesTurbines(turbI) = velocitiesTurbines(turbI)*wakeEffCoeff
+        wtVelocity(turbI) = wtVelocity(turbI)*wakeEffCoeff
     end do
     
     ! calculate the velocity at the sample points
@@ -610,16 +610,16 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yaw_deg, &
                 reductionFactor = 0.0_dp
             end if    
             
-            ws_array(loc) = ws_array(loc)*(1.0_dp-reductionFactor)
+            wsArray(loc) = wsArray(loc)*(1.0_dp-reductionFactor)
             
         end do
         
     end do
     
-!     print *, "ws_array: ", ws_array
+!     print *, "wsArray: ", wsArray
 !     print *, "hubHeight: ", hubHeight
 !     print *, "velZ: ", velZ
-!     print *, ws_array
+!     print *, wsArray
         
     ! pack desired matrices into vectors for output
     do turbI = 1, nTurbines
@@ -655,14 +655,14 @@ end subroutine floris
 !  Tapenade 3.11 (r5902M) - 15 Dec 2015 09:00
 !
 !  Differentiation of floris_unified in reverse (adjoint) mode:
-!   gradient     of useful results: velocitiesturbines
-!   with respect to varying inputs: rotordiameter turbinexw yaw_deg
-!                velocitiesturbines turbineyw ct a_in
+!   gradient     of useful results: wtVelocity
+!   with respect to varying inputs: rotordiameter turbinexw yawDeg
+!                wtVelocity turbineyw ct a_in
 !   RW status of diff variables: rotordiameter:out turbinexw:out
-!                yaw_deg:out velocitiesturbines:in-zero turbineyw:out
+!                yawDeg:out wtVelocity:in-zero turbineyw:out
 !                ct:out a_in:out
 SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
-& , turbineywb, yaw_deg, yaw_degb, rotordiameter, rotordiameterb, vinf, &
+& , turbineywb, yawDeg, yaw_degb, rotordiameter, rotordiameterb, vinf, &
 & ct, ctb, a_in, a_inb, ke_in, kd, me, initialwakedisplacement, bd, mu, &
 & au, bu, initialwakeangle, cos_spread, kecorrct, region2ct, kecorrarray&
 & , usewakeangle, adjustinitialwakediamtoyaw, axialindprovided, useaubu&
@@ -678,7 +678,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
 & , ke_in
   REAL(dp), INTENT(IN) :: kecorrct, region2ct, bd, cos_spread, vinf, &
 & kecorrarray
-  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: yaw_deg, ct, a_in, &
+  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: yawDeg, ct, a_in, &
 & turbinexw, turbineyw
   REAL(dp), DIMENSION(nbdirs, nturbines), intent(out) :: yaw_degb, ctb, a_inb, &
 & turbinexwb, turbineywb
@@ -726,7 +726,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
   REAL(dp), DIMENSION(nbdirs) :: sb, cosfacb, wakeeffcoeffb, &
 & wakeeffcoeffperzoneb
 ! out
-  REAL(dp), DIMENSION(nturbines) :: velocitiesturbines
+  REAL(dp), DIMENSION(nturbines) :: wtVelocity
   REAL(dp), DIMENSION(nbdirs, nturbines) :: velocitiesturbinesb
   REAL(dp), DIMENSION(nturbines*nturbines) :: &
 & wakecentersyt_vec
@@ -775,7 +775,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
   REAL(dp) :: temp4
 !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
   spline_bound = 1.0_dp
-  yaw = yaw_deg*pi/180.0_dp
+  yaw = yawDeg*pi/180.0_dp
 ! calculate y-locations of wake centers in wind ref. frame
   wakecentersyt_mat = 0.0_dp
   DO turb=1,nturbines
@@ -888,7 +888,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! convert yaw from degrees to radians
   CALL PUSHREAL4ARRAY(yaw, dp*nturbines/4)
-  yaw = yaw_deg*pi/180.0_dp
+  yaw = yawDeg*pi/180.0_dp
   IF (axialindprovided) THEN
     a = a_in
     CALL PUSHCONTROL1B(0)
@@ -906,7 +906,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
   END DO
 ! find effective wind speeds at downstream turbines, then predict the power of 
 ! downstream turbine    
-  velocitiesturbines = vinf
+  wtVelocity = vinf
   DO turbi=1,nturbines
     CALL PUSHREAL4ARRAY(wakeeffcoeff, dp/4)
     wakeeffcoeff = 0.0_dp
@@ -979,7 +979,7 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
   END DO
   DO turbi=nturbines,1,-1
     DO nd=1,nbdirs
-      wakeeffcoeffb(nd) = velocitiesturbines(turbi)*velocitiesturbinesb(&
+      wakeeffcoeffb(nd) = wtVelocity(turbi)*velocitiesturbinesb(&
 &       nd, turbi)
       velocitiesturbinesb(nd, turbi) = wakeeffcoeff*velocitiesturbinesb(&
 &       nd, turbi)
@@ -1266,13 +1266,13 @@ SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
     CALL POPCONTROL1B(branch)
     IF (branch .EQ. 0) THEN
       CALL POPREAL4ARRAY(wakediameter0, dp/4)
-      yaw = yaw_deg*pi/180.0_dp
+      yaw = yawDeg*pi/180.0_dp
       DO nd=1,nbdirs
         rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
 &         wakediameter0b(nd)
       END DO
     ELSE
-      yaw = yaw_deg*pi/180.0_dp
+      yaw = yawDeg*pi/180.0_dp
       CALL POPREAL4ARRAY(wakediameter0, dp/4)
       DO nd=1,nbdirs
         rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + COS(yaw(&

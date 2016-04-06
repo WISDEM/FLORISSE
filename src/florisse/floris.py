@@ -605,7 +605,7 @@ class DirectionGroup(Group):
                                ['gen_params:*', 'yaw%i' % direction_id, 'wtVelocity%i' % direction_id,
                                 'floris_params:*', 'wind_speed', 'wind_direction', 'axialInduction',
                                 'turbineX', 'turbineY', 'rotorDiameter', 'hubHeight', 'wakeCentersYT', 'wakeDiametersT',
-                                'wakeOverlapTRel', 'wsPositionX', 'ws_positionY', 'wsPositionZ',
+                                'wakeOverlapTRel', 'wsPositionX', 'wsPositionY', 'wsPositionZ',
                                 'wsArray%i' % direction_id]))
         else:
             self.add('CtCp', AdjustCtCpYaw(nTurbines, direction_id, differentiable),
