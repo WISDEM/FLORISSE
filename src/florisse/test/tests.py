@@ -86,7 +86,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         prob.run()
 
         # pass results to self for use with unit test
-        self.J = prob.check_total_derivatives()
+        self.J = prob.check_total_derivatives(out_stream=None)
         self.nDirections = nDirections
 
         # print self.J
@@ -185,7 +185,7 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         prob.run()
 
         # pass results to self for use with unit test
-        self.J = prob.check_total_derivatives()
+        self.J = prob.check_total_derivatives(out_stream=None)
         self.nDirections = nDirections
 
         # print self.J
@@ -295,7 +295,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
         prob.run()
 
         # pass results to self for use with unit test
-        self.J = prob.check_total_derivatives()
+        self.J = prob.check_total_derivatives(out_stream=None)
         self.nDirections = nDirections
 
         # print self.J

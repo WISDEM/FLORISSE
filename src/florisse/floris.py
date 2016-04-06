@@ -10,8 +10,7 @@ from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP
 from florisse import config
 import _floris
 import _florisDiscontinuous
-import _florisUnified
-import _florisUnifiedDiscontinuous
+
 # import _florisHubSmooth as _floris
 
 import mpi4py as mpi
@@ -358,7 +357,7 @@ class Floris(Component):
         if self.differentiable:
             # call to fortran code to obtain output values
             wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-                _florisUnified.floris_unified(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
+                _floris.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
                                                Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                Region2CT, keCorrArray, useWakeAngle,
@@ -367,7 +366,7 @@ class Floris(Component):
         else:
              # call to fortran code to obtain output values
             wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-                _florisUnifiedDiscontinuous.floris_unified(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
+                _florisDiscontinuous.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
                                                            Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                            MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                            Region2CT, keCorrArray, useWakeAngle,
@@ -438,7 +437,7 @@ class Floris(Component):
         if self.differentiable:
             # call to fortran code to obtain output values
             wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-                _florisUnified.floris_unified(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
+                _floris.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
                                                Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                Region2CT, keCorrArray, useWakeAngle,
@@ -447,7 +446,7 @@ class Floris(Component):
         else:
              # call to fortran code to obtain output values
             wtVelocity, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-                _florisUnifiedDiscontinuous.floris_unified(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
+                _florisDiscontinuous.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
                                                            Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                            MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                            Region2CT, keCorrArray, useWakeAngle,
@@ -510,7 +509,7 @@ class Floris(Component):
 
         # call to fortran code to obtain output values
         turbineXwb, turbineYwb, yawDegb, rotorDiameterb, Ctb, axialInductionb = \
-            _florisUnified.floris_unified_bv(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
+            _floris.floris_bv(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
                                              Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                              MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                              Region2CT, keCorrArray, useWakeAngle,
