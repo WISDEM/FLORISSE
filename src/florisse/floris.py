@@ -505,7 +505,7 @@ class Floris(Component):
         nDirs = nTurbines
 
         # define input array to direct differentiation
-        velocitiesTurbinesb = np.eye(nDirs, nTurbines)
+        wtVelocityb = np.eye(nDirs, nTurbines)
 
         # call to fortran code to obtain output values
         turbineXwb, turbineYwb, yawDegb, rotorDiameterb, Ctb, axialInductionb = \
@@ -514,7 +514,7 @@ class Floris(Component):
                                              MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                              Region2CT, keCorrArray, useWakeAngle,
                                              adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
-                                             velocitiesTurbinesb)
+                                             wtVelocityb)
 
         # initialize Jacobian dict
         J = {}
@@ -666,7 +666,7 @@ class AEPGroup(Group):
         # add vars to be seen by MPI and gradient calculations
         self.add('dv5', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('dv6', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
-        self.add('dv7', IndepVarComp('generator_efficiency', np.zeros(nTurbines)), promotes=['*'])
+        self.add('dv7', IndepVarComp('generatorEfficiency', np.zeros(nTurbines)), promotes=['*'])
         self.add('dv8', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
 
         # add variable tree IndepVarComps
@@ -901,7 +901,7 @@ if __name__ == "__main__":
 #             print "wind speed at turbines %s [m/s]" % wtVelocity
 #             print "rotor area %d" % (np.pi*rotorDiameter[0]*rotorDiameter[0]/4.0)
 #             print "rho %s" % rho
-#             print "generator_efficiency %s" % generator_efficiency
+#             print "generatorEfficiency %s" % generatorEfficiency
 #             print "powers turbines %s [kW]" % wt_power
 #
 #     def linearize(self):
