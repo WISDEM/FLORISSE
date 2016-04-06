@@ -63,6 +63,7 @@ prob['windFrequencies'] = np.array([wind_frequency])
 
 # prob.initVelocitiesTurbines = np.ones_like(prob.windrose_directions)*wind_speed
 
+windDirectionPlot = 270. - windDirection
 # visualization:
 #    generate points downstream slice
 y_cut = np.linspace(-rotorDiameter, rotorDiameter, resolution)
@@ -70,8 +71,8 @@ z_cut = np.linspace(-hub_height, rotorDiameter, resolution)
 yy, zz = np.meshgrid(y_cut, z_cut)
 xx = np.ones(yy.shape) * 3.5*rotorDiameter
 position = np.array([xx.flatten(), yy.flatten(), zz.flatten()])
-rotationMatrix = np.array([(np.cos(windDirection*np.pi/180.), -np.sin(windDirection*np.pi/180.), 0.),
-                                   (np.sin(windDirection*np.pi/180.), np.cos(windDirection*np.pi/180.), 0.),
+rotationMatrix = np.array([(np.cos(windDirectionPlot*np.pi/180.), -np.sin(windDirectionPlot*np.pi/180.), 0.),
+                                   (np.sin(windDirectionPlot*np.pi/180.), np.cos(windDirectionPlot*np.pi/180.), 0.),
                                    (0., 0., 1.)])
 positionF = np.dot(rotationMatrix, position) + np.dot(np.array([(prob['turbineX'][0], prob['turbineY'][0], hub_height)]).transpose(), np.ones((1, np.size(position, 1))))
 
@@ -182,15 +183,17 @@ for pos2 in posrange:
     prob.run()
     FLORISpower.append(np.array(prob['wtPower0']))
     velocities.append(np.array(prob['wsArray0']))
-    print prob['wsArray0'], velocities, prob['wsArray0'].shape
+
 
     # Call FLORIS cut-through slice
     prob['wsPositionX'] = np.copy(positionF[0])
     prob['wsPositionY'] = np.copy(positionF[1])
     prob['wsPositionZ'] = np.copy(positionF[2])
+    print "CUT: "
     prob.run()
+    print "CUT END"
     velocities_cut.append(np.array(prob['wsArray0']))
-    print prob['wsArray0'], velocities_cut
+    print prob['wsArray0'][len(prob['wsArray0'])/2]
 
 # plot powers
 FLORISpower = np.array(FLORISpower)
