@@ -401,14 +401,14 @@ class BoundaryComp(Component):
         self.nTurbines = nTurbines
 
         # Explicitly size input arrays
-        self.add_param('AX', np.zeros(nVertices))
-        self.add_param('AY', np.zeros(nVertices))
+        self.add_param('wfBoundaryX', np.zeros(nVertices))
+        self.add_param('wfBoundaryY', np.zeros(nVertices))
         self.add_param('b', np.zeros(nVertices))
 
-        self.add_param('turbineXw', np.zeros(nTurbines), iotype='in',
-                       desc='x coordinates of turbines in wind dir. ref. frame')
-        self.add_param('turbineYw', np.zeros(nTurbines), iotype='in',
-                       desc='y coordinates of turbines in wind dir. ref. frame')
+        self.add_param('turbineX', np.zeros(nTurbines), iotype='in',
+                       desc='x coordinates of turbines in global ref. frame')
+        self.add_param('turbineY', np.zeros(nTurbines), iotype='in',
+                       desc='y coordinates of turbines in global ref. frame')
 
         # Explicitly size output array
         # (vector with positive elements if turbines outside of hull)
