@@ -590,7 +590,6 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
             deltaz = velZ(loc) - wakeCentersZ(loc, turb)
             radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)            
             axialIndAndNearRotor = 2.0_dp*a(turb)
-            print *, "deltax: ", deltax, " radiusLoc: ", radiusLoc
             if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 1)/2.0_dp) then   ! check if in zone 1
                 reductionFactor = axialIndAndNearRotor*&
                                   & (rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &

@@ -189,11 +189,8 @@ for pos2 in posrange:
     prob['wsPositionX'] = np.copy(positionF[0])
     prob['wsPositionY'] = np.copy(positionF[1])
     prob['wsPositionZ'] = np.copy(positionF[2])
-    print "CUT: "
     prob.run()
-    print "CUT END"
     velocities_cut.append(np.array(prob['wsArray0']))
-    print prob['wsArray0'][len(prob['wsArray0'])/2]
 
 # plot powers
 FLORISpower = np.array(FLORISpower)
