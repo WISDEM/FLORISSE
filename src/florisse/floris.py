@@ -161,7 +161,7 @@ def add_floris_params_IndepVarComps(openmdao_object, use_rotor_components=False)
 
     # ## flags
     openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw',
-                                             False if not use_rotor_components else True, pass_by_obj=True,
+                                             False, pass_by_obj=True,
                                              desc='if True then initial wake diameter will be set to '
                                                   'rotorDiameter*cos(yaw)'),
                         promotes=['*'])

@@ -44,6 +44,7 @@ prob.setup()
 prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
 prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
 prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
+prob['floris_params:cos_spread'] = 1E12
 prob['axialInduction'] = np.array([axialInduction, axialInduction])
 prob['rotorDiameter'] = np.array([rotorDiameter, rotorDiameter])
 prob['hubHeight'] = np.array([hub_height, hub_height])

@@ -254,7 +254,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
         FLORISpower = np.array(FLORISpower)
         FLORISvelocity = np.array(FLORISvelocity)
 
-        np.savetxt("downstream_velocity_original.txt", np.c_[posrange/rotorDiameter[0], FLORISvelocity[:, 1]], delimiter=',')
+        # np.savetxt("downstream_velocity_original.txt", np.c_[posrange/rotorDiameter[0], FLORISvelocity[:, 1]], delimiter=',')
 
         axes[1].plot(posrange/rotorDiameter[0], FLORISpower[:, 1], '#7CFC00', label='FLORIS model')
         axes[1].plot(np.array([7, 7]), np.array([0, 1800]), '--k', label='tuning point')
@@ -412,7 +412,7 @@ if __name__ == '__main__':
     model = 'smooth'  # options: 'original', 'smooth'
     gradients = 'fd'    # options: 'fd', 'exact'
     flat = True        # if False, will use cosine smoothing factor
-    rotor = False       # if True, will use rotor coupled data
+    rotor = True       # if True, will use rotor coupled data
     tune = False        # if True, will optimize parameters starting with provided values
 
     # plot option
@@ -531,7 +531,7 @@ if __name__ == '__main__':
         prob['gen_params:CTcorrected'] = False
         prob['gen_params:CPcorrected'] = False
 
-    if not (model=="original"):
+    if model is not "original":
         prob['floris_params:useWakeAngle'] = True
         prob['floris_params:adjustInitialWakeDiamToYaw'] = False
         prob['floris_params:useaUbU'] = True
