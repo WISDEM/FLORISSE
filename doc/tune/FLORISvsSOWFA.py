@@ -28,7 +28,7 @@ resolution = 75
 rotorDiameter = 126.4
 rotorArea = np.pi*rotorDiameter*rotorDiameter/4.0
 axialInduction = 1.0/3.0 # used only for initialization
-generator_efficiency = 0.944
+generatorEfficiency = 0.944
 hub_height = 90.0
 NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
 datasize = NREL5MWCPCT['CP'].size
@@ -48,7 +48,7 @@ prob['floris_params:cos_spread'] = 1E12
 prob['axialInduction'] = np.array([axialInduction, axialInduction])
 prob['rotorDiameter'] = np.array([rotorDiameter, rotorDiameter])
 prob['hubHeight'] = np.array([hub_height, hub_height])
-prob['generator_efficiency'] = np.array([generator_efficiency, generator_efficiency])
+prob['generatorEfficiency'] = np.array([generatorEfficiency, generatorEfficiency])
 prob['turbineX'] = turbineXinit
 prob['turbineY'] = turbineYinit
 

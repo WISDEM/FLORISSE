@@ -303,9 +303,9 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
         fig, axes = plt.subplots(ncols=2, nrows=2, sharey=False, sharex=False)
         # plot wake center
-        axes[0, 0].plot(posrange/rotorDiameter[0], FLORIScenters[:, 2], 'k', label='Wake Center')
+        axes[0, 0].plot(posrange/rotorDiameter[0], FLORIScenters[:, 2]/rotorDiameter[0], 'k', label='Wake Center')
         # axes[0, 0].set_xlabel('x/D')
-        axes[0, 0].set_ylabel('Position')
+        axes[0, 0].set_ylabel('y/D')
         axes[0, 0].legend(loc=1)
 
         # plot wake diameters
@@ -412,7 +412,7 @@ if __name__ == '__main__':
     model = 'smooth'  # options: 'original', 'smooth'
     gradients = 'fd'    # options: 'fd', 'exact'
     flat = True        # if False, will use cosine smoothing factor
-    rotor = True       # if True, will use rotor coupled data
+    rotor = False       # if True, will use rotor coupled data
     tune = False        # if True, will optimize parameters starting with provided values
 
     # plot option
@@ -467,7 +467,6 @@ if __name__ == '__main__':
     # ###################################################################################
 
     params = np.array([pP, kd, initialWakeAngle, bd, ke,   me[0], me[1], MU[0], MU[2], aU,  bU,  cos_spread])
-
 
     if rotor:
         NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))

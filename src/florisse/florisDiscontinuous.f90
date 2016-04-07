@@ -146,7 +146,7 @@ end subroutine CTtoAxialInd
 
 subroutine floris(nTurbines, turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf, &
                           & Ct, a_in, ke_in, kd, me, initialWakeDisplacement, bd, MU, &
-                          & aU, bU, initialWakeAngle, cos_spread, keCorrCT, Region2CT, &
+                          & aU, bU, initialWakeAngle, keCorrCT, Region2CT, &
                           & keCorrArray, useWakeAngle, adjustInitialWakeDiamToYaw, & 
                           & axialIndProvided, useaUbU, wtVelocity, &
                           & wakeCentersYT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec)
@@ -162,7 +162,7 @@ subroutine floris(nTurbines, turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf, 
     ! in
     integer, intent(in) :: nTurbines
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
-    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray
+    real(dp), intent(in) :: keCorrCT, Region2CT, bd, Vinf, keCorrArray
     real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: me, MU
@@ -187,7 +187,6 @@ subroutine floris(nTurbines, turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf, 
     ! local (Wake overlap)
     real(dp) :: rmax
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel_mat
-    real(dp), dimension(nTurbines, nTurbines, 3) :: cosFac_mat
     
     ! local (Velocity)
     real(dp), dimension(nTurbines) :: a, keArray
@@ -366,6 +365,31 @@ subroutine floris(nTurbines, turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf, 
         ! multiply the inflow speed with the wake coefficients to find effective wind 
         ! speed at turbine
         wtVelocity(turbI) = wtVelocity(turbI)*wakeEffCoeff
+    end do
+    
+    ! pack desired matrices into vectors for output
+    do turbI = 1, nTurbines
+        ! wake centers
+        wakeCentersYT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
+                                     = wakeCentersYT_mat(turbI, :)
+                                     
+        ! wake diameters
+        wakeDiametersT_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
+                                 = wakeDiametersT_mat(turbI, :, 1)
+        wakeDiametersT_vec(3*nTurbines*(turbI-1)+nTurbines+1:3*nTurbines*(turbI-1) &
+                                   +2*nTurbines) = wakeDiametersT_mat(turbI, :, 2)
+        wakeDiametersT_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:nTurbines*(turbI-1) &
+                                   +3*nTurbines) = wakeDiametersT_mat(turbI, :, 3) 
+        
+        ! relative wake overlap
+        wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
+                             = wakeOverlapTRel_mat(turbI, :, 1)
+        wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+nTurbines+1:3*nTurbines*(turbI-1) &
+                               +2*nTurbines) = wakeOverlapTRel_mat(turbI, :, 2)
+        wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:3*nTurbines*(turbI-1) &
+                               +3*nTurbines) = wakeOverlapTRel_mat(turbI, :, 3)
+        
+       
     end do
 
 end subroutine floris

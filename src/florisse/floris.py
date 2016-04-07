@@ -67,7 +67,7 @@ def add_floris_parameters(openmdao_comp, use_rotor_components=False):
     openmdao_comp.add_param('floris_params:bU', 1.66 if not use_rotor_components else 1.3, pass_by_obj=True,
                             desc='zone decay adjustment parameter dependent yaw')
     # added
-    openmdao_comp.add_param('floris_params:cos_spread', 1E12 if not use_rotor_components else 2.0, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:cos_spread', 2.0, pass_by_obj=True,
                             desc='spread of cosine smoothing factor (multiple of sum of wake and rotor radii)')
     openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True,
                             desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative overlap with '
@@ -364,14 +364,14 @@ class Floris(Component):
                                                adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, wsPositionXYZw,
                                                shearCoefficientAlpha, shearZh)
         else:
-             # call to fortran code to obtain output values
-            wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
+            # call to fortran code to obtain output values
+            print rotorDiameter.shape
+            wtVelocity, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
                 _florisDiscontinuous.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
                                                            Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                           MU, aU, bU, initialWakeAngle, keCorrCT,
                                                            Region2CT, keCorrArray, useWakeAngle,
-                                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
-                                                           wsPositionXYZw)
+                                                           adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU)
 
         # pass outputs to self
         unknowns['wtVelocity%i' % self.direction_id] = wtVelocity
