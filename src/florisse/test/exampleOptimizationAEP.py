@@ -47,7 +47,8 @@ if __name__ == "__main__":
     # turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])   # m
 
     # Scaling grid case
-    nRows = int(sys.argv[1])     # number of rows and columns in grid
+    # nRows = int(sys.argv[1])     # number of rows and columns in grid
+    nRows = 3
     spacing = 5     # turbine grid spacing in diameters
 
     # Set up position arrays
@@ -82,8 +83,7 @@ if __name__ == "__main__":
     windFrequencies = np.ones_like(windDirections)*1.0/size
 
     # initialize problem
-    prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, resolution=0,
-                                          minSpacing=minSpacing, differentiable=True, use_rotor_components=False))
+    prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, minSpacing=minSpacing, use_rotor_components=False, datasize=0, differentiable=True, force_fd=False))
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
