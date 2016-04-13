@@ -5,7 +5,8 @@ import config
 
 import numpy as np
 from scipy import interp
-
+from scipy.io import loadmat
+from scipy.spatial import ConvexHull
 
 def add_gen_params_IdepVarComps(openmdao_group, datasize):
     openmdao_group.add('gp0', IndepVarComp('gen_params:pP', 1.88, pass_by_obj=True), promotes=['*'])
@@ -932,7 +933,62 @@ class WindDirectionPower(Component):
         return J
 
 
+def GenerateConvexHull(x, y):
+    import pylab as plt
+    plt.figure()
+    plt.scatter(x, y)
+    plt.hold(True)
+    # plt.show()
+
+    npoints = len(x)
+
+    points = np.zeros([len(x), 2])
+
+    for i in range(0, len(x)):
+        points[i, :] = np.array([x[i], y[i]])
+
+    print points
+
+    hull = ConvexHull(list(points))
+
+    plt.plot(points[hull.vertices, 0], points[hull.vertices, 1], '--r')
+    plt.hold(True)
+    # plt.show()
+
+    meanVals = np.mean(points[np.unique(hull.vertices), :], 0)
+
+    points = points - np.transpose([np.repeat(meanVals[0], npoints), np.repeat(meanVals[1], npoints)])
+
+    A = np.zeros([len(hull.vertices), npoints])
+
+    rc = 0
+
+    #TODO fix this
+    for ix in range(0, len(hull.vertices)):
+        print hull.vertices
+        F = points[hull.vertices[ix], :]
+
+        if np.rank(F) == np.size(F):
+            rc += 1
+            print F.shape, np.shape(np.ones(len(F[0])))
+            A[rc, :] = np.linalg.solve(F, np.ones(len(F[0])))
+
+
 if __name__ == "__main__":
+
+    AmaliaLocationsAndHull = loadmat('Amalia_locAndHull.mat')
+
+    turbineX = AmaliaLocationsAndHull['turbineX'].flatten()
+    turbineY = AmaliaLocationsAndHull['turbineY'].flatten()
+    #
+    # np.random.seed(50)
+    # x = np.random.random(20)*10.
+    # y = np.random.random(20)*10.
+
+    # print x.size, y.size
+
+    GenerateConvexHull(turbineX, turbineY)
+
 
     # top = Problem()
     #
@@ -987,21 +1043,21 @@ if __name__ == "__main__":
     # print(root.p.unknowns['output1'])
     # top.check_partial_derivatives()
 
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([0, 3])))
-    root.add('p2', IndepVarComp('y', np.array([1, 0])))
-    root.add('p', SpacingComp(nTurbines=2))
-
-    root.connect('p1.x', 'p.turbineX')
-    root.connect('p2.y', 'p.turbineY')
-
-    top.setup()
-    top.run()
-
-    # print(root.p.unknowns['output0'])
-    # print(root.p.unknowns['output1'])
-    top.check_partial_derivatives()
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([0, 3])))
+    # root.add('p2', IndepVarComp('y', np.array([1, 0])))
+    # root.add('p', SpacingComp(nTurbines=2))
+    #
+    # root.connect('p1.x', 'p.turbineX')
+    # root.connect('p2.y', 'p.turbineY')
+    #
+    # top.setup()
+    # top.run()
+    #
+    # # print(root.p.unknowns['output0'])
+    # # print(root.p.unknowns['output1'])
+    # top.check_partial_derivatives()
 
