@@ -1,7 +1,7 @@
 import numpy as np
 
 from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
-from openmdao.api import NLGaussSeidel, ScipyGMRES\
+from openmdao.api import NLGaussSeidel, ScipyGMRES, PetscKSP
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
@@ -365,7 +365,7 @@ class Floris(Component):
                                                shearCoefficientAlpha, shearZh)
         else:
             # call to fortran code to obtain output values
-            print rotorDiameter.shape
+            # print rotorDiameter.shape
             wtVelocity, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
                 _florisDiscontinuous.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
                                                            Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
@@ -552,9 +552,14 @@ class RotorSolveGroup(Group):
 
         super(RotorSolveGroup, self).__init__()
 
+        from openmdao.core.mpi_wrap import MPI
+
         # set up iterative solvers
         epsilon = 1E-6
-        self.ln_solver = ScipyGMRES()
+        if MPI:
+            self.ln_solver = PetscKSP()
+        else:
+            self.ln_solver = ScipyGMRES()
         self.nl_solver = NLGaussSeidel()
         self.ln_solver.options['atol'] = epsilon
 
