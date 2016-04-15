@@ -516,7 +516,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
     wsArray = Vinf
     
     ! apply shear profile to visualization
-    wsArray = wsArray*(velZ/shearZh)**shearCoefficientAlpha
+!     wsArray = wsArray*(velZ/shearZh)**shearCoefficientAlpha
 !     print *, wsArray
     ! initialize axial induction values    
     if (axialIndProvided) then
@@ -590,21 +590,26 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
             deltaz = velZ(loc) - wakeCentersZ(loc, turb)
             radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)            
             axialIndAndNearRotor = 2.0_dp*a(turb)
+            
+            rmax = cos_spread*0.5_dp*(wakeDiameters(loc, turb, 3) + rotorDiameter(turb))
+            cosFac = 0.5_dp*(1.0_dp + cos(pi*radiusLoc/rmax))
+            
             if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 1)/2.0_dp) then   ! check if in zone 1
                 reductionFactor = axialIndAndNearRotor*&
-                                  & (rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
+                                  & (cosFac*rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
                                   & keArray(turb)*(mmU(1))*deltax))**2
             else if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 2)/2.0_dp) then  ! check if in zone 2
                 reductionFactor = axialIndAndNearRotor* &
-                                  & (rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
+                                  & (cosFac*rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
                                   & keArray(turb)*(mmU(2))*deltax))**2
             else if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 3)/2.0_dp) then    ! check if in zone 3
                 reductionFactor = axialIndAndNearRotor* &
-                                  (rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
+                                  (cosFac*rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
                                   & keArray(turb)*(mmU(3))*deltax))**2
-            else if (deltax <= 0 .and. radiusLoc < rotorDiameter(turb)/2.0_dp) then     ! check if axial induction zone in front of rotor
-                reductionFactor = axialIndAndNearRotor*(0.5_dp+atan(2.0_dp*deltax/ &
-                                  & (rotorDiameter(turb)))/pi)
+            ! use this to add upstream turbine influence to visualization
+            ! else if (deltax <= 0 .and. radiusLoc < rotorDiameter(turb)/2.0_dp) then     ! check if axial induction zone in front of rotor
+!                 reductionFactor = axialIndAndNearRotor*(0.5_dp+atan(2.0_dp*deltax/ &
+!                                   & (rotorDiameter(turb)))/pi)
             else
                 reductionFactor = 0.0_dp
             end if    
