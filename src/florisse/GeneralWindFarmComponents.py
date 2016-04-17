@@ -281,6 +281,8 @@ class WindFarmAEP(Component):
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
+        print AEP
+
         # increase objective function call count
         if self.rec_func_calls:
             config.obj_func_calls += 1
@@ -299,14 +301,12 @@ class WindFarmAEP(Component):
 
         # calculate the derivative of outputs w.r.t. the power in each wind direction
         dAEP_dpower = np.ones(nDirs)*windFrequencies*hours
-        # dAEP_dwindrose_frequencies = np.ones(ndirs)*power_directions*hours
 
         # initialize Jacobian dict
         J = {}
 
         # populate Jacobian dict
         J['AEP', 'dirPowers'] = np.array([dAEP_dpower])
-        # J['AEP', 'windFrequencies'] = np.array([dAEP_dwindrose_frequencies])
 
         # increase gradient function call count
         if self.rec_func_calls:
@@ -402,9 +402,9 @@ class BoundaryComp(Component):
         self.nTurbines = nTurbines
 
         # Explicitly size input arrays
-        self.add_param('wfBoundaryX', np.zeros(nVertices))
-        self.add_param('wfBoundaryY', np.zeros(nVertices))
-        self.add_param('b', np.zeros(nVertices))
+        self.add_param('boundaryAX', np.zeros(nVertices))
+        self.add_param('boundaryAY', np.zeros(nVertices))
+        self.add_param('boundaryB', np.zeros(nVertices))
 
         self.add_param('turbineX', np.zeros(nTurbines), iotype='in',
                        desc='x coordinates of turbines in global ref. frame')
@@ -413,7 +413,7 @@ class BoundaryComp(Component):
 
         # Explicitly size output array
         # (vector with positive elements if turbines outside of hull)
-        self.add_output('inout', np.zeros(nVertices*nTurbines))
+        self.add_output('boundaryInOut', np.zeros(nVertices*nTurbines))
 
     def solve_nonlinear(self, params, unknowns, resids):
 
@@ -421,16 +421,16 @@ class BoundaryComp(Component):
         # tictot = time.time()
         nTurbines = self.nTurbines
 
-        AX = params['AX']
-        AY = params['AY']
-        b = params['b']
-        turbineXw = params['turbineXw']
-        turbineYw = params['turbineY']
+        AX = params['boundaryAX']
+        AY = params['boundaryAY']
+        b = params['boundaryB']
+        turbineX = params['turbineX']
+        turbineY = params['turbineY']
 
         J = np.concatenate((np.kron(np.eye(nTurbines), AX).transpose(), np.kron(np.eye(nTurbines), AY).transpose()), 1)
 
-        unknowns['inout'] = (np.dot(J, np.concatenate((turbineXw, turbineYw))) - np.tile(b, (1, nTurbines))).flatten()
-
+        unknowns['boundaryInOut'] = (np.dot(J, np.concatenate((turbineX, turbineY))) - np.tile(b, (1, nTurbines))).flatten()
+        print unknowns['boundaryInOut']
         # toctot = time.time()
         #print 'done %s' % (toctot-tictot)
 
@@ -441,13 +441,13 @@ class BoundaryComp(Component):
 
         nTurbines = self.nTurbines
 
-        AX = params['AX']
-        AY = params['AY']
+        AX = params['boundaryAX']
+        AY = params['boundaryAY']
 
         J = {}
 
-        J['inout', 'turbineXw'] = np.kron(np.eye(nTurbines), AX).transpose()
-        J['inout', 'turbineYw'] = np.kron(np.eye(nTurbines), AY).transpose()
+        J['boundaryInOut', 'turbineX'] = np.kron(np.eye(nTurbines), AX).transpose()
+        J['boundaryInOut', 'turbineY'] = np.kron(np.eye(nTurbines), AY).transpose()
 
         # toctot = time.time()
         #print 'done %s' % (toctot-tictot)
@@ -933,51 +933,132 @@ class WindDirectionPower(Component):
         return J
 
 
-def GenerateConvexHull(x, y):
-    import pylab as plt
-    plt.figure()
-    plt.scatter(x, y)
-    plt.hold(True)
-    # plt.show()
+def GenerateConvexHullBoundary(x, y, plot_res=False):
 
+    # find the number of points
     npoints = len(x)
 
-    points = np.zeros([len(x), 2])
+    print x
 
+    # get points in proper format for hull constraint
+    points = np.zeros([npoints, 2])
     for i in range(0, len(x)):
         points[i, :] = np.array([x[i], y[i]])
 
-    print points
-
+    # find the convex hull of the given points
     hull = ConvexHull(list(points))
 
-    plt.plot(points[hull.vertices, 0], points[hull.vertices, 1], '--r')
-    plt.hold(True)
-    # plt.show()
+    # find the number of vertices in the convex hull
+    nverts = len(hull.vertices)
 
-    meanVals = np.mean(points[np.unique(hull.vertices), :], 0)
+    print hull.vertices, hull.simplices
+    vertices_sorted = np.sort(hull.vertices)
 
-    points = points - np.transpose([np.repeat(meanVals[0], npoints), np.repeat(meanVals[1], npoints)])
+    print vertices_sorted
+    # print points
+    # calculate the mean x and y value of the convex hull (find an interior point)
+    meanVals = np.mean(points[hull.vertices, :], 0)
 
-    A = np.zeros([len(hull.vertices), npoints])
+    # subtract the mean (aka interior point) x and y from each x and y point respectively
+    points = points - meanVals
+
+    # initialize normals array #TODO correct this comment
+    A = np.zeros([nverts, 2])
 
     rc = 0
 
-    #TODO fix this
-    for ix in range(0, len(hull.vertices)):
-        print hull.vertices
-        F = points[hull.vertices[ix], :]
+    for facet in range(0, nverts):
 
-        if np.rank(F) == np.size(F):
+        # F is the set of 2 points comprising the current facet
+        if facet < nverts - 1:
+            F = points[[hull.vertices[facet], hull.vertices[facet+1]], :]
+        else:
+            F = points[[hull.vertices[facet], hull.vertices[0]], :]
+        # check that F is an invertible matrix
+        if np.linalg.matrix_rank(F, tol=1E-5) == F.shape[0]:
+
+            # solve F*A[rc, :] = [1 1]
+            A[rc, :] = np.linalg.solve(F, np.ones(2))
+
+            # increment index
             rc += 1
-            print F.shape, np.shape(np.ones(len(F[0])))
-            A[rc, :] = np.linalg.solve(F, np.ones(len(F[0])))
+
+    # reduce the size of A to just the elements where F was invertible
+    A = A[:rc, :]
+
+    # make a vector of ones the same length as rows in A
+    b = np.ones_like(A[:, 0])
+
+    # TODO comment what does this mean in context?
+    b += np.dot(A, meanVals)
+
+    # get indices of unique constraints
+    # AI = np.reshape(np.array([A[:, 0], A[:, 1], b]), (nverts, 3))
+    # print AI
+    # I = np.argsort(AI[0])
+    #
+    # print I
+
+    # save only the unique constraints
+    # A = A[I]
+    # b = b[I]
+
+    AX = A[:, 0]
+    AY = A[:, 1]
+    nVertices = len(b)
+
+    #TODO fix this
+    if plot_res:
+        import pylab as plt
+
+        # plot points
+        plt.figure()
+        plt.plot(x, y, 'og')
+        plt.hold(True)
+
+        # plot boundary defined by hull
+        plt.plot(points[hull.vertices, 0]+meanVals[0], points[hull.vertices, 1]+meanVals[1], '--r')
+
+        # make a grid of points for visualization
+        xx, yy = np.meshgrid(np.arange(min(x-meanVals[0]), max(x-meanVals[0]), 10), np.arange(min(y-meanVals[1]), max(y-meanVals[1]), 100))
+
+        # arrange visualization points into one n by 2 array
+        pp = np.array([xx.flatten(), yy.flatten()])
+
+        # check if points are inside the hull
+        pp = (np.dot(A, pp) <= np.swapaxes(np.tile(b, (pp.shape[1], 1)), 0, 1))
+
+        # print pp[:, 0], pp[:, 40]
+
+        # if points are inside
+        pp = pp.sum(axis=0)
+
+        print pp[pp == 0]
+
+        # print pp.shape, type(pp[0]), pp[pp==8].shape
+        pp = np.reshape(pp, xx.shape)
+        plt.pcolormesh(xx+meanVals[0], yy+meanVals[1], pp)
+        # print pp.shape
+
+
+        # color based on in or out of hull
+        plt.hold(True)
+        plt.show()
+
+    return AX, AY, b, nVertices
+
+
+def hull_const_J(AX, AY, nTurbines):
+    J = np.concatenate((np.kron(np.eye(nTurbines), AX).transpose(), np.kron(np.eye(nTurbines), AY).transpose()), 1)
+    return J
+
+
 
 
 if __name__ == "__main__":
 
     AmaliaLocationsAndHull = loadmat('Amalia_locAndHull.mat')
-
+    print AmaliaLocationsAndHull.keys()
     turbineX = AmaliaLocationsAndHull['turbineX'].flatten()
     turbineY = AmaliaLocationsAndHull['turbineY'].flatten()
     #
@@ -987,7 +1068,7 @@ if __name__ == "__main__":
 
     # print x.size, y.size
 
-    GenerateConvexHull(turbineX, turbineY)
+    GenerateConvexHullBoundary(turbineX, turbineY, plot_res=True)
 
 
     # top = Problem()
