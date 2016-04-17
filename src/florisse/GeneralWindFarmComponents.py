@@ -281,7 +281,7 @@ class WindFarmAEP(Component):
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
-        print AEP
+        # print AEP
 
         # increase objective function call count
         if self.rec_func_calls:
