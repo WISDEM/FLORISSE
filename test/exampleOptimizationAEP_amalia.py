@@ -10,7 +10,6 @@ import pylab as plt
 
 import cProfile
 
-
 import sys
 
 if __name__ == "__main__":
@@ -48,13 +47,9 @@ if __name__ == "__main__":
     turbineX = locations[:, 0]
     turbineY = locations[:, 1]
 
-    np.random.seed(50)
-    turbineX = np.random.random(10)*10.
-    turbineY = np.random.random(10)*10.
-
     # generate boundary constraint
     boundaryVertices, boundaryNormals = calculate_boundary(locations)
-    nVertices = len(boundaryNormals)
+    nVertices = boundaryVertices.shape[0]
 
     # define turbine size
     rotor_diameter = 126.4  # (m)
@@ -89,7 +84,7 @@ if __name__ == "__main__":
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    prob.driver.add_objective('obj', scaler=1E-8)
+    prob.driver.add_objective('obj', scaler=1E-5)
 
     # set optimizer options
     prob.driver.opt_settings['Verify level'] = 3
@@ -98,10 +93,10 @@ if __name__ == "__main__":
     prob.driver.opt_settings['Major iterations limit'] = 1000
 
     # select design variables
-    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbines)*min(turbineX), upper=np.ones(nTurbines)*max(turbineX), scaler=1E-2)
-    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbines)*min(turbineY), upper=np.ones(nTurbines)*max(turbineY), scaler=1E-2)
+    prob.driver.add_desvar('turbineX', scaler=1.0)
+    prob.driver.add_desvar('turbineY', scaler=1.0)
     for direction_id in range(0, nDirections):
-        prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
+        prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
 
     # add constraints
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)), scaler=1.0)
