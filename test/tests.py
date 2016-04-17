@@ -13,7 +13,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
     def setUp(self):
 
-        nTurbines = 4
+        nTurbines = 3
         self.rtol = 1E-6
         self.atol = 1E-6
 
@@ -93,6 +93,10 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         prob['windDirections'] = windDirections
         prob['windFrequencies'] = windFrequencies
         prob['floris_params:FLORISoriginal'] = True
+
+        # provide values for hull constraint
+        prob['boundaryVertices'] = boundaryVertices
+        prob['boundaryNormals'] = boundaryNormals
 
         # run problem
         prob.run()
