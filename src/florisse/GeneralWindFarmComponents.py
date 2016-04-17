@@ -403,15 +403,15 @@ class BoundaryComp(Component):
         self.nVertices = nVertices
 
         # Explicitly size input arrays
-        self.add_param('boundaryVertices', np.zeros([nVertices, 2]),
+        self.add_param('boundaryVertices', np.zeros([nVertices, 2]), units='m', pass_by_obj=True,
                        desc="vertices of the convex hull CCW in order s.t. boundaryVertices[i] -> first point of face"
                             "for unit_normals[i]")
-        self.add_param('boundaryNormals', np.zeros([nVertices, 2]),
+        self.add_param('boundaryNormals', np.zeros([nVertices, 2]), pass_by_obj=True,
                        desc="unit normal vector for each boundary face CCW where boundaryVertices[i] is "
                             "the first point of the corresponding face")
-        self.add_param('turbineX', np.zeros(nTurbines), iotype='in',
+        self.add_param('turbineX', np.zeros(nTurbines), units='m',
                        desc='x coordinates of turbines in global ref. frame')
-        self.add_param('turbineY', np.zeros(nTurbines), iotype='in',
+        self.add_param('turbineY', np.zeros(nTurbines), units='m',
                        desc='y coordinates of turbines in global ref. frame')
 
         # Explicitly size output array
@@ -456,8 +456,8 @@ class BoundaryComp(Component):
                 ddistanceVec_dy = np.vdot(dpa_dy, unit_normals[j])*unit_normals[j]
 
                 # calculate derivatives for the sign of perpendicular distance from point to current face
-                dfaceDistance_dx[j*self.nTurbines, i] = np.vdot(ddistanceVec_dx, unit_normals[j])
-                dfaceDistance_dy[j*self.nTurbines, i] = np.vdot(ddistanceVec_dy, unit_normals[j])
+                dfaceDistance_dx[i*self.nVertices+j, i] = np.vdot(ddistanceVec_dx, unit_normals[j])
+                dfaceDistance_dy[i*self.nVertices+j, i] = np.vdot(ddistanceVec_dy, unit_normals[j])
 
         # initialize Jacobian dict
         J = {}
