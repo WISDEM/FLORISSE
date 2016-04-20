@@ -1,0 +1,3 @@
+module purge
+module load /nopt/nrel/apps/modules/candidate/modulefiles/conda/2.2.0
+ipython notebook --ip="*" --no-browser &
