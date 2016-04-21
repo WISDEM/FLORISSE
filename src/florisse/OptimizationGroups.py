@@ -108,6 +108,7 @@ class OptAEP(Group):
         super(OptAEP, self).__init__()
 
         self.fd_options['force_fd'] = force_fd
+        self.fd_options['form'] = 'forward'
 
         # ##### add major components and groups
         # add component that calculates AEP

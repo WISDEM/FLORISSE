@@ -95,8 +95,8 @@ if __name__ == "__main__":
     # select design variables
     prob.driver.add_desvar('turbineX', scaler=1.0)
     prob.driver.add_desvar('turbineY', scaler=1.0)
-    for direction_id in range(0, nDirections):
-        prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
+    # for direction_id in range(0, nDirections):
+    #     prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
 
     # add constraints
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)), scaler=1.0)
@@ -137,36 +137,39 @@ if __name__ == "__main__":
     prob.run()
     toc = time.time()
 
-    # print the results
-    mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
+    if prob.root.comm.rank == 0:
+        # print the results
+        mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
 
-    for direction_id in range(0, windDirections.size):
-        mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
-    # for direction_id in range(0, windDirections.size):
-        # mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
-    # for direction_id in range(0, windDirections.size):
-    #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
+        for direction_id in range(0, windDirections.size):
+            mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
+        # for direction_id in range(0, windDirections.size):
+            # mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
+        # for direction_id in range(0, windDirections.size):
+        #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
 
-    mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
-    mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
-    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
-    mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
+        mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
+        mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
+        mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
+        mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
 
-    xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
-    ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
+        xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
+        ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
 
-    plt.figure()
-    plt.plot(turbineX, turbineY, 'ok', label='Original')
-    plt.plot(prob['turbineX'], prob['turbineY'], 'or', label='Optimized')
-    plt.plot(xbounds, ybounds, ':k')
-    for i in range(0, nTurbines):
-        plt.plot([turbineX[i], prob['turbineX'][i]], [turbineY[i], prob['turbineY'][i]], '--k')
-    plt.legend()
-    plt.xlabel('Turbine X Position (m)')
-    plt.ylabel('Turbine Y Position (m)')
-    plt.show()
+        plt.figure()
+        plt.plot(turbineX, turbineY, 'ok', label='Original')
+        plt.plot(prob['turbineX'], prob['turbineY'], 'or', label='Optimized')
+        plt.plot(xbounds, ybounds, ':k')
+        for i in range(0, nTurbines):
+            plt.plot([turbineX[i], prob['turbineX'][i]], [turbineY[i], prob['turbineY'][i]], '--k')
+        plt.legend()
+        plt.xlabel('Turbine X Position (m)')
+        plt.ylabel('Turbine Y Position (m)')
+        plt.show()
 
-    #
+        np.savetxt('AmaliaOptimizedXY.txt', np.c_[prob['turbineX'], prob['turbineY']], header="turbineX, turbineY")
+
+        #
     #
     # windSpeeds = np.array([6.53163342, 6.11908394, 6.13415514, 6.0614625,  6.21344602,
     #                             5.87000793, 5.62161519, 5.96779107, 6.33589422, 6.4668016,
