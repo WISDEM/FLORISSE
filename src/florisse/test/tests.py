@@ -20,6 +20,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
+        turbineZ = np.random.rand(nTurbines)*150.+75
 
         minSpacing = 2.
 
@@ -58,6 +59,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         # select design variables
         prob.driver.add_desvar('turbineX', lower=np.ones(nTurbines)*min(turbineX), upper=np.ones(nTurbines)*max(turbineX), scaler=1E-2)
         prob.driver.add_desvar('turbineY', lower=np.ones(nTurbines)*min(turbineY), upper=np.ones(nTurbines)*max(turbineY), scaler=1E-2)
+        prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbines)*min(turbineZ), upper=np.ones(nTurbines)*max(turbineZ), scaler=1E-2)
         for direction_id in range(0, windDirections.size):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
@@ -68,8 +70,9 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         prob.setup()
 
         # assign values to constant inputs (not design variables)
-        prob['turbineX'] = turbineX*0.
-        prob['turbineY'] = turbineY*0.
+        prob['turbineX'] = turbineX
+        prob['turbineY'] = turbineY
+        prob['turbineZ'] = turbineZ
         prob['yaw0'] = yaw
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
@@ -95,6 +98,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
         np.testing.assert_allclose(self.J[('obj', 'turbineX')]['rel error'], self.J[('obj', 'turbineX')]['rel error'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J[('obj', 'turbineY')]['rel error'], self.J[('obj', 'turbineY')]['rel error'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J[('obj', 'turbineZ')]['rel error'], self.J[('obj', 'turbineZ')]['rel error'], self.rtol, self.atol)
         for dir in np.arange(0, self.nDirections):
             np.testing.assert_allclose(self.J[('obj', 'yaw%i' % dir)]['rel error'], self.J[('obj', 'yaw%i' % dir)]['rel error'], self.rtol, self.atol)
 
@@ -119,6 +123,7 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
 
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
+        turbineZ = np.random.rand(nTurbines)*150.+75
 
         minSpacing = 2.
 
@@ -157,6 +162,7 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         # select design variables
         prob.driver.add_desvar('turbineX', lower=np.ones(nTurbines)*min(turbineX), upper=np.ones(nTurbines)*max(turbineX), scaler=1E-2)
         prob.driver.add_desvar('turbineY', lower=np.ones(nTurbines)*min(turbineY), upper=np.ones(nTurbines)*max(turbineY), scaler=1E-2)
+        prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbines)*min(turbineZ), upper=np.ones(nTurbines)*max(turbineZ), scaler=1E-2)
         for direction_id in range(0, windDirections.size):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
@@ -167,8 +173,9 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         prob.setup()
 
         # assign values to constant inputs (not design variables)
-        prob['turbineX'] = turbineX*0.
-        prob['turbineY'] = turbineY*0.
+        prob['turbineX'] = turbineX
+        prob['turbineY'] = turbineY
+        prob['turbineZ'] = turbineZ
         prob['yaw0'] = yaw
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
@@ -197,6 +204,7 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
 
         np.testing.assert_allclose(self.J[('obj', 'turbineX')]['rel error'], self.J[('obj', 'turbineX')]['rel error'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J[('obj', 'turbineY')]['rel error'], self.J[('obj', 'turbineY')]['rel error'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J[('obj', 'turbineZ')]['rel error'], self.J[('obj', 'turbineZ')]['rel error'], self.rtol, self.atol)
         for dir in np.arange(0, self.nDirections):
             np.testing.assert_allclose(self.J[('obj', 'yaw%i' % dir)]['rel error'], self.J[('obj', 'yaw%i' % dir)]['rel error'], self.rtol, self.atol)
 
@@ -220,6 +228,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
 
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
+        turbineZ = np.random.rand(nTurbines)*150.+75
 
         minSpacing = 2.
 
@@ -256,6 +265,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
         # select design variables
         prob.driver.add_desvar('turbineX', lower=np.ones(nTurbines)*min(turbineX), upper=np.ones(nTurbines)*max(turbineX), scaler=1E-2)
         prob.driver.add_desvar('turbineY', lower=np.ones(nTurbines)*min(turbineY), upper=np.ones(nTurbines)*max(turbineY), scaler=1E-2)
+        prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbines)*min(turbineZ), upper=np.ones(nTurbines)*max(turbineZ), scaler=1E-2)
         for direction_id in range(0, windDirections.size):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
@@ -271,6 +281,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
         NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
         prob['turbineX'] = turbineX
         prob['turbineY'] = turbineY
+        prob['turbineZ'] = turbineZ
         prob['yaw0'] = yaw
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
@@ -304,6 +315,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
 
         np.testing.assert_allclose(self.J[('obj', 'turbineX')]['rel error'], self.J[('obj', 'turbineX')]['rel error'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J[('obj', 'turbineY')]['rel error'], self.J[('obj', 'turbineY')]['rel error'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J[('obj', 'turbineZ')]['rel error'], self.J[('obj', 'turbineZ')]['rel error'], self.rtol, self.atol)
         for dir in np.arange(0, self.nDirections):
             np.testing.assert_allclose(self.J[('obj', 'yaw%i' % dir)]['rel error'], self.J[('obj', 'yaw%i' % dir)]['rel error'], self.rtol, self.atol)
 
@@ -327,6 +339,7 @@ class GradientTestsFLORIS(unittest.TestCase):
 
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
+        turbineZ = np.random.rand(nTurbines)*150.+75
 
         # initialize input variable arrays
         rotorDiameter = np.ones(nTurbines)*np.random.random()*150.
@@ -388,6 +401,7 @@ class GradientTestsFLORIS(unittest.TestCase):
         # assign values to constant inputs (not design variables)
         prob['turbineX'] = turbineX
         prob['turbineY'] = turbineY
+        prob['turbineZ'] = turbineZ
         prob['yaw0'] = yaw
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
@@ -638,13 +652,14 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
         config.BV = True
 
         nTurbines = 4
-        self.rtol = 1E-10
-        self.atol = 1E-10
+        self.rtol = 1E-6
+        self.atol = 1E-6
 
         np.random.seed(seed=100)
 
         turbineX = np.random.rand(nTurbines)*3000.
         turbineY = np.random.rand(nTurbines)*3000.
+        turbineZ = np.random.rand(nTurbines)*150.+75
 
         # initialize input variable arrays
         rotorDiameter = np.ones(nTurbines)*np.random.random()*150.
@@ -670,6 +685,7 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
                 # assign values to constant inputs (not design variables)
         prob['turbineX'] = turbineX
         prob['turbineY'] = turbineY
+        prob['turbineZ'] = turbineZ
         prob['yaw0'] = yaw
         prob['rotorDiameter'] = rotorDiameter
         prob['axialInduction'] = axialInduction
@@ -694,6 +710,9 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
     def testUnified_wtVelocity(self):
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineXw')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineXw')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineYw')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineYw')]['J_fd'], self.rtol, self.atol)
+        
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fd'], self.rtol, self.atol)        
+        
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'yaw0')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'rotorDiameter')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'rotorDiameter')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'Ct')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'Ct')]['J_fd'], self.rtol, self.atol)

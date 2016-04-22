@@ -6,6 +6,7 @@
 ! turbines are place within 1E-15 * rotor diameter of one another, which is extremely 
 ! unlikely during optimization if the user does not explicitly place them there.
 
+! Anywhere marked with TODO has been added/modified for FLORIS 3D
     
 subroutine Hermite_Spline(x, x0, x1, y0, dy0, y1, dy1, y)
     !    This function produces the y and dy values for a hermite cubic spline
@@ -67,7 +68,7 @@ end subroutine Hermite_Spline
 
 
 subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiameter, wakeDiameters, &
-                            wakeCentersY, wakeCentersZ, wakeOverlapTRel_mat)
+                            wakeCentersYT, wakeCentersZT, wakeOverlapTRel_mat) !TODO
 !    calculate overlap of rotors and wake zones (wake zone location defined by wake 
 !    center and wake diameter)
 !   turbineX,turbineY is x,y-location of center of rotor
@@ -83,9 +84,9 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiamet
     
     ! in
     integer, intent(in) :: nTurbines
-    real(dp), dimension(nTurbines), intent(in) :: turbineX, turbineY, turbineZ, rotorDiameter
+    real(dp), dimension(nTurbines), intent(in) :: turbineX, turbineY, turbineZ, rotorDiameter !TODO
     real(dp), dimension(nTurbines, nTurbines, 3), intent(in) :: wakeDiameters
-    real(dp), dimension(nTurbines, nTurbines), intent(in) :: wakeCentersY, wakeCentersZ
+    real(dp), dimension(nTurbines, nTurbines), intent(in) :: wakeCentersYT, wakeCentersZT !TODO
     
     ! out    
     real(dp), dimension(nTurbines, nTurbines, 3), intent(out) :: wakeOverlapTRel_mat
@@ -102,7 +103,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiamet
     do turb = 1, nTurbines
         do turbI = 1, nTurbines
             if (turbineX(turbI) > turbineX(turb)) then
-                OVdYd = sqrt((wakeCentersY(turbI, turb)-turbineY(turbI))**2+(wakeCentersZ(turbI, turb)-turbineZ(turbI))**2)     ! distance between wake center and rotor center
+                OVdYd = sqrt((wakeCentersYT(turbI, turb)-turbineY(turbI))**2+(wakeCentersZT(turbI, turb)-turbineZ(turbI))**2)     ! distance between wake center and rotor center !TODO
                 OVr = rotorDiameter(turbI)/2                        ! rotor diameter
                 do zone = 1, 3
                     OVRR = wakeDiameters(turbI, turb, zone)/2.0_dp        ! wake diameter
@@ -210,15 +211,15 @@ end subroutine CTtoAxialInd
     
 
 subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
-                          & rotorDiameter, hubHeight, Vinf, Ct, a_in, ke_in, kd, me, &
+                          & rotorDiameter, Vinf, Ct, a_in, ke_in, kd, me, &
                           & initialWakeDisplacement, bd, MU, aU, bU, initialWakeAngle, &
                           & cos_spread, keCorrCT, Region2CT, keCorrArray, useWakeAngle, &
                           & adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, &
                           & wsPositionXYZw, shearCoefficientAlpha, shearZh, &
                           & wtVelocity, wsArray, &
-                          & wakeCentersYT_vec, wakeCentersZT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec)
+                          & wakeCentersYT_vec, wakeCentersZT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec) !TODO
     
-    ! independent variables: yawDeg Ct turbineXw turbineYw rotorDiameter a_in    
+    ! independent variables: yawDeg Ct turbineXw turbineYw turbineZ  rotorDiameter a_in    
     ! dependent variables: wtVelocity
     
     implicit none
@@ -231,8 +232,8 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     integer :: nSamples
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
     real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray
-    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw, turbineZ
-    real(dp), dimension(nTurbines), intent(in) :: rotorDiameter, hubHeight
+    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw, turbineZ !TODO
+    real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: me, MU
     real(dp), intent(in) :: aU, bU, shearCoefficientAlpha, shearZh
     logical, intent(in) :: useWakeAngle, adjustInitialWakeDiamToYaw, axialIndProvided, &
@@ -256,10 +257,10 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     real(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
     real(dp) :: wakeDiameter0
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
-    real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat, wakeCentersZT_mat
+    real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat, wakeCentersZT_mat !TODO
     ! visualization
     real(dp), dimension(nSamples, nTurbines, 3) :: wakeDiameters
-    real(dp), dimension(nSamples, nTurbines) :: wakeCentersY, wakeCentersZ
+    real(dp), dimension(nSamples, nTurbines) :: wakeCentersY, wakeCentersZ !TODO
     
     ! local (Wake overlap)
     real(dp) :: rmax
@@ -276,7 +277,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     real(dp), dimension(nTurbines), intent(out) :: wtVelocity
     
     ! test out
-    real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec, wakeCentersZT_vec
+    real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec, wakeCentersZT_vec !TODO
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeDiametersT_vec    
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeOverlapTRel_vec
     
@@ -299,9 +300,9 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
     spline_bound = 1.0_dp
        
-    ! calculate y-locations of wake centers in wind ref. frame
+    ! calculate locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
-    wakeCentersZT_mat = 0.0_dp
+    wakeCentersZT_mat = 0.0_dp !TODO
     wakeCentersY = 0.0_dp
     wakeCentersZ = 0.0_dp
     
@@ -318,7 +319,11 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
             if (turbineXw(turb) < turbineXw(turbI)) then
                 deltax = turbineXw(turbI) - turbineXw(turb)
                 factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
-                wakeCentersZT_mat(turbI, turb) = turbineZ(turb)
+
+                !THESE ARE THE Z CALCULATIONS
+                wakeCentersZT_mat(turbI, turb) = turbineZ(turb) !TODO
+
+                !THESE ARE THE Y CALCULATIONS
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
                 
                 displacement = wakeAngleInit*(wakeAngleInit* &
@@ -342,7 +347,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
             end if
 
         end do
-        
+
         ! wake center calculations at each sample point
         do loc = 1, nSamples            
             
@@ -369,12 +374,12 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
                     wakeCentersY(loc, turb) = wakeCentersY(loc, turb) + bd*(deltax)
                 end if
                 
-                wakeCentersZ(loc, turb) = hubHeight(turb)
+                wakeCentersZ(loc, turb) = turbineZ(turb)
                 
             end if
 
         end do
-        
+
     end do
     
     !adjust k_e to C_T, adjusted to yaw
@@ -447,7 +452,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
             end if      
             
         end do
-        
+
         ! calculate the wake diameter of each wake at each sample point
         do loc = 1, nSamples
         
@@ -509,8 +514,8 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Overlap !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     ! calculate relative overlap
-    call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, &
-                          & wakeDiametersT_mat, wakeCentersYT_mat, wakeOverlapTRel_mat)
+    call calcOverlapAreas(nTurbines, turbineXw, turbineYw, turbineZ, rotorDiameter, &
+                          & wakeDiametersT_mat, wakeCentersYT_mat, wakeCentersZT_mat, wakeOverlapTRel_mat) !TODO
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
@@ -576,7 +581,6 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
         ! speed at turbine
         wtVelocity(turbI) = wtVelocity(turbI)*wakeEffCoeff
     end do
-    
     ! calculate the velocity at the sample points
     do turb = 1, nTurbines
     
@@ -615,11 +619,8 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
             wsArray(loc) = wsArray(loc)*(1.0_dp-reductionFactor)
             
         end do
-        
     end do
-    
 !     print *, "wsArray: ", wsArray
-!     print *, "hubHeight: ", hubHeight
 !     print *, "velZ: ", velZ
 !     print *, wsArray
         
@@ -628,6 +629,9 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
         ! wake centers
         wakeCentersYT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
                                      = wakeCentersYT_mat(turbI, :)
+
+        wakeCentersZT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
+                                 = wakeCentersZT_mat(turbI, :) !TODO
                                      
         ! wake diameters
         wakeDiametersT_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
@@ -651,704 +655,18 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
 end subroutine floris
 
 
+!TODO TAPENADE: Run TAPENADE (floris.f90 as source, adStack.c and adBuffer.f as an include) input language "from the files extensions), Name of the top routine: floris. Differentiate in Multiobjective Adjoint Mode.
+
+!TODO After you run, 1.) Change all nbdirs max (all one word) to nbdirs 2.) delete  3.) in florisbv, chnage all the input variables b to intent out 4.) delete wtvelocity from florisbv
+
+
+
+
 
 
 !        Generated by TAPENADE     (INRIA, Ecuador team)
 !  Tapenade 3.11 (r5902M) - 15 Dec 2015 09:00
 !
-!  Differentiation of floris_unified in reverse (adjoint) mode:
-!   gradient     of useful results: wtVelocity
-!   with respect to varying inputs: rotordiameter turbinexw yawDeg
-!                wtVelocity turbineyw ct a_in
-!   RW status of diff variables: rotordiameter:out turbinexw:out
-!                yawDeg:out wtVelocity:in-zero turbineyw:out
-!                ct:out a_in:out
-SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, turbineyw&
-& , turbineywb, yawDeg, yaw_degb, rotordiameter, rotordiameterb, vinf, &
-& ct, ctb, a_in, a_inb, ke_in, kd, me, initialwakedisplacement, bd, mu, &
-& au, bu, initialwakeangle, cos_spread, kecorrct, region2ct, kecorrarray&
-& , usewakeangle, adjustinitialwakediamtoyaw, axialindprovided, useaubu&
-& , velocitiesturbinesb, nbdirs)
-  
-!  Hint: nbdirs should be the maximum number of differentiation directions
-  IMPLICIT NONE
-! define precision to be the standard for a double precision ! on local system
-  INTEGER, PARAMETER :: dp=KIND(0.d0)
-! in
-  INTEGER, INTENT(IN) :: nturbines
-  REAL(dp), INTENT(IN) :: kd, initialwakedisplacement, initialwakeangle&
-& , ke_in
-  REAL(dp), INTENT(IN) :: kecorrct, region2ct, bd, cos_spread, vinf, &
-& kecorrarray
-  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: yawDeg, ct, a_in, &
-& turbinexw, turbineyw
-  REAL(dp), DIMENSION(nbdirs, nturbines), intent(out) :: yaw_degb, ctb, a_inb, &
-& turbinexwb, turbineywb
-  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: rotordiameter
-  REAL(dp), DIMENSION(nbdirs, nturbines), intent(out) :: rotordiameterb
-  REAL(dp), DIMENSION(3), INTENT(IN) :: me, mu
-  REAL(dp), INTENT(IN) :: au, bu
-  LOGICAL, INTENT(IN) :: usewakeangle, adjustinitialwakediamtoyaw, &
-& axialindprovided, useaubu
-! local (General)
-  REAL(dp), DIMENSION(nturbines) :: ke, yaw
-  REAL(dp), DIMENSION(nbdirs, nturbines) :: keb, yawb
-  REAL(dp) :: deltax
-  REAL(dp), DIMENSION(nbdirs) :: deltaxb
-  INTEGER :: turb, turbi, zone
-  REAL(dp), PARAMETER :: pi=3.141592653589793_dp
-! local (Wake centers and diameters)
-! in rotor diameters    
-  REAL(dp) :: spline_bound
-  REAL(dp) :: wakeangleinit, zeroloc
-  REAL(dp), DIMENSION(nbdirs) :: wakeangleinitb, zerolocb
-  REAL(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
-  REAL(dp), DIMENSION(nbdirs) :: factorb, displacementb, xb, x1b, x2b&
-& , y1b, dy1b
-  REAL(dp) :: wakediameter0
-  REAL(dp), DIMENSION(nbdirs) :: wakediameter0b
-  REAL(dp), DIMENSION(nturbines, nturbines, 3) :: wakediameterst_mat
-  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
-& wakediameterst_matb
-  REAL(dp), DIMENSION(nturbines, nturbines) :: wakecentersyt_mat
-  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines) :: &
-& wakecentersyt_matb
-! local (Wake overlap)
-  REAL(dp) :: rmax
-  REAL(dp), DIMENSION(nbdirs) :: rmaxb
-  REAL(dp), DIMENSION(nturbines, nturbines, 3) :: wakeoverlaptrel_mat
-  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
-& wakeoverlaptrel_matb
-! local (Velocity)
-  REAL(dp), DIMENSION(nturbines) :: a, kearray
-  REAL(dp), DIMENSION(nbdirs, nturbines) :: ab, kearrayb
-  REAL(dp), DIMENSION(3) :: mmu
-  REAL(dp), DIMENSION(nbdirs, 3) :: mmub
-  REAL(dp) :: s, cosfac, wakeeffcoeff, wakeeffcoeffperzone
-  REAL(dp), DIMENSION(nbdirs) :: sb, cosfacb, wakeeffcoeffb, &
-& wakeeffcoeffperzoneb
-! out
-  REAL(dp), DIMENSION(nturbines) :: wtVelocity
-  REAL(dp), DIMENSION(nbdirs, nturbines) :: velocitiesturbinesb
-  REAL(dp), DIMENSION(nturbines*nturbines) :: &
-& wakecentersyt_vec
-  REAL(dp), DIMENSION(3*nturbines*nturbines) :: &
-& wakediameterst_vec
-  REAL(dp), DIMENSION(3*nturbines*nturbines) :: &
-& wakeoverlaptrel_vec
-  INTRINSIC COS
-  INTRINSIC KIND
-  INTRINSIC SIN
-  INTRINSIC SUM
-  INTRINSIC DABS
-  INTRINSIC SQRT
-  INTEGER :: nd
-  INTEGER :: branch
-  INTEGER :: nbdirs
-  REAL(dp) :: temp3
-  REAL(dp) :: temp2
-  REAL(dp) :: temp1
-  REAL(dp) :: temp0
-  REAL(dp) :: tempb9(nbdirs)
-  REAL(dp) :: tempb8(nbdirs)
-  REAL :: tempb7(nbdirs)
-  REAL(dp) :: tempb6(nbdirs)
-  REAL(dp) :: tempb5(nbdirs)
-  REAL(dp) :: tempb4(nbdirs)
-  REAL(dp) :: tempb3(nbdirs)
-  REAL(dp) :: tempb2(nbdirs)
-  REAL(dp) :: tempb1(nbdirs)
-  REAL(dp) :: tempb0(nbdirs)
-  REAL(dp) :: tempb13(nbdirs)
-  REAL(dp) :: tempb12(nbdirs)
-  REAL(dp) :: tempb11(nbdirs)
-  REAL(dp) :: tempb10(nbdirs)
-  DOUBLE PRECISION :: dabs0b(nbdirs)
-  REAL(dp) :: temp11
-  REAL(dp) :: temp10
-  REAL(dp) :: tempb(nbdirs)
-  DOUBLE PRECISION :: dabs0
-  REAL(dp) :: temp
-  REAL(dp) :: temp9
-  REAL(dp) :: temp8
-  REAL(dp) :: temp7
-  REAL(dp) :: temp6
-  REAL(dp) :: temp5
-  REAL(dp) :: temp4
-!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-  spline_bound = 1.0_dp
-  yaw = yawDeg*pi/180.0_dp
-! calculate y-locations of wake centers in wind ref. frame
-  wakecentersyt_mat = 0.0_dp
-  DO turb=1,nturbines
-    CALL PUSHREAL4ARRAY(wakeangleinit, dp/4)
-    wakeangleinit = 0.5_dp*SIN(yaw(turb))*ct(turb)
-    IF (usewakeangle) wakeangleinit = wakeangleinit + initialwakeangle*&
-&       pi/180.0_dp
-    DO turbi=1,nturbines
-      IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
-        CALL PUSHREAL4ARRAY(deltax, dp/4)
-        deltax = turbinexw(turbi) - turbinexw(turb)
-        factor = 2.0_dp*kd*deltax/rotordiameter(turb) + 1.0_dp
-        wakecentersyt_mat(turbi, turb) = turbineyw(turb)
-        displacement = wakeangleinit*(wakeangleinit*wakeangleinit+&
-&         15.0_dp*factor*factor*factor*factor)/(30.0_dp*kd/rotordiameter&
-&         (turb)*(factor*factor*factor*factor*factor))
-        displacement = displacement - wakeangleinit*(wakeangleinit*&
-&         wakeangleinit+15.0_dp)/(30.0_dp*kd/rotordiameter(turb))
-        wakecentersyt_mat(turbi, turb) = wakecentersyt_mat(turbi, turb) &
-&         + initialwakedisplacement + displacement
-        IF (usewakeangle .EQV. .false.) THEN
-          wakecentersyt_mat(turbi, turb) = wakecentersyt_mat(turbi, turb&
-&           ) + bd*deltax
-          CALL PUSHCONTROL2B(2)
-        ELSE
-          CALL PUSHCONTROL2B(1)
-        END IF
-      ELSE
-        CALL PUSHCONTROL2B(0)
-      END IF
-    END DO
-  END DO
-!adjust k_e to C_T, adjusted to yaw
-  ke = ke_in + kecorrct*(ct-region2ct)
-  wakediameterst_mat = 0.0_dp
-  DO turb=1,nturbines
-    IF (adjustinitialwakediamtoyaw) THEN
-      CALL PUSHREAL4ARRAY(wakediameter0, dp/4)
-      wakediameter0 = rotordiameter(turb)*COS(yaw(turb))
-      CALL PUSHCONTROL1B(1)
-    ELSE
-      CALL PUSHREAL4ARRAY(wakediameter0, dp/4)
-      wakediameter0 = rotordiameter(turb)
-      CALL PUSHCONTROL1B(0)
-    END IF
-    DO turbi=1,nturbines
-! turbine separation
-      CALL PUSHREAL4ARRAY(deltax, dp/4)
-      deltax = turbinexw(turbi) - turbinexw(turb)
-! x position of interest
-      x = turbinexw(turbi)
-      CALL PUSHINTEGER4(zone)
-      zone = 1
-! define centerpoint of spline
-      zeroloc = turbinexw(turb) - wakediameter0/(2.0_dp*ke(turb)*me(zone&
-&       ))
-      IF (zeroloc + spline_bound*rotordiameter(turb) .LT. turbinexw(&
-&         turbi)) THEN
-! check this
-        wakediameterst_mat(turbi, turb, zone) = 0.0_dp
-        CALL PUSHCONTROL2B(0)
-      ELSE IF (zeroloc - spline_bound*rotordiameter(turb) .LT. turbinexw&
-&         (turbi)) THEN
-!check this
-!!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
-! position of upwind point
-        x1 = zeroloc - spline_bound*rotordiameter(turb)
-! diameter of upwind point
-        y1 = wakediameter0 + 2.0_dp*ke(turb)*me(zone)*(x1-turbinexw(turb&
-&         ))
-! slope at upwind point
-        dy1 = 2.0_dp*ke(turb)*me(zone)
-! position of downwind point
-        x2 = zeroloc + spline_bound*rotordiameter(turb)
-! diameter at downwind point
-        y2 = 0.0_dp
-! slope at downwind point
-        dy2 = 0.0_dp
-! solve for the wake zone diameter and its derivative w.r.t. the downwind
-! location at the point of interest
-        CALL HERMITE_SPLINE(x, x1, x2, y1, dy1, y2, dy2, &
-&                     wakediameterst_mat(turbi, turb, zone))
-        CALL PUSHCONTROL2B(1)
-      ELSE IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
-        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
-&         ke(turb)*me(zone)*deltax
-        CALL PUSHCONTROL2B(2)
-      ELSE
-        CALL PUSHCONTROL2B(3)
-      END IF
-      IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
-        CALL PUSHINTEGER4(zone)
-        zone = 2
-        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
-&         ke(turb)*me(zone)*deltax
-        zone = 3
-        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
-&         ke(turb)*me(zone)*deltax
-        CALL PUSHCONTROL1B(1)
-      ELSE
-        CALL PUSHCONTROL1B(0)
-      END IF
-    END DO
-  END DO
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Overlap !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! calculate relative overlap
-  CALL CALCOVERLAPAREAS(nturbines, turbinexw, turbineyw, rotordiameter, &
-&                 wakediameterst_mat, wakecentersyt_mat, &
-&                 wakeoverlaptrel_mat)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! convert yaw from degrees to radians
-  CALL PUSHREAL4ARRAY(yaw, dp*nturbines/4)
-  yaw = yawDeg*pi/180.0_dp
-  IF (axialindprovided) THEN
-    a = a_in
-    CALL PUSHCONTROL1B(0)
-  ELSE
-    CALL CTTOAXIALIND(ct, nturbines, a)
-    CALL PUSHCONTROL1B(1)
-  END IF
-! adjust ke to Ct as adjusted to yaw
-  ke = ke_in + kecorrct*(ct-region2ct)
-  DO turb=1,nturbines
-    CALL PUSHREAL4ARRAY(s, dp/4)
-    s = SUM(wakeoverlaptrel_mat(turb, :, 1) + wakeoverlaptrel_mat(turb, &
-&     :, 2))
-    kearray(turb) = ke(turb)*(1+s*kecorrarray)
-  END DO
-! find effective wind speeds at downstream turbines, then predict the power of 
-! downstream turbine    
-  wtVelocity = vinf
-  DO turbi=1,nturbines
-    CALL PUSHREAL4ARRAY(wakeeffcoeff, dp/4)
-    wakeeffcoeff = 0.0_dp
-! find overlap-area weighted effect of each wake zone
-    DO turb=1,nturbines
-      CALL PUSHREAL4ARRAY(wakeeffcoeffperzone, dp/4)
-      wakeeffcoeffperzone = 0.0_dp
-      CALL PUSHREAL4ARRAY(deltax, dp/4)
-      deltax = turbinexw(turbi) - turbinexw(turb)
-      IF (useaubu) THEN
-        CALL PUSHREAL4ARRAY(mmu, dp*3/4)
-        mmu = mu/COS(au*pi/180.0_dp+bu*yaw(turb))
-        CALL PUSHCONTROL1B(0)
-      ELSE
-        CALL PUSHCONTROL1B(1)
-      END IF
-      IF (deltax .GT. 0 .AND. turbi .NE. turb) THEN
-        CALL PUSHINTEGER4(zone)
-        DO zone=1,3
-          rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
-&           rotordiameter(turbi))
-          IF (wakecentersyt_mat(turbi, turb) - turbineyw(turbi) .GE. 0.&
-&         ) THEN
-            CALL PUSHREAL8(dabs0)
-            dabs0 = wakecentersyt_mat(turbi, turb) - turbineyw(turbi)
-            CALL PUSHCONTROL1B(0)
-          ELSE
-            CALL PUSHREAL8(dabs0)
-            dabs0 = -(wakecentersyt_mat(turbi, turb)-turbineyw(turbi))
-            CALL PUSHCONTROL1B(1)
-          END IF
-          CALL PUSHREAL4ARRAY(cosfac, dp/4)
-          cosfac = 0.5_dp*(1.0_dp+COS(pi*dabs0/rmax))
-          IF (useaubu) THEN
-            wakeeffcoeffperzone = wakeeffcoeffperzone + (cosfac*&
-&             rotordiameter(turb)/(rotordiameter(turb)+2.0_dp*kearray(&
-&             turb)*mmu(zone)*deltax))**2*wakeoverlaptrel_mat(turbi, &
-&             turb, zone)
-            CALL PUSHCONTROL1B(1)
-          ELSE
-            wakeeffcoeffperzone = wakeeffcoeffperzone + (cosfac*&
-&             rotordiameter(turb)/(rotordiameter(turb)+2.0_dp*kearray(&
-&             turb)*mu(zone)*deltax))**2*wakeoverlaptrel_mat(turbi, turb&
-&             , zone)
-            CALL PUSHCONTROL1B(0)
-          END IF
-        END DO
-        wakeeffcoeff = wakeeffcoeff + (a(turb)*wakeeffcoeffperzone)**2
-        CALL PUSHCONTROL1B(1)
-      ELSE
-        CALL PUSHCONTROL1B(0)
-      END IF
-    END DO
-    CALL PUSHREAL4ARRAY(wakeeffcoeff, dp/4)
-    wakeeffcoeff = 1.0_dp - 2.0_dp*SQRT(wakeeffcoeff)
-! multiply the inflow speed with the wake coefficients to find effective wind 
-! speed at turbine
-  END DO
-  DO nd=1,nbdirs
-    rotordiameterb(nd, :) = 0.0
-    turbinexwb(nd, :) = 0.0
-    turbineywb(nd, :) = 0.0
-    kearrayb(nd, :) = 0.0
-    yawb(nd, :) = 0.0
-    wakeoverlaptrel_matb(nd, :, :, :) = 0.0
-    wakediameterst_matb(nd, :, :, :) = 0.0
-    wakecentersyt_matb(nd, :, :) = 0.0
-    mmub(nd, :) = 0.0
-    ab(nd, :) = 0.0
-  END DO
-  DO turbi=nturbines,1,-1
-    DO nd=1,nbdirs
-      wakeeffcoeffb(nd) = wtVelocity(turbi)*velocitiesturbinesb(&
-&       nd, turbi)
-      velocitiesturbinesb(nd, turbi) = wakeeffcoeff*velocitiesturbinesb(&
-&       nd, turbi)
-    END DO
-    CALL POPREAL4ARRAY(wakeeffcoeff, dp/4)
-    DO nd=1,nbdirs
-      IF (wakeeffcoeff .EQ. 0.0) THEN
-        wakeeffcoeffb(nd) = 0.0
-      ELSE
-        wakeeffcoeffb(nd) = -(2.0_dp*wakeeffcoeffb(nd)/(2.0*SQRT(&
-&         wakeeffcoeff)))
-      END IF
-    END DO
-    DO turb=nturbines,1,-1
-      CALL POPCONTROL1B(branch)
-      IF (branch .EQ. 0) THEN
-        DO nd=1,nbdirs
-          deltaxb(nd) = 0.0
-        END DO
-      ELSE
-        DO nd=1,nbdirs
-          tempb13(nd) = 2*a(turb)*wakeeffcoeffperzone*wakeeffcoeffb(nd)
-          ab(nd, turb) = ab(nd, turb) + wakeeffcoeffperzone*tempb13(nd)
-          wakeeffcoeffperzoneb(nd) = a(turb)*tempb13(nd)
-        END DO
-        deltax = turbinexw(turbi) - turbinexw(turb)
-        DO nd=1,nbdirs
-          deltaxb(nd) = 0.0
-        END DO
-        DO zone=3,1,-1
-          CALL POPCONTROL1B(branch)
-          IF (branch .EQ. 0) THEN
-            temp11 = 2.0_dp*mu(zone)
-            temp8 = rotordiameter(turb) + temp11*kearray(turb)*deltax
-            temp10 = wakeoverlaptrel_mat(turbi, turb, zone)
-            temp9 = cosfac**2*rotordiameter(turb)**2
-            DO nd=1,nbdirs
-              tempb11(nd) = wakeeffcoeffperzoneb(nd)/temp8**2
-              tempb12(nd) = -(temp9*temp10*2*tempb11(nd)/temp8)
-              cosfacb(nd) = rotordiameter(turb)**2*temp10*2*cosfac*&
-&               tempb11(nd)
-              rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
-&               tempb12(nd) + cosfac**2*temp10*2*rotordiameter(turb)*&
-&               tempb11(nd)
-              wakeoverlaptrel_matb(nd, turbi, turb, zone) = &
-&               wakeoverlaptrel_matb(nd, turbi, turb, zone) + temp9*&
-&               tempb11(nd)
-              kearrayb(nd, turb) = kearrayb(nd, turb) + temp11*deltax*&
-&               tempb12(nd)
-              deltaxb(nd) = deltaxb(nd) + temp11*kearray(turb)*tempb12(&
-&               nd)
-            END DO
-          ELSE
-            temp5 = rotordiameter(turb) + 2.0_dp*kearray(turb)*deltax*&
-&             mmu(zone)
-            temp7 = wakeoverlaptrel_mat(turbi, turb, zone)
-            temp6 = cosfac**2*rotordiameter(turb)**2
-            DO nd=1,nbdirs
-              tempb8(nd) = wakeeffcoeffperzoneb(nd)/temp5**2
-              tempb9(nd) = -(temp6*temp7*2*tempb8(nd)/temp5)
-              tempb10(nd) = 2.0_dp*mmu(zone)*tempb9(nd)
-              cosfacb(nd) = rotordiameter(turb)**2*temp7*2*cosfac*tempb8&
-&               (nd)
-              rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
-&               tempb9(nd) + cosfac**2*temp7*2*rotordiameter(turb)*&
-&               tempb8(nd)
-              wakeoverlaptrel_matb(nd, turbi, turb, zone) = &
-&               wakeoverlaptrel_matb(nd, turbi, turb, zone) + temp6*&
-&               tempb8(nd)
-              kearrayb(nd, turb) = kearrayb(nd, turb) + deltax*tempb10(&
-&               nd)
-              deltaxb(nd) = deltaxb(nd) + kearray(turb)*tempb10(nd)
-              mmub(nd, zone) = mmub(nd, zone) + 2.0_dp*kearray(turb)*&
-&               deltax*tempb9(nd)
-            END DO
-          END IF
-          rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
-&           rotordiameter(turbi))
-          CALL POPREAL4ARRAY(cosfac, dp/4)
-          DO nd=1,nbdirs
-            tempb7(nd) = -(pi*SIN(pi*(dabs0/rmax))*0.5_dp*cosfacb(nd)/&
-&             rmax)
-            dabs0b(nd) = tempb7(nd)
-            rmaxb(nd) = -(dabs0*tempb7(nd)/rmax)
-          END DO
-          CALL POPCONTROL1B(branch)
-          IF (branch .EQ. 0) THEN
-            CALL POPREAL8(dabs0)
-            DO nd=1,nbdirs
-              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
-&               nd, turbi, turb) + dabs0b(nd)
-              turbineywb(nd, turbi) = turbineywb(nd, turbi) - dabs0b(nd)
-            END DO
-          ELSE
-            CALL POPREAL8(dabs0)
-            DO nd=1,nbdirs
-              turbineywb(nd, turbi) = turbineywb(nd, turbi) + dabs0b(nd)
-              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
-&               nd, turbi, turb) - dabs0b(nd)
-            END DO
-          END IF
-          DO nd=1,nbdirs
-            tempb6(nd) = cos_spread*0.5_dp*rmaxb(nd)
-            wakediameterst_matb(nd, turbi, turb, 3) = &
-&             wakediameterst_matb(nd, turbi, turb, 3) + tempb6(nd)
-            rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + &
-&             tempb6(nd)
-          END DO
-        END DO
-        CALL POPINTEGER4(zone)
-      END IF
-      CALL POPCONTROL1B(branch)
-      IF (branch .EQ. 0) THEN
-        CALL POPREAL4ARRAY(mmu, dp*3/4)
-        temp4 = au*pi/180.0_dp + bu*yaw(turb)
-        temp3 = COS(temp4)
-        DO nd=1,nbdirs
-          yawb(nd, turb) = yawb(nd, turb) - SIN(temp4)*bu*SUM(-(mu*mmub(&
-&           nd, :)/temp3))/temp3
-        END DO
-        DO nd=1,nbdirs
-          mmub(nd, :) = 0.0
-        END DO
-      END IF
-      CALL POPREAL4ARRAY(deltax, dp/4)
-      CALL POPREAL4ARRAY(wakeeffcoeffperzone, dp/4)
-      DO nd=1,nbdirs
-        turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd)
-        turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
-      END DO
-    END DO
-    CALL POPREAL4ARRAY(wakeeffcoeff, dp/4)
-  END DO
-  DO nd=1,nbdirs
-    keb(nd, :) = 0.0
-  END DO
-  DO turb=nturbines,1,-1
-    DO nd=1,nbdirs
-      keb(nd, turb) = keb(nd, turb) + (kecorrarray*s+1)*kearrayb(nd, &
-&       turb)
-      sb(nd) = ke(turb)*kecorrarray*kearrayb(nd, turb)
-      kearrayb(nd, turb) = 0.0
-      wakeoverlaptrel_matb(nd, turb, :, 1) = wakeoverlaptrel_matb(nd, &
-&       turb, :, 1) + sb(nd)
-      wakeoverlaptrel_matb(nd, turb, :, 2) = wakeoverlaptrel_matb(nd, &
-&       turb, :, 2) + sb(nd)
-    END DO
-    CALL POPREAL4ARRAY(s, dp/4)
-  END DO
-  DO nd=1,nbdirs
-    ctb(nd, :) = 0.0
-    ctb(nd, :) = kecorrct*keb(nd, :)
-  END DO
-  CALL POPCONTROL1B(branch)
-  IF (branch .EQ. 0) THEN
-    DO nd=1,nbdirs
-      a_inb(nd, :) = 0.0
-      a_inb(nd, :) = ab(nd, :)
-    END DO
-  ELSE
-    CALL CTTOAXIALIND_BV(ct, ctb, nturbines, a, ab, nbdirs)
-    DO nd=1,nbdirs
-      a_inb(nd, :) = 0.0
-    END DO
-  END IF
-  DO nd=1,nbdirs
-    yaw_degb(nd, :) = 0.0
-    yaw_degb(nd, :) = pi*yawb(nd, :)/180.0_dp
-  END DO
-  CALL POPREAL4ARRAY(yaw, dp*nturbines/4)
-  CALL CALCOVERLAPAREAS_BV(nturbines, turbinexw, turbineyw, turbineywb, &
-&                    rotordiameter, rotordiameterb, wakediameterst_mat, &
-&                    wakediameterst_matb, wakecentersyt_mat, &
-&                    wakecentersyt_matb, wakeoverlaptrel_mat, &
-&                    wakeoverlaptrel_matb, nbdirs)
-  ke = ke_in + kecorrct*(ct-region2ct)
-  DO nd=1,nbdirs
-    yawb(nd, :) = 0.0
-    keb(nd, :) = 0.0
-  END DO
-  DO turb=nturbines,1,-1
-    DO nd=1,nbdirs
-      wakediameter0b(nd) = 0.0
-    END DO
-    DO turbi=nturbines,1,-1
-      CALL POPCONTROL1B(branch)
-      IF (branch .EQ. 0) THEN
-        DO nd=1,nbdirs
-          deltaxb(nd) = 0.0
-        END DO
-      ELSE
-        deltax = turbinexw(turbi) - turbinexw(turb)
-        zone = 3
-        DO nd=1,nbdirs
-          tempb4(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
-&           turb, zone)
-          wakediameter0b(nd) = wakediameter0b(nd) + wakediameterst_matb(&
-&           nd, turbi, turb, zone)
-          wakediameterst_matb(nd, turbi, turb, zone) = 0.0
-        END DO
-        zone = 2
-        DO nd=1,nbdirs
-          tempb5(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
-&           turb, zone)
-          keb(nd, turb) = keb(nd, turb) + deltax*tempb5(nd) + deltax*&
-&           tempb4(nd)
-          deltaxb(nd) = ke(turb)*tempb5(nd) + ke(turb)*tempb4(nd)
-          wakediameter0b(nd) = wakediameter0b(nd) + wakediameterst_matb(&
-&           nd, turbi, turb, zone)
-          wakediameterst_matb(nd, turbi, turb, zone) = 0.0
-        END DO
-        CALL POPINTEGER4(zone)
-      END IF
-      CALL POPCONTROL2B(branch)
-      IF (branch .LT. 2) THEN
-        IF (branch .EQ. 0) THEN
-          DO nd=1,nbdirs
-            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
-          END DO
-          DO nd=1,nbdirs
-            xb(nd) = 0.0
-            zerolocb(nd) = 0.0
-          END DO
-        ELSE
-          zone = 1
-          dy1 = 2.0_dp*ke(turb)*me(zone)
-          zeroloc = turbinexw(turb) - wakediameter0/(2.0_dp*ke(turb)*me(&
-&           zone))
-          x1 = zeroloc - spline_bound*rotordiameter(turb)
-          y1 = wakediameter0 + 2.0_dp*ke(turb)*me(zone)*(x1-turbinexw(&
-&           turb))
-          dy2 = 0.0_dp
-          y2 = 0.0_dp
-          x = turbinexw(turbi)
-          x2 = zeroloc + spline_bound*rotordiameter(turb)
-          CALL HERMITE_SPLINE_BV(x, xb, x1, x1b, x2, x2b, y1, y1b, dy1, &
-&                          dy1b, y2, dy2, wakediameterst_mat(turbi, turb&
-&                          , zone), wakediameterst_matb(1, turbi, turb, &
-&                          zone), nbdirs)
-          DO nd=1,nbdirs
-            tempb2(nd) = me(zone)*2.0_dp*y1b(nd)
-            x1b(nd) = x1b(nd) + ke(turb)*tempb2(nd)
-            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
-            zerolocb(nd) = x1b(nd) + x2b(nd)
-            rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
-&             spline_bound*x2b(nd) - spline_bound*x1b(nd)
-            keb(nd, turb) = keb(nd, turb) + (x1-turbinexw(turb))*tempb2(&
-&             nd) + me(zone)*2.0_dp*dy1b(nd)
-            wakediameter0b(nd) = wakediameter0b(nd) + y1b(nd)
-            turbinexwb(nd, turb) = turbinexwb(nd, turb) - ke(turb)*&
-&             tempb2(nd)
-          END DO
-        END IF
-      ELSE
-        IF (branch .EQ. 2) THEN
-          DO nd=1,nbdirs
-            tempb3(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
-&             turb, zone)
-            wakediameter0b(nd) = wakediameter0b(nd) + &
-&             wakediameterst_matb(nd, turbi, turb, zone)
-            keb(nd, turb) = keb(nd, turb) + deltax*tempb3(nd)
-            deltaxb(nd) = deltaxb(nd) + ke(turb)*tempb3(nd)
-            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
-          END DO
-        END IF
-        DO nd=1,nbdirs
-          xb(nd) = 0.0
-          zerolocb(nd) = 0.0
-        END DO
-      END IF
-      temp2 = 2.0_dp*me(zone)*ke(turb)
-      DO nd=1,nbdirs
-        turbinexwb(nd, turb) = turbinexwb(nd, turb) + zerolocb(nd)
-        wakediameter0b(nd) = wakediameter0b(nd) - zerolocb(nd)/temp2
-        keb(nd, turb) = keb(nd, turb) + wakediameter0*2.0_dp*me(zone)*&
-&         zerolocb(nd)/temp2**2
-        turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd) + xb&
-&         (nd)
-        turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
-      END DO
-      CALL POPINTEGER4(zone)
-      CALL POPREAL4ARRAY(deltax, dp/4)
-    END DO
-    CALL POPCONTROL1B(branch)
-    IF (branch .EQ. 0) THEN
-      CALL POPREAL4ARRAY(wakediameter0, dp/4)
-      yaw = yawDeg*pi/180.0_dp
-      DO nd=1,nbdirs
-        rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
-&         wakediameter0b(nd)
-      END DO
-    ELSE
-      yaw = yawDeg*pi/180.0_dp
-      CALL POPREAL4ARRAY(wakediameter0, dp/4)
-      DO nd=1,nbdirs
-        rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + COS(yaw(&
-&         turb))*wakediameter0b(nd)
-        yawb(nd, turb) = yawb(nd, turb) - rotordiameter(turb)*SIN(yaw(&
-&         turb))*wakediameter0b(nd)
-      END DO
-    END IF
-  END DO
-  DO nd=1,nbdirs
-    ctb(nd, :) = ctb(nd, :) + kecorrct*keb(nd, :)
-  END DO
-  DO turb=nturbines,1,-1
-    DO nd=1,nbdirs
-      wakeangleinitb(nd) = 0.0
-    END DO
-    DO turbi=nturbines,1,-1
-      CALL POPCONTROL2B(branch)
-      IF (branch .NE. 0) THEN
-        IF (branch .EQ. 1) THEN
-          DO nd=1,nbdirs
-            deltaxb(nd) = 0.0
-          END DO
-        ELSE
-          deltax = turbinexw(turbi) - turbinexw(turb)
-          DO nd=1,nbdirs
-            deltaxb(nd) = bd*wakecentersyt_matb(nd, turbi, turb)
-          END DO
-        END IF
-        factor = 2.0_dp*kd*deltax/rotordiameter(turb) + 1.0_dp
-        temp1 = 30.0_dp*kd*factor**5
-        temp0 = wakeangleinit*rotordiameter(turb)
-        temp = wakeangleinit**2 + 15.0_dp*factor**4
-        DO nd=1,nbdirs
-          displacementb(nd) = wakecentersyt_matb(nd, turbi, turb)
-          tempb(nd) = -((wakeangleinit**2+15.0_dp)*displacementb(nd)/(&
-&           30.0_dp*kd))
-          tempb0(nd) = displacementb(nd)/temp1
-          wakeangleinitb(nd) = wakeangleinitb(nd) + (temp*rotordiameter(&
-&           turb)+temp0*2*wakeangleinit)*tempb0(nd) + rotordiameter(turb&
-&           )*tempb(nd) - wakeangleinit**2*rotordiameter(turb)*2*&
-&           displacementb(nd)/(30.0_dp*kd)
-          factorb(nd) = (15.0_dp*temp0*4*factor**3-30.0_dp*kd*temp*temp0&
-&           *5*factor**4/temp1)*tempb0(nd)
-          turbineywb(nd, turb) = turbineywb(nd, turb) + &
-&           wakecentersyt_matb(nd, turbi, turb)
-          wakecentersyt_matb(nd, turbi, turb) = 0.0
-          tempb1(nd) = kd*2.0_dp*factorb(nd)/rotordiameter(turb)
-          rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + temp*&
-&           wakeangleinit*tempb0(nd) - deltax*tempb1(nd)/rotordiameter(&
-&           turb) + wakeangleinit*tempb(nd)
-          deltaxb(nd) = deltaxb(nd) + tempb1(nd)
-          turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd)
-          turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
-        END DO
-        CALL POPREAL4ARRAY(deltax, dp/4)
-      END IF
-    END DO
-    CALL POPREAL4ARRAY(wakeangleinit, dp/4)
-    DO nd=1,nbdirs
-      yawb(nd, turb) = yawb(nd, turb) + ct(turb)*0.5_dp*COS(yaw(turb))*&
-&       wakeangleinitb(nd)
-      ctb(nd, turb) = ctb(nd, turb) + 0.5_dp*SIN(yaw(turb))*&
-&       wakeangleinitb(nd)
-    END DO
-  END DO
-  DO nd=1,nbdirs
-    yaw_degb(nd, :) = yaw_degb(nd, :) + pi*yawb(nd, :)/180.0_dp
-  END DO
-  DO nd=1,nbdirs
-    velocitiesturbinesb(nd, :) = 0.0
-  END DO
-END SUBROUTINE FLORIS_BV
-
 !  Differentiation of hermite_spline in reverse (adjoint) mode:
 !   gradient     of useful results: y
 !   with respect to varying inputs: x x0 x1 dy0 y0
@@ -1358,6 +676,7 @@ END SUBROUTINE FLORIS_BV
 ! discontinuity at the hub of each turbine. The discontinuity only presents issues if
 ! turbines are place within 1E-15 * rotor diameter of one another, which is extremely 
 ! unlikely during optimization if the user does not explicitly place them there.
+! Anywhere marked with TODO has been added/modified for FLORIS 3D
 SUBROUTINE HERMITE_SPLINE_BV(x, xb, x0, x0b, x1, x1b, y0, y0b, dy0, dy0b&
 & , y1, dy1, y, yb, nbdirs)
   
@@ -1539,15 +858,27 @@ SUBROUTINE HERMITE_SPLINE_BV(x, xb, x0, x0b, x1, x1b, y0, y0b, dy0, dy0b&
   END DO
 END SUBROUTINE HERMITE_SPLINE_BV
 
+
+
+
+
+
+
+
+
+!        Generated by TAPENADE     (INRIA, Ecuador team)
+!  Tapenade 3.11 (r5902M) - 15 Dec 2015 09:00
+!
 !  Differentiation of calcoverlapareas in reverse (adjoint) mode:
 !   gradient     of useful results: rotordiameter turbiney wakeoverlaptrel_mat
-!                wakediameters wakecenters
-!   with respect to varying inputs: rotordiameter turbiney wakediameters
-!                wakecenters
+!                wakediameters wakecentersyt
+!   with respect to varying inputs: rotordiameter turbiney turbinez
+!                wakediameters wakecentersyt wakecenterszt
+!TODO
 SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
-& , rotordiameter, rotordiameterb, wakediameters, wakediametersb, &
-& wakecenters, wakecentersb, wakeoverlaptrel_mat, wakeoverlaptrel_matb, &
-& nbdirs)
+& , turbinez, turbinezb, rotordiameter, rotordiameterb, wakediameters, &
+& wakediametersb, wakecentersyt, wakecentersytb, wakecenterszt, &
+& wakecentersztb, wakeoverlaptrel_mat, wakeoverlaptrel_matb, nbdirs)
   
 !  Hint: nbdirs should be the maximum number of differentiation directions
   IMPLICIT NONE
@@ -1562,15 +893,20 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
   INTEGER, PARAMETER :: dp=KIND(0.d0)
 ! in
   INTEGER, INTENT(IN) :: nturbines
+!TODO
   REAL(dp), DIMENSION(nturbines), INTENT(IN) :: turbinex, turbiney, &
-& rotordiameter
-  REAL(dp), DIMENSION(nbdirs, nturbines) :: turbineyb, rotordiameterb
+& turbinez, rotordiameter
+  REAL(dp), DIMENSION(nbdirs, nturbines) :: turbineyb, turbinezb, &
+& rotordiameterb
   REAL(dp), DIMENSION(nturbines, nturbines, 3), INTENT(IN) :: &
 & wakediameters
   REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
 & wakediametersb
-  REAL(dp), DIMENSION(nturbines, nturbines), INTENT(IN) :: wakecenters
-  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines) :: wakecentersb
+!TODO
+  REAL(dp), DIMENSION(nturbines, nturbines), INTENT(IN) :: wakecentersyt&
+& , wakecenterszt
+  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines) :: wakecentersytb&
+& , wakecentersztb
 ! out    
   REAL(dp), DIMENSION(nturbines, nturbines, 3) :: wakeoverlaptrel_mat
   REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
@@ -1584,15 +920,20 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
   REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
 & wakeoverlapb
   INTRINSIC KIND
-  INTRINSIC ABS
   INTRINSIC SQRT
+  INTRINSIC ABS
   INTRINSIC DACOS
   INTEGER :: nd
   INTEGER :: branch
   INTEGER :: nbdirs
+  REAL(dp) :: temp3
+  REAL(dp) :: temp2
   REAL(dp) :: temp1
   REAL(dp) :: temp0
-  REAL(dp) :: tempb2(nbdirs, nturbines, 3)
+  REAL(dp) :: tempb5(nbdirs, nturbines, 3)
+  REAL(dp) :: tempb4(nbdirs)
+  REAL(dp) :: tempb3(nbdirs)
+  REAL(dp) :: tempb2(nbdirs)
   REAL(dp) :: tempb1(nbdirs)
   REAL(dp) :: tempb0(nbdirs)
   REAL(dp) :: tempb(nbdirs)
@@ -1601,9 +942,10 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
   DO turb=1,nturbines
     DO turbi=1,nturbines
       IF (turbinex(turbi) .GT. turbinex(turb)) THEN
-! distance between wake center and rotor center
+! distance between wake center and rotor center !TODO
         CALL PUSHREAL4ARRAY(ovdyd, dp/4)
-        ovdyd = wakecenters(turbi, turb) - turbiney(turbi)
+        ovdyd = SQRT((wakecentersyt(turbi, turb)-turbiney(turbi))**2 + (&
+&         wakecenterszt(turbi, turb)-turbinez(turbi))**2)
 ! rotor diameter
         CALL PUSHREAL4ARRAY(ovr, dp/4)
         ovr = rotordiameter(turbi)/2
@@ -1675,14 +1017,14 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
   END DO
   wakeoverlaptrel_mat = wakeoverlap
   DO turbi=nturbines,1,-1
-    temp1 = pi*rotordiameter(turbi)**2
+    temp3 = pi*rotordiameter(turbi)**2
     DO nd=1,nbdirs
-      tempb2(nd, :, :) = 4.0_dp*wakeoverlaptrel_matb(nd, turbi, :, :)/&
-&       temp1
+      tempb5(nd, :, :) = 4.0_dp*wakeoverlaptrel_matb(nd, turbi, :, :)/&
+&       temp3
       rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + pi*2*&
 &       rotordiameter(turbi)*SUM(-(wakeoverlaptrel_mat(turbi, :, :)*&
-&       tempb2(nd, :, :)/temp1))
-      wakeoverlaptrel_matb(nd, turbi, :, :) = tempb2(nd, :, :)
+&       tempb5(nd, :, :)/temp3))
+      wakeoverlaptrel_matb(nd, turbi, :, :) = tempb5(nd, :, :)
     END DO
   END DO
   DO nd=1,nbdirs
@@ -1698,6 +1040,10 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
 &         , 2) - wakeoverlapb(nd, turbi, turb, 3)
       END DO
     END DO
+  END DO
+  DO nd=1,nbdirs
+    turbinezb(nd, :) = 0.0
+    wakecentersztb(nd, :, :) = 0.0
   END DO
   DO turb=nturbines,1,-1
     DO turbi=nturbines,1,-1
@@ -1741,27 +1087,27 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
             END DO
           ELSE
             ovrr = wakediameters(turbi, turb, zone)/2.0_dp
-            temp = ovl/ovrr
-            temp0 = (ovdyd-ovl)/ovr
+            temp1 = ovl/ovrr
+            temp2 = (ovdyd-ovl)/ovr
             DO nd=1,nbdirs
-              IF (temp .EQ. 1.0 .OR. temp .EQ. (-1.0)) THEN
-                tempb0(nd) = 0.0
+              IF (temp1 .EQ. 1.0 .OR. temp1 .EQ. (-1.0)) THEN
+                tempb3(nd) = 0.0
               ELSE
-                tempb0(nd) = -(ovrr*wakeoverlapb(nd, turbi, turb, zone)/&
-&                 SQRT(1.D0-temp**2))
+                tempb3(nd) = -(ovrr*wakeoverlapb(nd, turbi, turb, zone)/&
+&                 SQRT(1.D0-temp1**2))
               END IF
-              IF (temp0 .EQ. 1.0 .OR. temp0 .EQ. (-1.0)) THEN
-                tempb1(nd) = 0.0
+              IF (temp2 .EQ. 1.0 .OR. temp2 .EQ. (-1.0)) THEN
+                tempb4(nd) = 0.0
               ELSE
-                tempb1(nd) = -(ovr*wakeoverlapb(nd, turbi, turb, zone)/&
-&                 SQRT(1.D0-temp0**2))
+                tempb4(nd) = -(ovr*wakeoverlapb(nd, turbi, turb, zone)/&
+&                 SQRT(1.D0-temp2**2))
               END IF
-              ovrrb(nd) = DACOS(temp)*2*ovrr*wakeoverlapb(nd, turbi, &
-&               turb, zone) - temp*tempb0(nd)
-              ovlb(nd) = tempb0(nd) - tempb1(nd)
-              ovrb(nd) = ovrb(nd) + DACOS(temp0)*2*ovr*wakeoverlapb(nd, &
-&               turbi, turb, zone) - temp0*tempb1(nd)
-              ovdydb(nd) = ovdydb(nd) + tempb1(nd) - ovz*wakeoverlapb(nd&
+              ovrrb(nd) = DACOS(temp1)*2*ovrr*wakeoverlapb(nd, turbi, &
+&               turb, zone) - temp1*tempb3(nd)
+              ovlb(nd) = tempb3(nd) - tempb4(nd)
+              ovrb(nd) = ovrb(nd) + DACOS(temp2)*2*ovr*wakeoverlapb(nd, &
+&               turbi, turb, zone) - temp2*tempb4(nd)
+              ovdydb(nd) = ovdydb(nd) + tempb4(nd) - ovz*wakeoverlapb(nd&
 &               , turbi, turb, zone)
               ovzb(nd) = -(ovdyd*wakeoverlapb(nd, turbi, turb, zone))
               wakeoverlapb(nd, turbi, turb, zone) = 0.0
@@ -1796,11 +1142,11 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
           IF (branch .EQ. 0) THEN
             CALL POPREAL4ARRAY(ovl, dp/4)
             DO nd=1,nbdirs
-              tempb(nd) = ovlb(nd)/(2.0_dp*ovdyd)
-              ovrrb(nd) = ovrrb(nd) + 2*ovrr*tempb(nd)
-              ovrb(nd) = ovrb(nd) - 2*ovr*tempb(nd)
+              tempb2(nd) = ovlb(nd)/(2.0_dp*ovdyd)
+              ovrrb(nd) = ovrrb(nd) + 2*ovrr*tempb2(nd)
+              ovrb(nd) = ovrb(nd) - 2*ovr*tempb2(nd)
               ovdydb(nd) = ovdydb(nd) + (2*ovdyd-(ovrr**2-ovr**2+ovdyd**&
-&               2)/ovdyd)*tempb(nd)
+&               2)/ovdyd)*tempb2(nd)
             END DO
           ELSE
             CALL POPREAL4ARRAY(ovl, dp/4)
@@ -1821,18 +1167,40 @@ SUBROUTINE CALCOVERLAPAREAS_BV(nturbines, turbinex, turbiney, turbineyb&
         END DO
         CALL POPREAL4ARRAY(ovr, dp/4)
         CALL POPREAL4ARRAY(ovdyd, dp/4)
+        temp0 = wakecenterszt(turbi, turb) - turbinez(turbi)
+        temp = wakecentersyt(turbi, turb) - turbiney(turbi)
         DO nd=1,nbdirs
           rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + ovrb(&
 &           nd)/2
-          wakecentersb(nd, turbi, turb) = wakecentersb(nd, turbi, turb) &
-&           + ovdydb(nd)
-          turbineyb(nd, turbi) = turbineyb(nd, turbi) - ovdydb(nd)
+          IF (temp**2 + temp0**2 .EQ. 0.0) THEN
+            tempb(nd) = 0.0
+          ELSE
+            tempb(nd) = ovdydb(nd)/(2.0*SQRT(temp**2+temp0**2))
+          END IF
+          tempb0(nd) = 2*temp*tempb(nd)
+          tempb1(nd) = 2*temp0*tempb(nd)
+          wakecentersytb(nd, turbi, turb) = wakecentersytb(nd, turbi, &
+&           turb) + tempb0(nd)
+          turbineyb(nd, turbi) = turbineyb(nd, turbi) - tempb0(nd)
+          wakecentersztb(nd, turbi, turb) = wakecentersztb(nd, turbi, &
+&           turb) + tempb1(nd)
+          turbinezb(nd, turbi) = turbinezb(nd, turbi) - tempb1(nd)
         END DO
       END IF
     END DO
   END DO
 END SUBROUTINE CALCOVERLAPAREAS_BV
 
+
+
+
+
+
+
+
+!        Generated by TAPENADE     (INRIA, Ecuador team)
+!  Tapenade 3.11 (r5902M) - 15 Dec 2015 09:00
+!
 !  Differentiation of cttoaxialind in reverse (adjoint) mode:
 !   gradient     of useful results: axial_induction ct
 !   with respect to varying inputs: ct
@@ -1883,3 +1251,742 @@ SUBROUTINE CTTOAXIALIND_BV(ct, ctb, nturbines, axial_induction, &
     END IF
   END DO
 END SUBROUTINE CTTOAXIALIND_BV
+
+
+
+
+
+
+
+
+
+!        Generated by TAPENADE     (INRIA, Ecuador team)
+!  Tapenade 3.11 (r5902M) - 15 Dec 2015 09:00
+!
+!  Differentiation of floris in reverse (adjoint) mode:
+!   gradient     of useful results: wtvelocity
+!   with respect to varying inputs: rotordiameter turbinez turbinexw
+!                wtvelocity turbineyw yawdeg ct a_in
+!   RW status of diff variables: rotordiameter:out turbinez:out
+!                turbinexw:out wtvelocity:in-zero turbineyw:out
+!                yawdeg:out ct:out a_in:out
+!TODO
+SUBROUTINE FLORIS_BV(nturbines, turbinexw, turbinexwb, &
+& turbineyw, turbineywb, turbinez, turbinezb, yawdeg, yawdegb, &
+& rotordiameter, rotordiameterb, vinf, ct, ctb, a_in, a_inb, ke_in, kd, &
+& me, initialwakedisplacement, bd, mu, au, bu, initialwakeangle, &
+& cos_spread, kecorrct, region2ct, kecorrarray, usewakeangle, &
+& adjustinitialwakediamtoyaw, axialindprovided, useaubu, &
+& wtvelocityb, nbdirs)
+  
+!  Hint: nbdirs should be the maximum number of differentiation directions
+  IMPLICIT NONE
+! define precision to be the standard for a double precision ! on local system
+  INTEGER, PARAMETER :: dp=KIND(0.d0)
+! in
+  INTEGER, INTENT(IN) :: nturbines
+  REAL(dp), INTENT(IN) :: kd, initialwakedisplacement, initialwakeangle&
+& , ke_in
+  REAL(dp), INTENT(IN) :: kecorrct, region2ct, bd, cos_spread, vinf, &
+& kecorrarray
+!TODO
+  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: yawdeg, ct, a_in, &
+& turbinexw, turbineyw, turbinez
+  REAL(dp), DIMENSION(nbdirs, nturbines), intent(out) :: yawdegb, ctb, a_inb, &
+& turbinexwb, turbineywb, turbinezb !TODO
+  REAL(dp), DIMENSION(nturbines), INTENT(IN) :: rotordiameter
+  REAL(dp), DIMENSION(nbdirs, nturbines), intent(out) :: rotordiameterb
+  REAL(dp), DIMENSION(3), INTENT(IN) :: me, mu
+  REAL(dp), INTENT(IN) :: au, bu
+  LOGICAL, INTENT(IN) :: usewakeangle, adjustinitialwakediamtoyaw, &
+& axialindprovided, useaubu
+! local (General)
+  REAL(dp), DIMENSION(nturbines) :: ke, yaw
+  REAL(dp), DIMENSION(nbdirs, nturbines) :: keb, yawb
+  REAL(dp) :: deltax
+  REAL(dp), DIMENSION(nbdirs) :: deltaxb
+  INTEGER :: turb, turbi, zone
+  REAL(dp), PARAMETER :: pi=3.141592653589793_dp
+! local (Wake centers and diameters)
+! in rotor diameters    
+  REAL(dp) :: spline_bound
+  REAL(dp) :: wakeangleinit, zeroloc
+  REAL(dp), DIMENSION(nbdirs) :: wakeangleinitb, zerolocb
+  REAL(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
+  REAL(dp), DIMENSION(nbdirs) :: factorb, displacementb, xb, x1b, x2b&
+& , y1b, dy1b
+  REAL(dp) :: wakediameter0
+  REAL(dp), DIMENSION(nbdirs) :: wakediameter0b
+  REAL(dp), DIMENSION(nturbines, nturbines, 3) :: wakediameterst_mat
+  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
+& wakediameterst_matb
+!TODO
+  REAL(dp), DIMENSION(nturbines, nturbines) :: wakecentersyt_mat, &
+& wakecenterszt_mat
+  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines) :: &
+& wakecentersyt_matb, wakecenterszt_matb
+! local (Wake overlap)
+  REAL(dp) :: rmax
+  REAL(dp), DIMENSION(nbdirs) :: rmaxb
+  REAL(dp), DIMENSION(nturbines, nturbines, 3) :: wakeoverlaptrel_mat
+  REAL(dp), DIMENSION(nbdirs, nturbines, nturbines, 3) :: &
+& wakeoverlaptrel_matb
+! local (Velocity)
+  REAL(dp), DIMENSION(nturbines) :: a, kearray
+  REAL(dp), DIMENSION(nbdirs, nturbines) :: ab, kearrayb
+  REAL(dp), DIMENSION(3) :: mmu
+  REAL(dp), DIMENSION(nbdirs, 3) :: mmub
+  REAL(dp) :: s, cosfac, wakeeffcoeff, wakeeffcoeffperzone
+  REAL(dp), DIMENSION(nbdirs) :: sb, cosfacb, wakeeffcoeffb, &
+& wakeeffcoeffperzoneb
+! visualization
+  REAL(dp) :: deltay, deltaz, radiusloc, axialindandnearrotor, &
+& reductionfactor
+! model out
+  REAL(dp), DIMENSION(nturbines) :: wtvelocity
+  REAL(dp), DIMENSION(nbdirs, nturbines) :: wtvelocityb
+! test out
+!TODO
+  REAL(dp), DIMENSION(nturbines*nturbines) :: &
+& wakecentersyt_vec, wakecenterszt_vec
+  REAL(dp), DIMENSION(3*nturbines*nturbines) :: &
+& wakediameterst_vec
+  REAL(dp), DIMENSION(3*nturbines*nturbines) :: &
+& wakeoverlaptrel_vec
+! visualization out
+  INTRINSIC COS, ATAN, MAX
+  INTRINSIC KIND
+  INTRINSIC SIN
+  INTRINSIC SUM
+  INTRINSIC DABS
+  INTRINSIC SQRT
+  INTEGER :: nd
+  INTEGER :: branch
+  INTEGER :: nbdirs
+  REAL(dp) :: temp3
+  REAL(dp) :: temp2
+  REAL(dp) :: temp1
+  REAL(dp) :: temp0
+  REAL(dp) :: tempb9(nbdirs)
+  REAL(dp) :: tempb8(nbdirs)
+  REAL :: tempb7(nbdirs)
+  REAL(dp) :: tempb6(nbdirs)
+  REAL(dp) :: tempb5(nbdirs)
+  REAL(dp) :: tempb4(nbdirs)
+  REAL(dp) :: tempb3(nbdirs)
+  REAL(dp) :: tempb2(nbdirs)
+  REAL(dp) :: tempb1(nbdirs)
+  REAL(dp) :: tempb0(nbdirs)
+  REAL(dp) :: tempb13(nbdirs)
+  REAL(dp) :: tempb12(nbdirs)
+  REAL(dp) :: tempb11(nbdirs)
+  REAL(dp) :: tempb10(nbdirs)
+  DOUBLE PRECISION :: dabs0b(nbdirs)
+  REAL(dp) :: temp11
+  REAL(dp) :: temp10
+  REAL(dp) :: tempb(nbdirs)
+  DOUBLE PRECISION :: dabs0
+  REAL(dp) :: temp
+  REAL(dp) :: temp9
+  REAL(dp) :: temp8
+  REAL(dp) :: temp7
+  REAL(dp) :: temp6
+  REAL(dp) :: temp5
+  REAL(dp) :: temp4
+  yaw = yawdeg*pi/180.0_dp
+!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+  spline_bound = 1.0_dp
+! calculate locations of wake centers in wind ref. frame
+  wakecentersyt_mat = 0.0_dp
+!TODO
+  wakecenterszt_mat = 0.0_dp
+  DO turb=1,nturbines
+    CALL PUSHREAL4ARRAY(wakeangleinit, dp/4)
+    wakeangleinit = 0.5_dp*SIN(yaw(turb))*ct(turb)
+    IF (usewakeangle) wakeangleinit = wakeangleinit + initialwakeangle*&
+&       pi/180.0_dp
+! wake center calculations at each turbine
+    DO turbi=1,nturbines
+      IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
+        CALL PUSHREAL4ARRAY(deltax, dp/4)
+        deltax = turbinexw(turbi) - turbinexw(turb)
+        factor = 2.0_dp*kd*deltax/rotordiameter(turb) + 1.0_dp
+!THESE ARE THE Z CALCULATIONS
+!TODO
+        wakecenterszt_mat(turbi, turb) = turbinez(turb)
+!THESE ARE THE Y CALCULATIONS
+        wakecentersyt_mat(turbi, turb) = turbineyw(turb)
+        displacement = wakeangleinit*(wakeangleinit*wakeangleinit+&
+&         15.0_dp*factor*factor*factor*factor)/(30.0_dp*kd/rotordiameter&
+&         (turb)*(factor*factor*factor*factor*factor))
+        displacement = displacement - wakeangleinit*(wakeangleinit*&
+&         wakeangleinit+15.0_dp)/(30.0_dp*kd/rotordiameter(turb))
+        wakecentersyt_mat(turbi, turb) = wakecentersyt_mat(turbi, turb) &
+&         + initialwakedisplacement + displacement
+        IF (usewakeangle .EQV. .false.) THEN
+          wakecentersyt_mat(turbi, turb) = wakecentersyt_mat(turbi, turb&
+&           ) + bd*deltax
+          CALL PUSHCONTROL2B(2)
+        ELSE
+          CALL PUSHCONTROL2B(1)
+        END IF
+      ELSE
+        CALL PUSHCONTROL2B(0)
+      END IF
+    END DO
+!$AD DO-NOT-DIFF 
+!$AD END-DO-NOT-DIFF 
+    CONTINUE
+  END DO
+!Uncomment this when you run TAPENADE
+!adjust k_e to C_T, adjusted to yaw
+  ke = ke_in + kecorrct*(ct-region2ct)
+! calculate wake diameters
+  wakediameterst_mat = 0.0_dp
+  DO turb=1,nturbines
+    IF (adjustinitialwakediamtoyaw) THEN
+      CALL PUSHREAL4ARRAY(wakediameter0, dp/4)
+      wakediameter0 = rotordiameter(turb)*COS(yaw(turb))
+      CALL PUSHCONTROL1B(1)
+    ELSE
+      CALL PUSHREAL4ARRAY(wakediameter0, dp/4)
+      wakediameter0 = rotordiameter(turb)
+      CALL PUSHCONTROL1B(0)
+    END IF
+! calculate the wake diameter of each wake at each turbine
+    DO turbi=1,nturbines
+! turbine separation
+      CALL PUSHREAL4ARRAY(deltax, dp/4)
+      deltax = turbinexw(turbi) - turbinexw(turb)
+! x position of interest
+      x = turbinexw(turbi)
+      CALL PUSHINTEGER4(zone)
+      zone = 1
+! define centerpoint of spline
+      zeroloc = turbinexw(turb) - wakediameter0/(2.0_dp*ke(turb)*me(zone&
+&       ))
+      IF (zeroloc + spline_bound*rotordiameter(turb) .LT. turbinexw(&
+&         turbi)) THEN
+! check this
+        wakediameterst_mat(turbi, turb, zone) = 0.0_dp
+        CALL PUSHCONTROL2B(0)
+      ELSE IF (zeroloc - spline_bound*rotordiameter(turb) .LT. turbinexw&
+&         (turbi)) THEN
+!check this
+!!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
+! position of upwind point
+        x1 = zeroloc - spline_bound*rotordiameter(turb)
+! diameter of upwind point
+        y1 = wakediameter0 + 2.0_dp*ke(turb)*me(zone)*(x1-turbinexw(turb&
+&         ))
+! slope at upwind point
+        dy1 = 2.0_dp*ke(turb)*me(zone)
+! position of downwind point
+        x2 = zeroloc + spline_bound*rotordiameter(turb)
+! diameter at downwind point
+        y2 = 0.0_dp
+! slope at downwind point
+        dy2 = 0.0_dp
+! solve for the wake zone diameter and its derivative w.r.t. the downwind
+! location at the point of interest
+        CALL HERMITE_SPLINE(x, x1, x2, y1, dy1, y2, dy2, &
+&                     wakediameterst_mat(turbi, turb, zone))
+        CALL PUSHCONTROL2B(1)
+      ELSE IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
+        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
+&         ke(turb)*me(zone)*deltax
+        CALL PUSHCONTROL2B(2)
+      ELSE
+        CALL PUSHCONTROL2B(3)
+      END IF
+      IF (turbinexw(turb) .LT. turbinexw(turbi)) THEN
+        CALL PUSHINTEGER4(zone)
+        zone = 2
+        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
+&         ke(turb)*me(zone)*deltax
+        zone = 3
+        wakediameterst_mat(turbi, turb, zone) = wakediameter0 + 2.0_dp*&
+&         ke(turb)*me(zone)*deltax
+        CALL PUSHCONTROL1B(1)
+      ELSE
+        CALL PUSHCONTROL1B(0)
+      END IF
+    END DO
+!$AD DO-NOT-DIFF 
+!$AD END-DO-NOT-DIFF 
+    CONTINUE
+  END DO
+!Uncomment this when you run TAPENADE
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Overlap !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! calculate relative overlap
+  CALL CALCOVERLAPAREAS(nturbines, turbinexw, turbineyw, turbinez, &
+&                 rotordiameter, wakediameterst_mat, wakecentersyt_mat, &
+&                 wakecenterszt_mat, wakeoverlaptrel_mat)
+!TODO
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! initialize velocities in full flow field (optional)
+! apply shear profile to visualization
+!     print *, wsArray
+! initialize axial induction values    
+  IF (axialindprovided) THEN
+    a = a_in
+    CALL PUSHCONTROL1B(0)
+  ELSE
+    CALL CTTOAXIALIND(ct, nturbines, a)
+    CALL PUSHCONTROL1B(1)
+  END IF
+! adjust ke to Ct as adjusted to yaw
+  CALL PUSHREAL4ARRAY(ke, dp*nturbines/4)
+  ke = ke_in + kecorrct*(ct-region2ct)
+  DO turb=1,nturbines
+    CALL PUSHREAL4ARRAY(s, dp/4)
+    s = SUM(wakeoverlaptrel_mat(turb, :, 1) + wakeoverlaptrel_mat(turb, &
+&     :, 2))
+    kearray(turb) = ke(turb)*(1+s*kecorrarray)
+  END DO
+! find effective wind speeds at downstream turbines
+  wtvelocity = vinf
+  DO turbi=1,nturbines
+    CALL PUSHREAL4ARRAY(wakeeffcoeff, dp/4)
+    wakeeffcoeff = 0.0_dp
+! find overlap-area weighted effect of each wake zone
+    DO turb=1,nturbines
+      CALL PUSHREAL4ARRAY(wakeeffcoeffperzone, dp/4)
+      wakeeffcoeffperzone = 0.0_dp
+      CALL PUSHREAL4ARRAY(deltax, dp/4)
+      deltax = turbinexw(turbi) - turbinexw(turb)
+      IF (useaubu) THEN
+        CALL PUSHREAL4ARRAY(mmu, dp*3/4)
+        mmu = mu/COS(au*pi/180.0_dp+bu*yaw(turb))
+        CALL PUSHCONTROL1B(0)
+      ELSE
+        CALL PUSHCONTROL1B(1)
+      END IF
+      IF (deltax .GT. 0 .AND. turbi .NE. turb) THEN
+        CALL PUSHINTEGER4(zone)
+        DO zone=1,3
+          rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
+&           rotordiameter(turbi))
+          IF (wakecentersyt_mat(turbi, turb) - turbineyw(turbi) .GE. 0.&
+&         ) THEN
+            CALL PUSHREAL8(dabs0)
+            dabs0 = wakecentersyt_mat(turbi, turb) - turbineyw(turbi)
+            CALL PUSHCONTROL1B(0)
+          ELSE
+            CALL PUSHREAL8(dabs0)
+            dabs0 = -(wakecentersyt_mat(turbi, turb)-turbineyw(turbi))
+            CALL PUSHCONTROL1B(1)
+          END IF
+          CALL PUSHREAL4ARRAY(cosfac, dp/4)
+          cosfac = 0.5_dp*(1.0_dp+COS(pi*dabs0/rmax))
+          IF (useaubu) THEN
+            wakeeffcoeffperzone = wakeeffcoeffperzone + (cosfac*&
+&             rotordiameter(turb)/(rotordiameter(turb)+2.0_dp*kearray(&
+&             turb)*mmu(zone)*deltax))**2*wakeoverlaptrel_mat(turbi, &
+&             turb, zone)
+            CALL PUSHCONTROL1B(1)
+          ELSE
+            wakeeffcoeffperzone = wakeeffcoeffperzone + (cosfac*&
+&             rotordiameter(turb)/(rotordiameter(turb)+2.0_dp*kearray(&
+&             turb)*mu(zone)*deltax))**2*wakeoverlaptrel_mat(turbi, turb&
+&             , zone)
+            CALL PUSHCONTROL1B(0)
+          END IF
+        END DO
+        wakeeffcoeff = wakeeffcoeff + (a(turb)*wakeeffcoeffperzone)**2
+        CALL PUSHCONTROL1B(1)
+      ELSE
+        CALL PUSHCONTROL1B(0)
+      END IF
+    END DO
+    CALL PUSHREAL4ARRAY(wakeeffcoeff, dp/4)
+    wakeeffcoeff = 1.0_dp - 2.0_dp*SQRT(wakeeffcoeff)
+! multiply the inflow speed with the wake coefficients to find effective wind 
+! speed at turbine
+  END DO
+!$AD DO-NOT-DIFF 
+!$AD END-DO-NOT-DIFF 
+!$AD DID-NOT-DIFF 
+!$AD END-DID-NOT-DIFF 
+  DO nd=1,nbdirs
+    rotordiameterb(nd, :) = 0.0
+    turbinexwb(nd, :) = 0.0
+    turbineywb(nd, :) = 0.0
+    kearrayb(nd, :) = 0.0
+    yawb(nd, :) = 0.0
+    wakeoverlaptrel_matb(nd, :, :, :) = 0.0
+    wakediameterst_matb(nd, :, :, :) = 0.0
+    wakecentersyt_matb(nd, :, :) = 0.0
+    mmub(nd, :) = 0.0
+    ab(nd, :) = 0.0
+  END DO
+  DO turbi=nturbines,1,-1
+    DO nd=1,nbdirs
+      wakeeffcoeffb(nd) = wtvelocity(turbi)*wtvelocityb(nd, turbi)
+      wtvelocityb(nd, turbi) = wakeeffcoeff*wtvelocityb(nd, turbi)
+    END DO
+    CALL POPREAL4ARRAY(wakeeffcoeff, dp/4)
+    DO nd=1,nbdirs
+      IF (wakeeffcoeff .EQ. 0.0) THEN
+        wakeeffcoeffb(nd) = 0.0
+      ELSE
+        wakeeffcoeffb(nd) = -(2.0_dp*wakeeffcoeffb(nd)/(2.0*SQRT(&
+&         wakeeffcoeff)))
+      END IF
+    END DO
+    DO turb=nturbines,1,-1
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        DO nd=1,nbdirs
+          deltaxb(nd) = 0.0
+        END DO
+      ELSE
+        DO nd=1,nbdirs
+          tempb13(nd) = 2*a(turb)*wakeeffcoeffperzone*wakeeffcoeffb(nd)
+          ab(nd, turb) = ab(nd, turb) + wakeeffcoeffperzone*tempb13(nd)
+          wakeeffcoeffperzoneb(nd) = a(turb)*tempb13(nd)
+        END DO
+        deltax = turbinexw(turbi) - turbinexw(turb)
+        DO nd=1,nbdirs
+          deltaxb(nd) = 0.0
+        END DO
+        DO zone=3,1,-1
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            temp11 = 2.0_dp*mu(zone)
+            temp8 = rotordiameter(turb) + temp11*kearray(turb)*deltax
+            temp10 = wakeoverlaptrel_mat(turbi, turb, zone)
+            temp9 = cosfac**2*rotordiameter(turb)**2
+            DO nd=1,nbdirs
+              tempb11(nd) = wakeeffcoeffperzoneb(nd)/temp8**2
+              tempb12(nd) = -(temp9*temp10*2*tempb11(nd)/temp8)
+              cosfacb(nd) = rotordiameter(turb)**2*temp10*2*cosfac*&
+&               tempb11(nd)
+              rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
+&               tempb12(nd) + cosfac**2*temp10*2*rotordiameter(turb)*&
+&               tempb11(nd)
+              wakeoverlaptrel_matb(nd, turbi, turb, zone) = &
+&               wakeoverlaptrel_matb(nd, turbi, turb, zone) + temp9*&
+&               tempb11(nd)
+              kearrayb(nd, turb) = kearrayb(nd, turb) + temp11*deltax*&
+&               tempb12(nd)
+              deltaxb(nd) = deltaxb(nd) + temp11*kearray(turb)*tempb12(&
+&               nd)
+            END DO
+          ELSE
+            temp5 = rotordiameter(turb) + 2.0_dp*kearray(turb)*deltax*&
+&             mmu(zone)
+            temp7 = wakeoverlaptrel_mat(turbi, turb, zone)
+            temp6 = cosfac**2*rotordiameter(turb)**2
+            DO nd=1,nbdirs
+              tempb8(nd) = wakeeffcoeffperzoneb(nd)/temp5**2
+              tempb9(nd) = -(temp6*temp7*2*tempb8(nd)/temp5)
+              tempb10(nd) = 2.0_dp*mmu(zone)*tempb9(nd)
+              cosfacb(nd) = rotordiameter(turb)**2*temp7*2*cosfac*tempb8&
+&               (nd)
+              rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
+&               tempb9(nd) + cosfac**2*temp7*2*rotordiameter(turb)*&
+&               tempb8(nd)
+              wakeoverlaptrel_matb(nd, turbi, turb, zone) = &
+&               wakeoverlaptrel_matb(nd, turbi, turb, zone) + temp6*&
+&               tempb8(nd)
+              kearrayb(nd, turb) = kearrayb(nd, turb) + deltax*tempb10(&
+&               nd)
+              deltaxb(nd) = deltaxb(nd) + kearray(turb)*tempb10(nd)
+              mmub(nd, zone) = mmub(nd, zone) + 2.0_dp*kearray(turb)*&
+&               deltax*tempb9(nd)
+            END DO
+          END IF
+          rmax = cos_spread*0.5_dp*(wakediameterst_mat(turbi, turb, 3)+&
+&           rotordiameter(turbi))
+          CALL POPREAL4ARRAY(cosfac, dp/4)
+          DO nd=1,nbdirs
+            tempb7(nd) = -(pi*SIN(pi*(dabs0/rmax))*0.5_dp*cosfacb(nd)/&
+&             rmax)
+            dabs0b(nd) = tempb7(nd)
+            rmaxb(nd) = -(dabs0*tempb7(nd)/rmax)
+          END DO
+          CALL POPCONTROL1B(branch)
+          IF (branch .EQ. 0) THEN
+            CALL POPREAL8(dabs0)
+            DO nd=1,nbdirs
+              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
+&               nd, turbi, turb) + dabs0b(nd)
+              turbineywb(nd, turbi) = turbineywb(nd, turbi) - dabs0b(nd)
+            END DO
+          ELSE
+            CALL POPREAL8(dabs0)
+            DO nd=1,nbdirs
+              turbineywb(nd, turbi) = turbineywb(nd, turbi) + dabs0b(nd)
+              wakecentersyt_matb(nd, turbi, turb) = wakecentersyt_matb(&
+&               nd, turbi, turb) - dabs0b(nd)
+            END DO
+          END IF
+          DO nd=1,nbdirs
+            tempb6(nd) = cos_spread*0.5_dp*rmaxb(nd)
+            wakediameterst_matb(nd, turbi, turb, 3) = &
+&             wakediameterst_matb(nd, turbi, turb, 3) + tempb6(nd)
+            rotordiameterb(nd, turbi) = rotordiameterb(nd, turbi) + &
+&             tempb6(nd)
+          END DO
+        END DO
+        CALL POPINTEGER4(zone)
+      END IF
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        CALL POPREAL4ARRAY(mmu, dp*3/4)
+        temp4 = au*pi/180.0_dp + bu*yaw(turb)
+        temp3 = COS(temp4)
+        DO nd=1,nbdirs
+          yawb(nd, turb) = yawb(nd, turb) - SIN(temp4)*bu*SUM(-(mu*mmub(&
+&           nd, :)/temp3))/temp3
+        END DO
+        DO nd=1,nbdirs
+          mmub(nd, :) = 0.0
+        END DO
+      END IF
+      CALL POPREAL4ARRAY(deltax, dp/4)
+      CALL POPREAL4ARRAY(wakeeffcoeffperzone, dp/4)
+      DO nd=1,nbdirs
+        turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd)
+        turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
+      END DO
+    END DO
+    CALL POPREAL4ARRAY(wakeeffcoeff, dp/4)
+  END DO
+  DO nd=1,nbdirs
+    keb(nd, :) = 0.0
+  END DO
+  DO turb=nturbines,1,-1
+    DO nd=1,nbdirs
+      keb(nd, turb) = keb(nd, turb) + (kecorrarray*s+1)*kearrayb(nd, &
+&       turb)
+      sb(nd) = ke(turb)*kecorrarray*kearrayb(nd, turb)
+      kearrayb(nd, turb) = 0.0
+      wakeoverlaptrel_matb(nd, turb, :, 1) = wakeoverlaptrel_matb(nd, &
+&       turb, :, 1) + sb(nd)
+      wakeoverlaptrel_matb(nd, turb, :, 2) = wakeoverlaptrel_matb(nd, &
+&       turb, :, 2) + sb(nd)
+    END DO
+    CALL POPREAL4ARRAY(s, dp/4)
+  END DO
+  DO nd=1,nbdirs
+    ctb(nd, :) = 0.0
+    ctb(nd, :) = kecorrct*keb(nd, :)
+  END DO
+  CALL POPREAL4ARRAY(ke, dp*nturbines/4)
+  CALL POPCONTROL1B(branch)
+  IF (branch .EQ. 0) THEN
+    DO nd=1,nbdirs
+      a_inb(nd, :) = 0.0
+      a_inb(nd, :) = ab(nd, :)
+    END DO
+  ELSE
+    CALL CTTOAXIALIND_BV(ct, ctb, nturbines, a, ab, nbdirs)
+    DO nd=1,nbdirs
+      a_inb(nd, :) = 0.0
+    END DO
+  END IF
+  CALL CALCOVERLAPAREAS_BV(nturbines, turbinexw, turbineyw, turbineywb, &
+&                    turbinez, turbinezb, rotordiameter, rotordiameterb&
+&                    , wakediameterst_mat, wakediameterst_matb, &
+&                    wakecentersyt_mat, wakecentersyt_matb, &
+&                    wakecenterszt_mat, wakecenterszt_matb, &
+&                    wakeoverlaptrel_mat, wakeoverlaptrel_matb, nbdirs)
+  DO nd=1,nbdirs
+    keb(nd, :) = 0.0
+  END DO
+  DO turb=nturbines,1,-1
+!$AD DID-NOT-DIFF 
+!$AD END-DID-NOT-DIFF 
+    DO nd=1,nbdirs
+      wakediameter0b(nd) = 0.0
+    END DO
+    DO turbi=nturbines,1,-1
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        DO nd=1,nbdirs
+          deltaxb(nd) = 0.0
+        END DO
+      ELSE
+        deltax = turbinexw(turbi) - turbinexw(turb)
+        zone = 3
+        DO nd=1,nbdirs
+          tempb4(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
+&           turb, zone)
+          wakediameter0b(nd) = wakediameter0b(nd) + wakediameterst_matb(&
+&           nd, turbi, turb, zone)
+          wakediameterst_matb(nd, turbi, turb, zone) = 0.0
+        END DO
+        zone = 2
+        DO nd=1,nbdirs
+          tempb5(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
+&           turb, zone)
+          keb(nd, turb) = keb(nd, turb) + deltax*tempb5(nd) + deltax*&
+&           tempb4(nd)
+          deltaxb(nd) = ke(turb)*tempb5(nd) + ke(turb)*tempb4(nd)
+          wakediameter0b(nd) = wakediameter0b(nd) + wakediameterst_matb(&
+&           nd, turbi, turb, zone)
+          wakediameterst_matb(nd, turbi, turb, zone) = 0.0
+        END DO
+        CALL POPINTEGER4(zone)
+      END IF
+      CALL POPCONTROL2B(branch)
+      IF (branch .LT. 2) THEN
+        IF (branch .EQ. 0) THEN
+          DO nd=1,nbdirs
+            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
+          END DO
+          DO nd=1,nbdirs
+            xb(nd) = 0.0
+            zerolocb(nd) = 0.0
+          END DO
+        ELSE
+          zone = 1
+          dy1 = 2.0_dp*ke(turb)*me(zone)
+          zeroloc = turbinexw(turb) - wakediameter0/(2.0_dp*ke(turb)*me(&
+&           zone))
+          x1 = zeroloc - spline_bound*rotordiameter(turb)
+          y1 = wakediameter0 + 2.0_dp*ke(turb)*me(zone)*(x1-turbinexw(&
+&           turb))
+          dy2 = 0.0_dp
+          y2 = 0.0_dp
+          x = turbinexw(turbi)
+          x2 = zeroloc + spline_bound*rotordiameter(turb)
+          CALL HERMITE_SPLINE_BV(x, xb, x1, x1b, x2, x2b, y1, y1b, dy1, &
+&                          dy1b, y2, dy2, wakediameterst_mat(turbi, turb&
+&                          , zone), wakediameterst_matb(1, turbi, turb, &
+&                          zone), nbdirs)
+          DO nd=1,nbdirs
+            tempb2(nd) = me(zone)*2.0_dp*y1b(nd)
+            x1b(nd) = x1b(nd) + ke(turb)*tempb2(nd)
+            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
+            zerolocb(nd) = x1b(nd) + x2b(nd)
+            rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
+&             spline_bound*x2b(nd) - spline_bound*x1b(nd)
+            keb(nd, turb) = keb(nd, turb) + (x1-turbinexw(turb))*tempb2(&
+&             nd) + me(zone)*2.0_dp*dy1b(nd)
+            wakediameter0b(nd) = wakediameter0b(nd) + y1b(nd)
+            turbinexwb(nd, turb) = turbinexwb(nd, turb) - ke(turb)*&
+&             tempb2(nd)
+          END DO
+        END IF
+      ELSE
+        IF (branch .EQ. 2) THEN
+          DO nd=1,nbdirs
+            tempb3(nd) = me(zone)*2.0_dp*wakediameterst_matb(nd, turbi, &
+&             turb, zone)
+            wakediameter0b(nd) = wakediameter0b(nd) + &
+&             wakediameterst_matb(nd, turbi, turb, zone)
+            keb(nd, turb) = keb(nd, turb) + deltax*tempb3(nd)
+            deltaxb(nd) = deltaxb(nd) + ke(turb)*tempb3(nd)
+            wakediameterst_matb(nd, turbi, turb, zone) = 0.0
+          END DO
+        END IF
+        DO nd=1,nbdirs
+          xb(nd) = 0.0
+          zerolocb(nd) = 0.0
+        END DO
+      END IF
+      temp2 = 2.0_dp*me(zone)*ke(turb)
+      DO nd=1,nbdirs
+        turbinexwb(nd, turb) = turbinexwb(nd, turb) + zerolocb(nd)
+        wakediameter0b(nd) = wakediameter0b(nd) - zerolocb(nd)/temp2
+        keb(nd, turb) = keb(nd, turb) + wakediameter0*2.0_dp*me(zone)*&
+&         zerolocb(nd)/temp2**2
+        turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd) + xb&
+&         (nd)
+        turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
+      END DO
+      CALL POPINTEGER4(zone)
+      CALL POPREAL4ARRAY(deltax, dp/4)
+    END DO
+    CALL POPCONTROL1B(branch)
+    IF (branch .EQ. 0) THEN
+      CALL POPREAL4ARRAY(wakediameter0, dp/4)
+      DO nd=1,nbdirs
+        rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + &
+&         wakediameter0b(nd)
+      END DO
+    ELSE
+      CALL POPREAL4ARRAY(wakediameter0, dp/4)
+      DO nd=1,nbdirs
+        rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + COS(yaw(&
+&         turb))*wakediameter0b(nd)
+        yawb(nd, turb) = yawb(nd, turb) - rotordiameter(turb)*SIN(yaw(&
+&         turb))*wakediameter0b(nd)
+      END DO
+    END IF
+  END DO
+  DO nd=1,nbdirs
+    ctb(nd, :) = ctb(nd, :) + kecorrct*keb(nd, :)
+  END DO
+  DO turb=nturbines,1,-1
+!$AD DID-NOT-DIFF 
+!$AD END-DID-NOT-DIFF 
+    DO nd=1,nbdirs
+      wakeangleinitb(nd) = 0.0
+    END DO
+    DO turbi=nturbines,1,-1
+      CALL POPCONTROL2B(branch)
+      IF (branch .NE. 0) THEN
+        IF (branch .EQ. 1) THEN
+          DO nd=1,nbdirs
+            deltaxb(nd) = 0.0
+          END DO
+        ELSE
+          deltax = turbinexw(turbi) - turbinexw(turb)
+          DO nd=1,nbdirs
+            deltaxb(nd) = bd*wakecentersyt_matb(nd, turbi, turb)
+          END DO
+        END IF
+        factor = 2.0_dp*kd*deltax/rotordiameter(turb) + 1.0_dp
+        temp1 = 30.0_dp*kd*factor**5
+        temp0 = wakeangleinit*rotordiameter(turb)
+        temp = wakeangleinit**2 + 15.0_dp*factor**4
+        DO nd=1,nbdirs
+          displacementb(nd) = wakecentersyt_matb(nd, turbi, turb)
+          tempb(nd) = -((wakeangleinit**2+15.0_dp)*displacementb(nd)/(&
+&           30.0_dp*kd))
+          tempb0(nd) = displacementb(nd)/temp1
+          wakeangleinitb(nd) = wakeangleinitb(nd) + (temp*rotordiameter(&
+&           turb)+temp0*2*wakeangleinit)*tempb0(nd) + rotordiameter(turb&
+&           )*tempb(nd) - wakeangleinit**2*rotordiameter(turb)*2*&
+&           displacementb(nd)/(30.0_dp*kd)
+          factorb(nd) = (15.0_dp*temp0*4*factor**3-30.0_dp*kd*temp*temp0&
+&           *5*factor**4/temp1)*tempb0(nd)
+          turbineywb(nd, turb) = turbineywb(nd, turb) + &
+&           wakecentersyt_matb(nd, turbi, turb)
+          wakecentersyt_matb(nd, turbi, turb) = 0.0
+          turbinezb(nd, turb) = turbinezb(nd, turb) + wakecenterszt_matb&
+&           (nd, turbi, turb)
+          wakecenterszt_matb(nd, turbi, turb) = 0.0
+          tempb1(nd) = kd*2.0_dp*factorb(nd)/rotordiameter(turb)
+          rotordiameterb(nd, turb) = rotordiameterb(nd, turb) + temp*&
+&           wakeangleinit*tempb0(nd) - deltax*tempb1(nd)/rotordiameter(&
+&           turb) + wakeangleinit*tempb(nd)
+          deltaxb(nd) = deltaxb(nd) + tempb1(nd)
+          turbinexwb(nd, turbi) = turbinexwb(nd, turbi) + deltaxb(nd)
+          turbinexwb(nd, turb) = turbinexwb(nd, turb) - deltaxb(nd)
+        END DO
+        CALL POPREAL4ARRAY(deltax, dp/4)
+      END IF
+    END DO
+    CALL POPREAL4ARRAY(wakeangleinit, dp/4)
+    DO nd=1,nbdirs
+      yawb(nd, turb) = yawb(nd, turb) + ct(turb)*0.5_dp*COS(yaw(turb))*&
+&       wakeangleinitb(nd)
+      ctb(nd, turb) = ctb(nd, turb) + 0.5_dp*SIN(yaw(turb))*&
+&       wakeangleinitb(nd)
+    END DO
+  END DO
+  DO nd=1,nbdirs
+    yawdegb(nd, :) = 0.0
+    yawdegb(nd, :) = pi*yawb(nd, :)/180.0_dp
+  END DO
+  DO nd=1,nbdirs
+    wtvelocityb(nd, :) = 0.0
+  END DO
+END SUBROUTINE FLORIS_BV
+
+

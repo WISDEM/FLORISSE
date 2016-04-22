@@ -10,6 +10,7 @@ if __name__ == "__main__":
     # define turbine locations in global reference frame
     turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])
     turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])
+    turbineZ = np.array([100.0, 100.0, 100.0, 100.0, 100.0, 1000.0])
 
     # initialize input variable arrays
     nTurbs = turbineX.size
@@ -47,6 +48,7 @@ if __name__ == "__main__":
     # assign values to turbine states
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
+    prob['turbineZ'] = turbineZ
     prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
@@ -73,8 +75,11 @@ if __name__ == "__main__":
     print 'FLORIS calculation took %.06f sec.' % (toc-tic)
     print 'turbine X positions in wind frame (m): %s' % prob['turbineX']
     print 'turbine Y positions in wind frame (m): %s' % prob['turbineY']
+    print 'turbine Z positions in wind frame (m): %s' % prob['turbineZ']
     print 'yaw (deg) = ', prob['yaw0']
     print 'Effective hub velocities (m/s) = ', prob['wtVelocity0']
     print 'Turbine powers (kW) = ', (prob['wtPower0'])
     print 'wind farm power (kW): %s' % (prob['dir_power0'])
     print 'wind farm AEP for this direction and speed (kWh): %s' % prob['AEP']
+
+

@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     # Scaling grid case
     # nRows = int(sys.argv[1])     # number of rows and columns in grid
-    nRows = 3
+    nRows = 2
     spacing = 5     # turbine grid spacing in diameters
 
     # Set up position arrays
@@ -59,6 +59,7 @@ if __name__ == "__main__":
 
     # initialize input variable arrays
     nTurbs = turbineX.size
+    turbineZ = np.ones(nTurbs)*100.
     rotorDiameter = np.zeros(nTurbs)
     axialInduction = np.zeros(nTurbs)
     Ct = np.zeros(nTurbs)
@@ -99,6 +100,7 @@ if __name__ == "__main__":
     # select design variables
     prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
     prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
+    prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbs)*100., upper=np.ones(nTurbs)*500., scaler=1E-2)
     for direction_id in range(0, windDirections.size):
         prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
@@ -116,6 +118,7 @@ if __name__ == "__main__":
     # assign initial values to design variables
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
+    prob['turbineZ'] = turbineZ
     for direction_id in range(0, windDirections.size):
         prob['yaw%i' % direction_id] = yaw
 
