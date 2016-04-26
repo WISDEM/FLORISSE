@@ -35,10 +35,10 @@ if __name__ == "__main__":
 
     # load wind rose data
     windRose = np.loadtxt('./input_files/windrose_amalia_directionally_averaged_speeds.txt')
-    indexes = np.where(windRose[:, 1] > 0)
-    windDirections = windRose[indexes][0]
-    windSpeeds = windRose[indexes][1]
-    windFrequencies = windRose[indexes][2]
+    indexes = np.where(windRose[:, 1] > 0.1)
+    windDirections = windRose[indexes[0], 0]
+    windSpeeds = windRose[indexes[0], 1]
+    windFrequencies = windRose[indexes[0], 2]
 
     nDirections = len(windDirections)
 
@@ -87,10 +87,11 @@ if __name__ == "__main__":
     prob.driver.add_objective('obj', scaler=1E-5)
 
     # set optimizer options
-    prob.driver.opt_settings['Verify level'] = 3
-    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP_amaliaYAW.out'
-    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP_amaliaYAW.out'
+    # prob.driver.opt_settings['Verify level'] = 3
+    prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP_amalia.out'
+    prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP_amalia.out'
     prob.driver.opt_settings['Major iterations limit'] = 1000
+    prob.driver.opt_settings['Major optimality tolerance'] = 1E-5
 
     # select design variables
     prob.driver.add_desvar('turbineX', scaler=1.0)
@@ -148,8 +149,8 @@ if __name__ == "__main__":
         # for direction_id in range(0, windDirections.size):
         #     mpi_print(prob,  'wt_power%i (kW) = ' % direction_id, prob['wt_power%i' % direction_id])
 
-        mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
-        mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
+        mpi_print(prob,  'turbine X positions (m): %s' % prob['turbineX'])
+        mpi_print(prob,  'turbine Y positions (m): %s' % prob['turbineY'])
         mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
         mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
 
@@ -165,9 +166,10 @@ if __name__ == "__main__":
         plt.legend()
         plt.xlabel('Turbine X Position (m)')
         plt.ylabel('Turbine Y Position (m)')
-        plt.show()
 
         np.savetxt('AmaliaOptimizedXY.txt', np.c_[prob['turbineX'], prob['turbineY']], header="turbineX, turbineY")
+
+        plt.show()
 
         #
     #
