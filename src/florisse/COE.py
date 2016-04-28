@@ -111,15 +111,53 @@ if __name__=="__main__":
     """
     This is just to test during development
     """
+    rotor_diameter = 126.4
+    nRows = 3
+    spacing = 5     # turbine grid spacing in diameters
+
+    # Set up position arrays
+    points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
+    xpoints, ypoints = np.meshgrid(points, points)
+    turbineX = np.ndarray.flatten(xpoints)
+    turbineY = np.ndarray.flatten(ypoints)
+    
+
+    # initialize input variable arrays
+    nTurbs = turbineX.size
+    #turbineZ = np.array([100,100,100,100,100,200,200,200,200])
+    rotorDiameter = np.zeros(nTurbs)
+    axialInduction = np.zeros(nTurbs)
+    Ct = np.zeros(nTurbs)
+    Cp = np.zeros(nTurbs)
+    generatorEfficiency = np.zeros(nTurbs)
+    yaw = np.zeros(nTurbs)
+
+    # define initial values
+    for turbI in range(0, nTurbs):
+        rotorDiameter[turbI] = 126.4            # m
+        axialInduction[turbI] = 1.0/3.0
+        Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
+        # Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
+        Cp[turbI] = 0.7737 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
+        generatorEfficiency[turbI] = 1.0#0.944
+        yaw[turbI] = 0.     # deg.
+
+    # Define flow properties
+    wind_speed = 8.0        # m/s
+    air_density = 1.1716    # kg/m^3
+    # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
+    
+
 
     # define turbine locations in global reference frame
     turbineH1 = 90.
-    turbineH2 = 150.
+    turbineH2 = 90.
     nTurbsH1 = 3
-    nTurbsH2 = 5
+    nTurbsH2 = nTurbs-nTurbsH1
     nTurbines = nTurbsH1+nTurbsH2
     rotorDiameter = np.ones(nTurbines)*126.4 
-    nDirections = 72
+    nDirections = 50
+    wind_frequency = 1./nDirections    # probability of wind in this direction at this speed
 
     # set up problem
     prob = Problem()
@@ -129,9 +167,9 @@ if __name__=="__main__":
 
     root.add('getTurbineZ', getTurbineZ(), promotes=['*'])
     root.add('COE', COE(nTurbines), promotes=['*'])
-    root.add('AEP', AEPGroup(nTurbines, nDirections=nDirections,
+    root.add('AEP', AEPGroup(nTurbs, nDirections=nDirections,
                 use_rotor_components=False, datasize=0, differentiable=True,
-                optimizingLayout=False, nSamples=0), promotes=['AEP'])
+                optimizingLayout=False, nSamples=0), promotes=['*'])
 
     # initialize problem
     prob.setup()
@@ -140,7 +178,23 @@ if __name__=="__main__":
     prob['turbineH2'] = turbineH2
     prob['nTurbsH1'] = nTurbsH1
     prob['nTurbsH2'] = nTurbsH2
+
+    prob['turbineX'] = turbineX
+    prob['turbineY'] = turbineY
+    #prob['turbineZ'] = turbineZ
+    prob['yaw0'] = yaw
+
+    # assign values to constant inputs (not design variables)
     prob['rotorDiameter'] = rotorDiameter
+    prob['axialInduction'] = axialInduction
+    prob['generatorEfficiency'] = generatorEfficiency
+    prob['windSpeeds'] = np.array([wind_speed])
+    prob['air_density'] = air_density
+    #prob['windDirections'] = np.array([wind_direction])
+    prob['windFrequencies'] = np.ones([nDirections])*wind_frequency
+    prob['Ct_in'] = Ct
+    prob['Cp_in'] = Cp
+    prob['floris_params:cos_spread'] = 1E12         # turns off cosine spread (just needs to be very large)
 
     # run the problem
     print 'start run'
@@ -149,5 +203,6 @@ if __name__=="__main__":
     toc = time.time()
 
     print 'turbineZ: ', prob['turbineZ']
-    print 'COE: ', prob['COE']
+    print 'AEP: ', prob['AEP']
+    #print 'COE: ', prob['COE']
     
