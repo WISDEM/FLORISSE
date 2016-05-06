@@ -1,8 +1,10 @@
 from __future__ import print_function
 
-from openmdao.api import Problem, Group, pyOptSparseDriver
-from florisse.OptimizationGroups import OptAEP
+from openmdao.api import Problem, ExecComp, pyOptSparseDriver, ScipyGMRES
+#from florisse.OptimizationGroups import OptAEP
 from florisse import config
+from florisse.GeneralWindFarmComponents import SpacingComp
+from COE import *
 
 import time
 import numpy as np
@@ -14,7 +16,14 @@ import cProfile
 import sys
 
 if __name__ == "__main__":
+    #Load in Amalia locations
+    """filename = "layout_amalia.txt"
 
+    amalia = open(filename)
+    x_y = np.loadtxt(amalia)
+    turbineX = x_y[:,0]
+    turbineY = x_y[:,1]"""
+    
     config.floris_single_component = True
 
     ######################### for MPI functionality #########################
@@ -28,14 +37,14 @@ if __name__ == "__main__":
         # if you didn't use 'mpirun', then use the numpy data passing
         from openmdao.api import BasicImpl as impl
 
-    def mpi_print(prob, *args):
-        """ helper function to only print on rank 0 """
+    def mpi_print(prob, *args): 
+        """helper function to only print on rank 0 """
         if prob.root.comm.rank == 0:
             print(*args)
 
     prob = Problem(impl=impl)
 
-    size = 4 # number of processors (and number of wind directions to run)
+    size = 18 # number of processors (and number of wind directions to run)
 
     #########################################################################
     # define turbine size
@@ -48,7 +57,7 @@ if __name__ == "__main__":
 
     # Scaling grid case
     # nRows = int(sys.argv[1])     # number of rows and columns in grid
-    nRows = 2
+    nRows = 3
     spacing = 5     # turbine grid spacing in diameters
 
     # Set up position arrays
@@ -59,7 +68,10 @@ if __name__ == "__main__":
 
     # initialize input variable arrays
     nTurbs = turbineX.size
-    turbineZ = np.array([100,200,300,500])
+    turbineH1 = 100
+    turbineH2 = 100
+    nTurbsH1 = nTurbs/2
+    nTurbsH2 = nTurbs-nTurbsH1
     rotorDiameter = np.zeros(nTurbs)
     axialInduction = np.zeros(nTurbs)
     Ct = np.zeros(nTurbs)
@@ -84,29 +96,47 @@ if __name__ == "__main__":
     windFrequencies = np.ones_like(windDirections)*1.0/size
 
     # initialize problem
+
+    # set up problem
+    # prob = Problem(impl=impl, root=COE(nTurbs))
     prob = Problem()
     root = prob.root = Group()
+    
+    #TODO How to I pass TurbineZ down to calculate AEP? Basically, How do I get AEP?
 
-    root.add('AEP', OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, minSpacing=minSpacing, use_rotor_components=False, datasize=0, differentiable=True, force_fd=False), promotes=['*'])
-    #prob = Problem(impl=impl, root=OptAEP(nTurbines=nTurbs, nDirections=windDirections.size, minSpacing=minSpacing, use_rotor_components=False, datasize=0, differentiable=True, force_fd=False), promotes=['*'])
+    root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
+    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
+    root.add('AEPGroup', AEPGroup(nTurbs, nDirections=size,
+                use_rotor_components=False, datasize=0, differentiable=True,
+                optimizingLayout=False, nSamples=0), promotes=['*'])
+    root.add('spacing_comp', SpacingComp(nTurbines=nTurbs), promotes=['*'])
+    #root.ln_solver = ScipyGMRES()
+    
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    prob.driver.add_objective('obj', scaler=1E-8)
+    prob.driver.add_objective('COE', scaler=1E-8) #TODO???? COE is the objective ya?
 
     # set optimizer options
     prob.driver.opt_settings['Verify level'] = 3
     prob.driver.opt_settings['Print file'] = 'SNOPT_print_exampleOptAEP.out'
     prob.driver.opt_settings['Summary file'] = 'SNOPT_summary_exampleOptAEP.out'
     prob.driver.opt_settings['Major iterations limit'] = 1000
+     
 
     # select design variables
-    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
-    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
-    prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbs)*100., upper=np.ones(nTurbs)*200., scaler=1E-2)
-    for direction_id in range(0, windDirections.size):
-        prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
+    print('nTurbs: ', nTurbs)
+    print('nTurbsH1: ', nTurbsH1)
+    print('nturbsH2: ', nTurbsH2)
+    #prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
+    #prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
+    prob.driver.add_desvar('turbineH1', lower=80., upper=None, scaler=1E-2)
+    prob.driver.add_desvar('turbineH2', lower=80., upper=None, scaler=1E-2)
+    # prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbs)*100., upper=np.ones(nTurbs)*500., scaler=1E-2)
+    """for direction_id in range(0, windDirections.size):
+        prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)"""
+    
 
     # add constraints
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)), scaler=1.0/rotor_diameter)
@@ -122,7 +152,10 @@ if __name__ == "__main__":
     # assign initial values to design variables
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
-    prob['turbineZ'] = turbineZ
+    prob['turbineH1'] = turbineH1
+    prob['turbineH2'] = turbineH2
+    prob['nTurbsH1'] = nTurbsH1
+    prob['nTurbsH2'] = nTurbsH2
     for direction_id in range(0, windDirections.size):
         prob['yaw%i' % direction_id] = yaw
 
@@ -152,8 +185,8 @@ if __name__ == "__main__":
     # print the results
     mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
 
-    for direction_id in range(0, windDirections.size):
-        mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])
+    """for direction_id in range(0, windDirections.size):
+        mpi_print(prob,  'yaw%i (deg) = ' % direction_id, prob['yaw%i' % direction_id])"""
     # for direction_id in range(0, windDirections.size):
         # mpi_print(prob,  'velocitiesTurbines%i (m/s) = ' % direction_id, prob['velocitiesTurbines%i' % direction_id])
     # for direction_id in range(0, windDirections.size):
@@ -161,9 +194,11 @@ if __name__ == "__main__":
 
     mpi_print(prob,  'turbine X positions in wind frame (m): %s' % prob['turbineX'])
     mpi_print(prob,  'turbine Y positions in wind frame (m): %s' % prob['turbineY'])
-    mpi_print(prob,  'turbine Z positions in wind frame (m): %s' % prob['turbineZ'])
-    mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
-    mpi_print(prob,  'AEP (kWh): %s' % prob['AEP'])
+    mpi_print(prob,  'turbine Height 1 (m): %s' % prob['turbineH1'])
+    mpi_print(prob,  'turbine Height 2 (m): %s' % prob['turbineH2'])
+    #mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
+    #mpi_print(prob,  'AEP: %s' % prob['AEP'])
+    mpi_print(prob,  'COE: %s' % prob['COE'])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
     ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
@@ -177,4 +212,5 @@ if __name__ == "__main__":
     plt.legend()
     plt.xlabel('Turbine X Position (m)')
     plt.ylabel('Turbine Y Position (m)')
+    plt.legend(bbox_to_anchor=(1.14, 1.14))
     plt.show()

@@ -669,22 +669,24 @@ class AEPGroup(Group):
         self.add('dv3', IndepVarComp('turbineX', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('dv4', IndepVarComp('turbineY', np.zeros(nTurbines), units='m'), promotes=['*'])
 
-        self.add('dv5', IndepVarComp('turbineZ', np.zeros(nTurbines), units='m'), promotes=['*']) #TODO
+        #self.add('dv13', IndepVarComp('turbineZ', np.zeros(nTurbines), units='m'), promotes=['*']) #TODO
+        self.add('dv5', IndepVarComp('turbineH1', 0., units='m'), promotes=['*'])
+        self.add('dv6', IndepVarComp('turbineH2', 0., units='m'), promotes=['*'])
         
 
         # add vars to be seen by MPI and gradient calculations
-        self.add('dv6', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
-        self.add('dv7', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
-        self.add('dv8', IndepVarComp('generatorEfficiency', np.zeros(nTurbines)), promotes=['*']) #TODO
-        self.add('dv9', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
+        self.add('dv7', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
+        self.add('dv8', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
+        self.add('dv9', IndepVarComp('generatorEfficiency', np.zeros(nTurbines)), promotes=['*']) #TODO
+        self.add('dv10', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
 
         # add variable tree IndepVarComps
         add_floris_params_IndepVarComps(self, use_rotor_components=use_rotor_components)
         add_gen_params_IdepVarComps(self, datasize=datasize)
 
         if not use_rotor_components:
-            self.add('dv10', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
-            self.add('dv11', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
+            self.add('dv11', IndepVarComp('Ct_in', np.zeros(nTurbines)), promotes=['*'])
+            self.add('dv12', IndepVarComp('Cp_in', np.zeros(nTurbines)), promotes=['*'])
 
         # add components and groups
         self.add('windDirectionsDeMUX', DeMUX(nDirections, units=direction_units))

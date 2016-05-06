@@ -1,18 +1,24 @@
 import numpy as np
 from math import pi
 import time
-from openmdao.api import Group, Component, Problem
+from openmdao.api import Group, Component, Problem, ScipyGMRES
 from florisse.floris import AEPGroup
 
 
-class COE(Component):
+class COEComponent(Component):
     """
     Componenet to calculate the cost of energy (COE)
     """
 
     def __init__(self, nTurbines):
 
-        super(COE, self).__init__()
+        super(COEComponent, self).__init__()
+
+        self.fd_options['form'] = 'forward'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+        self.fd_options['force_fd'] = True
+        
 
         self.add_param('turbineZ', np.zeros(nTurbines), units='m',
                        desc='z coordinates of turbines')
@@ -72,7 +78,7 @@ class COE(Component):
 
 class getTurbineZ(Component):
 
-    def __init__(self):
+    def __init__(self, nTurbines):
 
         super(getTurbineZ, self).__init__()
 
@@ -147,15 +153,11 @@ if __name__=="__main__":
     air_density = 1.1716    # kg/m^3
     # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
     
-
-
-    # define turbine locations in global reference frame
     turbineH1 = 90.
-    turbineH2 = 90.
+    turbineH2 = 100.
     nTurbsH1 = 3
     nTurbsH2 = nTurbs-nTurbsH1
-    nTurbines = nTurbsH1+nTurbsH2
-    rotorDiameter = np.ones(nTurbines)*126.4 
+    rotorDiameter = np.ones(nTurbs)*126.4 
     nDirections = 50
     wind_frequency = 1./nDirections    # probability of wind in this direction at this speed
 
@@ -163,13 +165,13 @@ if __name__=="__main__":
     prob = Problem()
     root = prob.root = Group()
     
-    #TODO How to I pass TurbineZ down to calculate AEP? Basically, How do I get AEP?
 
-    root.add('getTurbineZ', getTurbineZ(), promotes=['*'])
-    root.add('COE', COE(nTurbines), promotes=['*'])
-    root.add('AEP', AEPGroup(nTurbs, nDirections=nDirections,
+    root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
+    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
+    root.add('AEPGroup', AEPGroup(nTurbs, nDirections=nDirections,
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
+    #root.ln_solver = ScipyGMRES()
 
     # initialize problem
     prob.setup()
@@ -181,7 +183,7 @@ if __name__=="__main__":
 
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
-    #prob['turbineZ'] = turbineZ
+    # prob['turbineZ'] = turbineZ
     prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
@@ -204,5 +206,5 @@ if __name__=="__main__":
 
     print 'turbineZ: ', prob['turbineZ']
     print 'AEP: ', prob['AEP']
-    #print 'COE: ', prob['COE']
+    print 'COE: ', prob['COE']
     
