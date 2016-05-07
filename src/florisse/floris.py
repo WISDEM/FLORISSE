@@ -670,8 +670,8 @@ class AEPGroup(Group):
         self.add('dv4', IndepVarComp('turbineY', np.zeros(nTurbines), units='m'), promotes=['*'])
 
         #self.add('dv13', IndepVarComp('turbineZ', np.zeros(nTurbines), units='m'), promotes=['*']) #TODO
-        self.add('dv5', IndepVarComp('turbineH1', 0., units='m'), promotes=['*'])
-        self.add('dv6', IndepVarComp('turbineH2', 0., units='m'), promotes=['*'])
+        #self.add('dv5', IndepVarComp('turbineH1', 0., units='m'), promotes=['*'])
+        #self.add('dv6', IndepVarComp('turbineH2', 0., units='m'), promotes=['*'])
         
 
         # add vars to be seen by MPI and gradient calculations

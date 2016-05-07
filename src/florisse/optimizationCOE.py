@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from openmdao.api import Problem, ExecComp, pyOptSparseDriver, ScipyGMRES
+from openmdao.api import Problem, ExecComp, pyOptSparseDriver, ScipyGMRES, IndepVarComp
 #from florisse.OptimizationGroups import OptAEP
 from florisse import config
 from florisse.GeneralWindFarmComponents import SpacingComp
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 18 # number of processors (and number of wind directions to run)
+    size = 8 # number of processors (and number of wind directions to run)
 
     #########################################################################
     # define turbine size
@@ -57,8 +57,8 @@ if __name__ == "__main__":
 
     # Scaling grid case
     # nRows = int(sys.argv[1])     # number of rows and columns in grid
-    nRows = 3
-    spacing = 5     # turbine grid spacing in diameters
+    nRows = 4
+    spacing = 3     # turbine grid spacing in diameters
 
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
@@ -68,8 +68,8 @@ if __name__ == "__main__":
 
     # initialize input variable arrays
     nTurbs = turbineX.size
-    turbineH1 = 100
-    turbineH2 = 100
+    turbineH1 = 175
+    turbineH2 = 150
     nTurbsH1 = nTurbs/2
     nTurbsH2 = nTurbs-nTurbsH1
     rotorDiameter = np.zeros(nTurbs)
@@ -103,20 +103,28 @@ if __name__ == "__main__":
     root = prob.root = Group()
     
     #TODO How to I pass TurbineZ down to calculate AEP? Basically, How do I get AEP?
-
+    root.add('dv5', IndepVarComp('turbineH1', 0., units='m'), promotes=['*'])
+    root.add('dv6', IndepVarComp('turbineH2', 0., units='m'), promotes=['*'])
     root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
-    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
     root.add('AEPGroup', AEPGroup(nTurbs, nDirections=size,
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
+    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
+    
     root.add('spacing_comp', SpacingComp(nTurbines=nTurbs), promotes=['*'])
+    # add constraint definitions
+    root.add('spacing_con', ExecComp('sc = wtSeparationSquared-(minSpacing*rotorDiameter[0])**2',
+                                 minSpacing=minSpacing, rotorDiameter=np.zeros(nTurbs),
+                                 sc=np.zeros(((nTurbs-1.)*nTurbs/2.)),
+                                 wtSeparationSquared=np.zeros(((nTurbs-1.)*nTurbs/2.))),
+         promotes=['*'])
     #root.ln_solver = ScipyGMRES()
     
 
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    prob.driver.add_objective('COE', scaler=1E-8) #TODO???? COE is the objective ya?
+    prob.driver.add_objective('COE', scaler=1E-2) #TODO???? COE is the objective ya?
 
     # set optimizer options
     prob.driver.opt_settings['Verify level'] = 3
@@ -129,8 +137,8 @@ if __name__ == "__main__":
     print('nTurbs: ', nTurbs)
     print('nTurbsH1: ', nTurbsH1)
     print('nturbsH2: ', nTurbsH2)
-    #prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
-    #prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
+    prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
+    prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
     prob.driver.add_desvar('turbineH1', lower=80., upper=None, scaler=1E-2)
     prob.driver.add_desvar('turbineH2', lower=80., upper=None, scaler=1E-2)
     # prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbs)*100., upper=np.ones(nTurbs)*500., scaler=1E-2)
@@ -142,7 +150,7 @@ if __name__ == "__main__":
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)), scaler=1.0/rotor_diameter)
 
     tic = time.time()
-    prob.setup(check=False)
+    prob.setup(check=True)
     toc = time.time()
 
     # print the results
@@ -181,6 +189,7 @@ if __name__ == "__main__":
     # cProfile.run('prob.run()')
     prob.run()
     toc = time.time()
+    #self.J = prob.check_total_derivatives()
 
     # print the results
     mpi_print(prob, ('FLORIS Opt. calculation took %.03f sec.' % (toc-tic)))
@@ -199,6 +208,7 @@ if __name__ == "__main__":
     #mpi_print(prob,  'wind farm power in each direction (kW): %s' % prob['dirPowers'])
     #mpi_print(prob,  'AEP: %s' % prob['AEP'])
     mpi_print(prob,  'COE: %s' % prob['COE'])
+    mpi_print(prob,  'AEP: %s' % prob['AEP'])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
     ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]

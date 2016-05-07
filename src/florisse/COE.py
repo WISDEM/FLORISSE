@@ -167,10 +167,11 @@ if __name__=="__main__":
     
 
     root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
-    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
     root.add('AEPGroup', AEPGroup(nTurbs, nDirections=nDirections,
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
+    root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
+    
     #root.ln_solver = ScipyGMRES()
 
     # initialize problem
@@ -204,7 +205,12 @@ if __name__=="__main__":
     prob.run()
     toc = time.time()
 
+    first = prob['COE']
+
     print 'turbineZ: ', prob['turbineZ']
     print 'AEP: ', prob['AEP']
     print 'COE: ', prob['COE']
+
+    step = 1e-6
+    
     
