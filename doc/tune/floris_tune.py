@@ -410,6 +410,7 @@ if __name__ == '__main__':
     config.floris_single_component = True
 
     model = 'smooth'  # options: 'original', 'smooth'
+
     gradients = 'fd'    # options: 'fd', 'exact'
     flat = True        # if False, will use cosine smoothing factor
     rotor = False       # if True, will use rotor coupled data
