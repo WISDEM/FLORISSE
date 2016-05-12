@@ -1,7 +1,10 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
-from openmdao.api import NLGaussSeidel, ScipyGMRES, PetscKSP
+from openmdao.api import Group, Component, Problem, IndepVarComp, ParallelGroup
+from openmdao.api import NLGaussSeidel, ScipyGMRES
+from openmdao.core.mpi_wrap import MPI
+if MPI:
+    from openmdao.api import PetscKSP
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
@@ -10,10 +13,6 @@ from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP
 from florisse import config
 import _floris
 import _florisDiscontinuous
-
-# import _florisHubSmooth as _floris
-
-import mpi4py as mpi
 
 
 def add_floris_parameters(openmdao_comp, use_rotor_components=False):
