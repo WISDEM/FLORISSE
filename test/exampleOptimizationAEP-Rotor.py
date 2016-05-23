@@ -118,6 +118,9 @@ if __name__ == "__main__":
     # add constraints
     prob.driver.add_constraint('sc', lower=np.zeros(((nTurbs-1.)*nTurbs/2.)))
 
+    # set voi_red options
+    prob.root.ln_solver.options['single_voi_relevance_reduction'] = True
+
     # initialize problem
     prob.setup(check=True)
 
