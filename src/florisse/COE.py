@@ -111,6 +111,27 @@ class getTurbineZ(Component):
         return J
 
 
+class AEPobj(Component):
+    """
+    Objective to maximize AEP
+    """
+
+    def __init__(self):
+
+        super(AEPobj, self).__init__()
+
+        self.fd_options['form'] = 'forward'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+        self.fd_options['force_fd'] = True
+        
+        self.add_param('AEP', 0.0, desc='AEP of the wind farm')
+
+        self.add_output('maxAEP', 0.0, desc='negative AEP')
+        
+    def solve_nonlinear(self, params, unknowns, resids):
+        unknowns['maxAEP'] = -1*params['AEP']
+        
 
 
 if __name__=="__main__":
@@ -153,9 +174,9 @@ if __name__=="__main__":
     air_density = 1.1716    # kg/m^3
     # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
     
-    turbineH1 = 90.
-    turbineH2 = 100.
-    nTurbsH1 = 3
+    turbineH1 = 100
+    turbineH2 = 1000
+    nTurbsH1 = nTurbs/2
     nTurbsH2 = nTurbs-nTurbsH1
     rotorDiameter = np.ones(nTurbs)*126.4 
     nDirections = 50
@@ -209,8 +230,5 @@ if __name__=="__main__":
 
     print 'turbineZ: ', prob['turbineZ']
     print 'AEP: ', prob['AEP']
-    print 'COE: ', prob['COE']
-
-    step = 1e-6
-    
+    print 'COE: ', prob['COE']    
     
