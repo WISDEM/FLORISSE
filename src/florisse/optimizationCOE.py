@@ -16,7 +16,7 @@ import cProfile
 import sys
 
 if __name__ == "__main__":
-    """
+    
     #Load in Amalia locations
     filename = "layout_amalia.txt"
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     x_y = np.loadtxt(amalia)
     turbineX = x_y[:,0]
     turbineY = x_y[:,1]
-    
+    """
     #Amalia Data
     ##############################################################################
     windSpeeds = np.array([6.53163342, 6.11908394, 6.13415514, 6.0614625,  6.21344602,
@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 8 # number of processors (and number of wind directions to run)
+    size = 36 # number of processors (and number of wind directions to run)
 
     #########################################################################
     # define turbine size
@@ -106,12 +106,14 @@ if __name__ == "__main__":
 
     # Scaling grid case
     # nRows = int(sys.argv[1])     # number of rows and columns in grid
-    nRows = 5
+    """
+    nRows = 3
     spacing = 3    # turbine grid spacing in diameters
 
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
     xpoints, ypoints = np.meshgrid(points, points)
+    """
     """
     turbineX = np.ndarray.flatten(xpoints)
     turbineY = np.ndarray.flatten(ypoints)
@@ -128,8 +130,8 @@ if __name__ == "__main__":
     
     inverted = "no"
     
-
-    nRows = 5
+    """
+    nRows = 2
     spacing = 3   # turbine grid spacing in diameters
     nTurbs = nRows*nRows
     # Set up position arrays
@@ -139,6 +141,8 @@ if __name__ == "__main__":
     
     turbineX = np.ndarray.flatten(xpoints)
     turbineY = np.ndarray.flatten(ypoints)
+    """
+    nTurbs = len(turbineX)
     turbineX1 = np.array([])
     turbineX2 = np.array([])
     turbineY1 = np.array([])
@@ -166,9 +170,9 @@ if __name__ == "__main__":
     # initialize input variable arrays
     nTurbs = turbineX.size
     #87.6m is the height of the 5MW NREL turbines
-    turbineMin = 70
-    turbineH1 = 130
-    turbineH2 = 110
+    turbineMin = rotor_diameter/2+10
+    turbineH1 = 150
+    turbineH2 = 90
     #turbineH2 = 87.6
     #nTurbsH1 = 5
     nTurbsH1 = len(turbineX1)
@@ -228,7 +232,7 @@ if __name__ == "__main__":
     # set up optimizer
     prob.driver = pyOptSparseDriver()
     prob.driver.options['optimizer'] = 'SNOPT'
-    prob.driver.add_objective('COE', scaler=1E-2) #TODO???? COE is the objective ya?
+    prob.driver.add_objective('COE', scaler=1E-6) #TODO???? COE is the objective ya?
 
     # set optimizer options
     prob.driver.opt_settings['Verify level'] = 3
@@ -243,8 +247,8 @@ if __name__ == "__main__":
     print('nturbsH2: ', nTurbsH2)
     prob.driver.add_desvar('turbineX', lower=np.ones(nTurbs)*min(turbineX), upper=np.ones(nTurbs)*max(turbineX), scaler=1E-2)
     prob.driver.add_desvar('turbineY', lower=np.ones(nTurbs)*min(turbineY), upper=np.ones(nTurbs)*max(turbineY), scaler=1E-2)
-    prob.driver.add_desvar('turbineH1', turbineMin, upper=175, scaler=1E-2)
-    prob.driver.add_desvar('turbineH2', turbineMin, upper=175, scaler=1E-2)
+    prob.driver.add_desvar('turbineH1', turbineMin, upper=None, scaler=1E-2)
+    prob.driver.add_desvar('turbineH2', turbineMin, upper=None, scaler=1E-2)
     # prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbs)*100., upper=np.ones(nTurbs)*500., scaler=1E-2)
     """for direction_id in range(0, windDirections.size):
         prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)"""
@@ -318,7 +322,7 @@ if __name__ == "__main__":
     optCOE = prob['COE']
     optAEP = prob['AEP']
 
-    np.savetxt('XYZ5test.txt',np.c_[prob['turbineX'],prob['turbineY'],prob['turbineZ']])
+    np.savetxt('XYZamalia.txt',np.c_[prob['turbineX'],prob['turbineY'],prob['turbineZ']])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
     ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]
@@ -339,17 +343,19 @@ if __name__ == "__main__":
     plt.xlabel('Turbine X Position (m)')
     plt.ylabel('Turbine Y Position (m)')
     plt.legend(bbox_to_anchor=(1.14, 1.14))
-    plt.show() 
+    #plt.show() 
 
     ##########################################################################################
     ##########################################################################################
     ##########################################################################################
     #Only modify x and y
 
-
+    """
     turbineH1 = turbineMin
     turbineH2 = turbineMin
-
+    """
+    turbineH1 = 87.6
+    turbineH2 = 87.6
     # set up problem
     prob = Problem()
     root = prob.root = Group()
@@ -464,7 +470,7 @@ if __name__ == "__main__":
 
     tdCOE = prob['COE']
     tdAEP = prob['AEP']
-    np.savetxt('XY5test.txt',np.c_[prob['turbineX'],prob['turbineY'],prob['turbineZ']])
+    np.savetxt('XYamalia.txt',np.c_[prob['turbineX'],prob['turbineY'],prob['turbineZ']])
 
     xbounds = [min(turbineX), min(turbineX), max(turbineX), max(turbineX), min(turbineX)]
     ybounds = [min(turbineY), max(turbineY), max(turbineY), min(turbineY), min(turbineX)]

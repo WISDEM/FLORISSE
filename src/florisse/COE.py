@@ -54,23 +54,32 @@ class COEComponent(Component):
         rotor_cost = 1505102.53 
         nacelle_cost = 3000270.
 
-        windpactMassSlope = 0.397251147546925
-        windpactMassInt   = -1414.381881
+        #windpactMassSlope = 0.397251147546925
+        #windpactMassInt   = -1414.381881
+
+        tower_mass_coeff = 19.828
+        tower_mass_exp = 2.0282
         
-        twrCostEscalator  = 1.5944
-        twrCostCoeff      = 1.5 # $/kg   
+        
+        #twrCostEscalator  = 1.5944
+        #twrCostCoeff      = 1.5 # $/kg   
+
+        tower_mass_cost_coefficient = 3.08 #$/kg
 
         tower_cost = np.zeros(nTurbines)
         for i in range(nTurbines):
-            mass = windpactMassSlope * pi * (RotorDiam[i]/2.)**2 * turbineZ[i] + windpactMassInt
-            tower_cost[i] = mass*twrCostEscalator*twrCostCoeff
+            #mass = windpactMassSlope * pi * (RotorDiam[i]/2.)**2 * turbineZ[i] + windpactMassInt
+            mass = tower_mass_coeff*turbineZ[i]**tower_mass_exp #new mass from Katherine
+            #tower_cost[i] = mass*twrCostEscalator*twrCostCoeff
             # tower_cost = 1390588.80 # to change
+            tower_cost[i] = tower_mass_cost_coefficient*mass #new cost from Katherine
+            
 
         parts_cost_farm = nTurbines*(rotor_cost + nacelle_cost) + np.sum(tower_cost) #parts cost for the entire wind farm
         turbine_multiplier = (1 + transportMultiplier + profitMultiplier) * (1+overheadCostMultiplier+assemblyCostMultiplier)
         turbine_cost = turbine_multiplier * parts_cost_farm
 
-        unknowns['COE'] = fixed_charge_rate*(turbine_cost+bos)/AEP + 0.0122*(1-tax_rate)
+        unknowns['COE'] = (fixed_charge_rate*(turbine_cost+bos)/AEP + 0.0122*(1-tax_rate))*1E8
 
 
 

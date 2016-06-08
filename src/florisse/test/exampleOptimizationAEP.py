@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     prob = Problem(impl=impl)
 
-    size = 4 # number of processors (and number of wind directions to run)
+    size = 8 # number of processors (and number of wind directions to run)
 
     #########################################################################
     # define turbine size
@@ -48,8 +48,8 @@ if __name__ == "__main__":
 
     # Scaling grid case
     # nRows = int(sys.argv[1])     # number of rows and columns in grid
-    nRows = 2
-    spacing = 5     # turbine grid spacing in diameters
+    nRows = 5
+    spacing = 3     # turbine grid spacing in diameters
 
     # Set up position arrays
     points = np.linspace(start=spacing*rotor_diameter, stop=nRows*spacing*rotor_diameter, num=nRows)
