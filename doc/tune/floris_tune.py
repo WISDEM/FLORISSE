@@ -1,7 +1,7 @@
 from openmdao.api import Problem, Group, IndepVarComp
 from pyoptsparse import Optimization, OPT, SNOPT
 
-from florisse.floris import DirectionGroupFLORIS
+from florisse.floris import DirectionGroup
 from florisse import config
 
 from scipy.io import loadmat
@@ -52,7 +52,7 @@ def objfunction(xdict):
 
         # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-        FLORISpower.append(list(prob['wt_power0']))
+        FLORISpower.append(list(prob['wtPower']))
 
     FLORISpower = np.array(FLORISpower)
 
@@ -88,7 +88,7 @@ def objfunction(xdict):
 
         # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-        FLORISpower.append(list(prob['wt_power0']))
+        FLORISpower.append(list(prob['wtPower']))
 
     FLORISpower = np.array(FLORISpower)
 
@@ -141,7 +141,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
         # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-        FLORISpower.append(list(prob['wt_power0']))
+        FLORISpower.append(list(prob['wtPower0']))
 
         time.sleep(0.001)
 
@@ -195,7 +195,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
         # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-        FLORISpower.append(list(prob['wt_power0']))
+        FLORISpower.append(list(prob['wtPower0']))
 
     FLORISpower = np.array(FLORISpower)
 
@@ -248,13 +248,13 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
             # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-            FLORISpower.append(list(prob['wt_power0']))
-            FLORISvelocity.append(list(prob['velocitiesTurbines0']))
+            FLORISpower.append(list(prob['wtPower0']))
+            FLORISvelocity.append(list(prob['wtVelocity0']))
 
         FLORISpower = np.array(FLORISpower)
         FLORISvelocity = np.array(FLORISvelocity)
 
-        np.savetxt("downstream_velocity_original.txt", np.c_[posrange/rotorDiameter[0], FLORISvelocity[:, 1]], delimiter=',')
+        # np.savetxt("downstream_velocity_original.txt", np.c_[posrange/rotorDiameter[0], FLORISvelocity[:, 1]], delimiter=',')
 
         axes[1].plot(posrange/rotorDiameter[0], FLORISpower[:, 1], '#7CFC00', label='FLORIS model')
         axes[1].plot(np.array([7, 7]), np.array([0, 1800]), '--k', label='tuning point')
@@ -292,7 +292,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
             FLORIScenters.append(list(prob['wakeCentersYT']))
             FLORISdiameters.append(list(prob['wakeDiametersT']))
             FLORISoverlap.append(list(prob['wakeOverlapTRel']))
-            # print prob['velocitiesTurbines0']
+            # print prob['wtVelocity0']
 
             # print prob['wakeOverlapTRel'][6:]
 
@@ -303,9 +303,9 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
         fig, axes = plt.subplots(ncols=2, nrows=2, sharey=False, sharex=False)
         # plot wake center
-        axes[0, 0].plot(posrange/rotorDiameter[0], FLORIScenters[:, 2], 'k', label='Wake Center')
+        axes[0, 0].plot(posrange/rotorDiameter[0], FLORIScenters[:, 2]/rotorDiameter[0], 'k', label='Wake Center')
         # axes[0, 0].set_xlabel('x/D')
-        axes[0, 0].set_ylabel('Position')
+        axes[0, 0].set_ylabel('y/D')
         axes[0, 0].legend(loc=1)
 
         # plot wake diameters
@@ -353,7 +353,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
 
             # print np.sqrt((turbineY[0]-turbineY[1])**2+(turbineX[0]-turbineX[1])**2)/rotorDiameter[0] # print downwind distance
 
-            FLORISpower.append(list(prob['wt_power0']))
+            FLORISpower.append(list(prob['wtPower0']))
 
         FLORISpower = np.array(FLORISpower)
 
@@ -386,7 +386,7 @@ def plotSOWFAvsFLORIS(prob, just_SOWFA=True, plot_prefix=""):
     #     FLORIScenters.append(list(prob['wakeCentersYT']))
     #     FLORISdiameters.append(list(prob['wakeDiametersT']))
     #     FLORISoverlap.append(list(prob['wakeOverlapTRel']))
-    #     # print prob['velocitiesTurbines0']
+    #     # print prob['wtVelocity0']
     #
     #     # print prob['wakeOverlapTRel'][6:]
     #
@@ -410,6 +410,7 @@ if __name__ == '__main__':
     config.floris_single_component = True
 
     model = 'smooth'  # options: 'original', 'smooth'
+
     gradients = 'fd'    # options: 'fd', 'exact'
     flat = True        # if False, will use cosine smoothing factor
     rotor = False       # if True, will use rotor coupled data
@@ -468,7 +469,6 @@ if __name__ == '__main__':
 
     params = np.array([pP, kd, initialWakeAngle, bd, ke,   me[0], me[1], MU[0], MU[2], aU,  bU,  cos_spread])
 
-
     if rotor:
         NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
         # NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
@@ -487,7 +487,7 @@ if __name__ == '__main__':
     axialInduction = np.zeros(nTurbines)
     Ct = np.zeros(nTurbines)
     Cp = np.zeros(nTurbines)
-    generator_efficiency = np.zeros(nTurbines)
+    generatorEfficiency = np.zeros(nTurbines)
     yaw = np.zeros(nTurbines)
 
     # define initial values
@@ -496,7 +496,7 @@ if __name__ == '__main__':
         axialInduction[turbI] = 1.0/3.0
         Ct[turbI] = 4.0*axialInduction[turbI]*(1.0-axialInduction[turbI])
         Cp[turbI] = (0.7737/0.944) * 4.0 * 1.0/3.0 * np.power((1. - 1.0/3.0), 2)
-        generator_efficiency[turbI] = 0.944
+        generatorEfficiency[turbI] = 0.944
         yaw[turbI] = 0.     # deg.
     print "initial Cp", Cp
     print "initial Ct", Ct
@@ -514,8 +514,8 @@ if __name__ == '__main__':
     global prob
     prob = Problem(root=Group())
 
-    prob.root.add('FLORIS', DirectionGroupFLORIS(nTurbines, resolution=0, use_rotor_components=rotor,
-                                                 datasize=datasize, differentiable=differentiable), promotes=['*'])
+    prob.root.add('FLORIS', DirectionGroup(nTurbines, use_rotor_components=rotor,
+                                           datasize=datasize, differentiable=differentiable), promotes=['*'])
 
     # set up problem
     prob.setup(check=False)
@@ -531,7 +531,7 @@ if __name__ == '__main__':
         prob['gen_params:CTcorrected'] = False
         prob['gen_params:CPcorrected'] = False
 
-    if not (model=="original"):
+    if model is not "original":
         prob['floris_params:useWakeAngle'] = True
         prob['floris_params:adjustInitialWakeDiamToYaw'] = False
         prob['floris_params:useaUbU'] = True
@@ -559,7 +559,7 @@ if __name__ == '__main__':
     # assign values to constant inputs
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
-    prob['generator_efficiency'] = generator_efficiency
+    prob['generatorEfficiency'] = generatorEfficiency
     prob['wind_speed'] = wind_speed
     prob['air_density'] = air_density
     prob['wind_direction'] = wind_direction

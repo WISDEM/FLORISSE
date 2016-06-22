@@ -4,6 +4,7 @@ from openmdao.api import pyOptSparseDriver, Problem
 
 from florisse.floris import *
 from florisse.OptimizationGroups import *
+from florisse.GeneralWindFarmComponents import calculate_boundary
 
 import cPickle as pickle
 
@@ -12,7 +13,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
     def setUp(self):
 
-        nTurbines = 4
+        nTurbines = 3
         self.rtol = 1E-6
         self.atol = 1E-6
 
@@ -22,6 +23,16 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         turbineY = np.random.rand(nTurbines)*3000.
         turbineZ = np.random.rand(nTurbines)*150.+75
 
+        # generate boundary constraint
+        locations = np.zeros([nTurbines, 2])
+        for i in range(0, nTurbines):
+            locations[i] = np.array([turbineX[i], turbineY[i]])
+
+        print locations
+        boundaryVertices, boundaryNormals = calculate_boundary(locations)
+        nVertices = len(boundaryNormals)
+
+        
         minSpacing = 2.
 
         # initialize input variable arrays
@@ -145,13 +156,13 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         # set up problem
         # prob = Problem(root=OptAEP(nTurbines, nDirections=1))
 
-        prob = Problem(root=OptAEP(nTurbines=nTurbines, nDirections=windDirections.size,
+        prob = Problem(root=OptAEP(nTurbines=nTurbines, nDirections=windDirections.size, nVertices=nVertices,
                                           minSpacing=minSpacing, use_rotor_components=False))
 
         # set up optimizer
         # prob.driver = pyOptSparseDriver()
         # prob.driver.options['optimizer'] = 'SNOPT'
-        prob.driver.add_objective('obj', scaler=1E-8)
+        prob.driver.add_objective('obj', scaler=1E-5)
 
         # set optimizer options
         # prob.driver.opt_settings['Verify level'] = 3
@@ -163,11 +174,14 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         prob.driver.add_desvar('turbineX', lower=np.ones(nTurbines)*min(turbineX), upper=np.ones(nTurbines)*max(turbineX), scaler=1E-2)
         prob.driver.add_desvar('turbineY', lower=np.ones(nTurbines)*min(turbineY), upper=np.ones(nTurbines)*max(turbineY), scaler=1E-2)
         prob.driver.add_desvar('turbineZ', lower=np.ones(nTurbines)*min(turbineZ), upper=np.ones(nTurbines)*max(turbineZ), scaler=1E-2)
+
         for direction_id in range(0, windDirections.size):
-            prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
+            prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
 
         # add constraints
         prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)))
+        prob.driver.add_constraint('boundaryDistances', lower=np.zeros(nVertices*nTurbines), scaler=1.0)
+
 
         # initialize problem
         prob.setup()
@@ -188,6 +202,10 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         prob['windFrequencies'] = windFrequencies
         prob['floris_params:FLORISoriginal'] = True
 
+        # provide values for hull constraint
+        prob['boundaryVertices'] = boundaryVertices
+        prob['boundaryNormals'] = boundaryNormals
+
         # run problem
         prob.run()
 
@@ -197,9 +215,6 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
 
         # print self.J
 
-        config.floris_single_component = False
-        config.BV = True
-
     def testObj(self):
 
         np.testing.assert_allclose(self.J[('obj', 'turbineX')]['rel error'], self.J[('obj', 'turbineX')]['rel error'], self.rtol, self.atol)
@@ -208,12 +223,15 @@ class TotalDerivTestsFlorisUnifiedAEPOpt(unittest.TestCase):
         for dir in np.arange(0, self.nDirections):
             np.testing.assert_allclose(self.J[('obj', 'yaw%i' % dir)]['rel error'], self.J[('obj', 'yaw%i' % dir)]['rel error'], self.rtol, self.atol)
 
-    def testCon(self):
+    def testSpacingCon(self):
 
         np.testing.assert_allclose(self.J[('sc', 'turbineX')]['rel error'], self.J[('sc', 'turbineX')]['rel error'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J[('sc', 'turbineY')]['rel error'], self.J[('sc', 'turbineY')]['rel error'], self.rtol, self.atol)
-        for dir in np.arange(0, self.nDirections):
-            np.testing.assert_allclose(self.J[('sc', 'yaw%i' % dir)]['rel error'], self.J[('sc', 'yaw%i' % dir)]['rel error'], self.rtol, self.atol)
+
+    def testBoundaryCon(self):
+
+        np.testing.assert_allclose(self.J[('boundaryDistances', 'turbineX')]['rel error'], self.J[('boundaryDistances', 'turbineX')]['rel error'], self.rtol, self.atol)
+        np.testing.assert_allclose(self.J[('boundaryDistances', 'turbineY')]['rel error'], self.J[('boundaryDistances', 'turbineY')]['rel error'], self.rtol, self.atol)
 
 
 class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
@@ -278,7 +296,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
 
 
         # assign values to constant inputs (not design variables)
-        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_smooth_dict.p'))
+        NREL5MWCPCT = pickle.load(open('./input_files/NREL5MWCPCT_smooth_dict.p'))
         prob['turbineX'] = turbineX
         prob['turbineY'] = turbineY
         prob['turbineZ'] = turbineZ
@@ -528,7 +546,7 @@ class GradientTestsCtCpRotor(unittest.TestCase):
 
 
 
-        NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
+        NREL5MWCPCT = pickle.load(open('./input_files/NREL5MWCPCT_dict.p'))
         datasize = NREL5MWCPCT['CP'].size
 
         # set up problem
@@ -710,9 +728,9 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
     def testUnified_wtVelocity(self):
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineXw')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineXw')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineYw')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineYw')]['J_fd'], self.rtol, self.atol)
-        
-        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fd'], self.rtol, self.atol)        
-        
+
+        np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'turbineZ')]['J_fd'], self.rtol, self.atol)
+
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'yaw0')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'yaw0')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'rotorDiameter')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'rotorDiameter')]['J_fd'], self.rtol, self.atol)
         np.testing.assert_allclose(self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'Ct')]['J_fwd'], self.J['all_directions.direction_group0.myFloris.f_0'][('wtVelocity0', 'Ct')]['J_fd'], self.rtol, self.atol)

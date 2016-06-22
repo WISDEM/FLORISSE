@@ -5,7 +5,8 @@ import config
 
 import numpy as np
 from scipy import interp
-
+from scipy.io import loadmat
+from scipy.spatial import ConvexHull
 
 def add_gen_params_IdepVarComps(openmdao_group, datasize):
     openmdao_group.add('gp0', IndepVarComp('gen_params:pP', 1.88, pass_by_obj=True), promotes=['*'])
@@ -280,6 +281,8 @@ class WindFarmAEP(Component):
         # promote AEP result to class attribute
         unknowns['AEP'] = AEP
 
+        # print AEP
+
         # increase objective function call count
         if self.rec_func_calls:
             config.obj_func_calls += 1
@@ -298,14 +301,12 @@ class WindFarmAEP(Component):
 
         # calculate the derivative of outputs w.r.t. the power in each wind direction
         dAEP_dpower = np.ones(nDirs)*windFrequencies*hours
-        # dAEP_dwindrose_frequencies = np.ones(ndirs)*power_directions*hours
 
         # initialize Jacobian dict
         J = {}
 
         # populate Jacobian dict
         J['AEP', 'dirPowers'] = np.array([dAEP_dpower])
-        # J['AEP', 'windFrequencies'] = np.array([dAEP_dwindrose_frequencies])
 
         # increase gradient function call count
         if self.rec_func_calls:
@@ -394,62 +395,76 @@ class SpacingComp(Component):
 
 class BoundaryComp(Component):
 
-    def __init__(self, nVertices, nTurbines):
+    def __init__(self, nTurbines, nVertices):
 
         super(BoundaryComp, self).__init__()
 
         self.nTurbines = nTurbines
+        self.nVertices = nVertices
 
         # Explicitly size input arrays
-        self.add_param('AX', np.zeros(nVertices))
-        self.add_param('AY', np.zeros(nVertices))
-        self.add_param('b', np.zeros(nVertices))
-
-        self.add_param('turbineXw', np.zeros(nTurbines), iotype='in',
-                       desc='x coordinates of turbines in wind dir. ref. frame')
-        self.add_param('turbineYw', np.zeros(nTurbines), iotype='in',
-                       desc='y coordinates of turbines in wind dir. ref. frame')
+        self.add_param('boundaryVertices', np.zeros([nVertices, 2]), units='m', pass_by_obj=True,
+                       desc="vertices of the convex hull CCW in order s.t. boundaryVertices[i] -> first point of face"
+                            "for unit_normals[i]")
+        self.add_param('boundaryNormals', np.zeros([nVertices, 2]), pass_by_obj=True,
+                       desc="unit normal vector for each boundary face CCW where boundaryVertices[i] is "
+                            "the first point of the corresponding face")
+        self.add_param('turbineX', np.zeros(nTurbines), units='m',
+                       desc='x coordinates of turbines in global ref. frame')
+        self.add_param('turbineY', np.zeros(nTurbines), units='m',
+                       desc='y coordinates of turbines in global ref. frame')
 
         # Explicitly size output array
         # (vector with positive elements if turbines outside of hull)
-        self.add_output('inout', np.zeros(nVertices*nTurbines))
+        self.add_output('boundaryDistances', np.zeros([nTurbines, nVertices]),
+                        desc="signed perpendicular distance from each turbine to each face CCW; + is inside")
 
     def solve_nonlinear(self, params, unknowns, resids):
 
-        #print 'in hull const'
-        # tictot = time.time()
-        nTurbines = self.nTurbines
+        turbineX = params['turbineX']
+        turbineY = params['turbineY']
 
-        AX = params['AX']
-        AY = params['AY']
-        b = params['b']
-        turbineXw = params['turbineXw']
-        turbineYw = params['turbineY']
+        # put locations in correct arrangement for calculations
+        locations = np.zeros([self.nTurbines, 2])
+        for i in range(0, self.nTurbines):
+            locations[i] = np.array([turbineX[i], turbineY[i]])
 
-        J = np.concatenate((np.kron(np.eye(nTurbines), AX).transpose(), np.kron(np.eye(nTurbines), AY).transpose()), 1)
+        # print "in comp, locs are: ", locations
 
-        unknowns['inout'] = (np.dot(J, np.concatenate((turbineXw, turbineYw))) - np.tile(b, (1, nTurbines))).flatten()
-
-        # toctot = time.time()
-        #print 'done %s' % (toctot-tictot)
+        # calculate distance from each point to each face
+        unknowns['boundaryDistances'] = calculate_distance(locations,
+                                                           params['boundaryVertices'], params['boundaryNormals'])
 
     def linearize(self, params, unknowns, resids):
 
-        #print 'in hull const - provide J'
-        # tictot = time.time()
+        unit_normals = params['boundaryNormals']
 
-        nTurbines = self.nTurbines
+        # initialize array to hold distances from each point to each face
+        dfaceDistance_dx = np.zeros([self.nTurbines*self.nVertices, self.nTurbines])
+        dfaceDistance_dy = np.zeros([self.nTurbines*self.nVertices, self.nTurbines])
 
-        AX = params['AX']
-        AY = params['AY']
+        for i in range(0, self.nTurbines):
+            # determine if point is inside or outside of each face, and distance from each face
+            for j in range(0, self.nVertices):
 
+                # define the derivative vectors from the point of interest to the first point of the face
+                dpa_dx = np.array([-1.0, 0.0])
+                dpa_dy = np.array([0.0, -1.0])
+
+                # find perpendicular distance derivatives from point to current surface (vector projection)
+                ddistanceVec_dx = np.vdot(dpa_dx, unit_normals[j])*unit_normals[j]
+                ddistanceVec_dy = np.vdot(dpa_dy, unit_normals[j])*unit_normals[j]
+
+                # calculate derivatives for the sign of perpendicular distance from point to current face
+                dfaceDistance_dx[i*self.nVertices+j, i] = np.vdot(ddistanceVec_dx, unit_normals[j])
+                dfaceDistance_dy[i*self.nVertices+j, i] = np.vdot(ddistanceVec_dy, unit_normals[j])
+
+        # initialize Jacobian dict
         J = {}
 
-        J['inout', 'turbineXw'] = np.kron(np.eye(nTurbines), AX).transpose()
-        J['inout', 'turbineYw'] = np.kron(np.eye(nTurbines), AY).transpose()
-
-        # toctot = time.time()
-        #print 'done %s' % (toctot-tictot)
+        # return Jacobian dict
+        J['boundaryDistances', 'turbineX'] = dfaceDistance_dx
+        J['boundaryDistances', 'turbineY'] = dfaceDistance_dy
 
         return J
 
@@ -931,8 +946,241 @@ class WindDirectionPower(Component):
 
         return J
 
+#
+# def calculate_boundary(vertices):
+#
+#     # find the points that actually comprise a convex hull
+#     hull = ConvexHull(list(vertices))
+#
+#     # keep only vertices that actually comprise a convex hull and arrange in CCW order
+#     vertices = vertices[hull.vertices]
+#
+#     # get the real number of vertices
+#     nVertices = vertices.shape[0]
+#
+#     # initialize normals array
+#     unit_normals = np.zeros([nVertices, 2])
+#
+#     # determine if point is inside or outside of each face, and distance from each face
+#     for j in range(0, nVertices):
+#
+#         # calculate the unit normal vector of the current face (taking points CCW)
+#         if j < nVertices - 1:  # all but the set of point that close the shape
+#             normal = np.array([vertices[j+1, 1]-vertices[j, 1],
+#                                -(vertices[j+1, 0]-vertices[j, 0])])
+#             unit_normals[j] = normal/np.linalg.norm(normal)
+#         else:   # the set of points that close the shape
+#             normal = np.array([vertices[0, 1]-vertices[j, 1],
+#                                -(vertices[0, 0]-vertices[j, 0])])
+#             unit_normals[j] = normal/np.linalg.norm(normal)
+#
+#     return vertices, unit_normals
+#
+#
+# def calculate_distance(points, vertices, unit_normals, return_bool=False):
+#
+#     """
+#     :param points: points that you want to calculate the distance from to the faces of the convex hull
+#     :param vertices: vertices of the convex hull CCW in order s.t. vertices[i] -> first point of face for
+#            unit_normals[i]
+#     :param unit_normals: unit normal vector for each face CCW where vertices[i] is first point of face
+#     :param return_bool: set to True to return an array of bools where True means the corresponding point
+#            is inside the hull
+#     :return face_distace: signed perpendicular distance from each point to each face; + is inside)
+#     :return [inside]: (optional) an array of zeros and ones where 1.0 means the corresponding point is inside the hull
+#     """
+#     print points.shape, vertices.shape, unit_normals.shape
+#     nPoints = len(points[0, :])
+#     nVertices = len(unit_normals)
+#
+#     # initialize array to hold distances from each point to each face
+#     face_distance = np.zeros([nPoints, nVertices])
+#
+#     if not return_bool:
+#         # loop through points and find distance to each face
+#         for i in range(0, nPoints):
+#
+#             # determine if point is inside or outside of each face, and distance from each face
+#             for j in range(0, nVertices):
+#
+#                 # define the vector from the point of interest to the first point of the face
+#                 pa = np.array([vertices[j, 0]-points[0, i], vertices[j, 1]-points[0, i]])
+#
+#                 # find perpendicular distance from point to current surface (vector projection)
+#                 d_vec = np.vdot(pa, unit_normals[j])*unit_normals[j]
+#
+#                 # calculate the sign of perpendicular distance from point to current face (+ is inside, - is outside)
+#                 face_distance[i, j] = np.vdot(d_vec, unit_normals[j])
+#
+#         return face_distance
+#
+#     else:
+#         # initialize array to hold boolean indicating whether a point is inside the hull or not
+#         inside = np.zeros(nPoints)
+#
+#         # loop through points and find distance to each face
+#         for i in range(0, nPoints):
+#
+#             # determine if point is inside or outside of each face, and distance from each face
+#             for j in range(0, nVertices):
+#
+#                 # define the vector from the point of interest to the first point of the face
+#                 pa = np.array([vertices[j, 0]-points[0, i], vertices[j, 1]-points[1, i]])
+#
+#                 # find perpendicular distance from point to current surface (vector projection)
+#                 d_vec = np.vdot(pa, unit_normals[j])*unit_normals[j]
+#
+#                 # calculate the sign of perpendicular distance from point to current face (+ is inside, - is outside)
+#                 face_distance[i, j] = np.vdot(d_vec, unit_normals[j])
+#
+#             # check if the point is inside the convex hull by checking the sign of the distance
+#             if np.all(face_distance[i] > 0):
+#                 inside[i] = 1.0
+#
+#         return face_distance, inside
+#
+
+def calculate_boundary(vertices):
+
+    # find the points that actually comprise a convex hull
+    hull = ConvexHull(list(vertices))
+
+    # keep only vertices that actually comprise a convex hull and arrange in CCW order
+    vertices = vertices[hull.vertices]
+
+    # get the real number of vertices
+    nVertices = vertices.shape[0]
+
+    # initialize normals array
+    unit_normals = np.zeros([nVertices, 2])
+
+    # determine if point is inside or outside of each face, and distance from each face
+    for j in range(0, nVertices):
+
+        # calculate the unit normal vector of the current face (taking points CCW)
+        if j < nVertices - 1:  # all but the set of point that close the shape
+            normal = np.array([vertices[j+1, 1]-vertices[j, 1],
+                               -(vertices[j+1, 0]-vertices[j, 0])])
+            unit_normals[j] = normal/np.linalg.norm(normal)
+        else:   # the set of points that close the shape
+            normal = np.array([vertices[0, 1]-vertices[j, 1],
+                               -(vertices[0, 0]-vertices[j, 0])])
+            unit_normals[j] = normal/np.linalg.norm(normal)
+
+    return vertices, unit_normals
+
+
+def calculate_distance(points, vertices, unit_normals, return_bool=False):
+
+    """
+    :param points: points that you want to calculate the distance from to the faces of the convex hull
+    :param vertices: vertices of the convex hull CCW in order s.t. vertices[i] -> first point of face for
+           unit_normals[i]
+    :param unit_normals: unit normal vector for each face CCW where vertices[i] is first point of face
+    :param return_bool: set to True to return an array of bools where True means the corresponding point
+           is inside the hull
+    :return face_distace: signed perpendicular distance from each point to each face; + is inside
+    :return [inside]: (optional) an array of zeros and ones where 1.0 means the corresponding point is inside the hull
+    """
+
+    # print points.shape, vertices.shape, unit_normals.shape
+
+    nPoints = points.shape[0]
+    nVertices = vertices.shape[0]
+
+    # initialize array to hold distances from each point to each face
+    face_distance = np.zeros([nPoints, nVertices])
+
+    if not return_bool:
+        # loop through points and find distance to each face
+        for i in range(0, nPoints):
+
+            # determine if point is inside or outside of each face, and distance from each face
+            for j in range(0, nVertices):
+
+                # define the vector from the point of interest to the first point of the face
+                pa = np.array([vertices[j, 0]-points[i, 0], vertices[j, 1]-points[i, 1]])
+
+                # find perpendicular distance from point to current surface (vector projection)
+                d_vec = np.vdot(pa, unit_normals[j])*unit_normals[j]
+
+                # calculate the sign of perpendicular distance from point to current face (+ is inside, - is outside)
+                face_distance[i, j] = np.vdot(d_vec, unit_normals[j])
+
+        return face_distance
+
+    else:
+        # initialize array to hold boolean indicating whether a point is inside the hull or not
+        inside = np.zeros(nPoints)
+
+        # loop through points and find distance to each face
+        for i in range(0, nPoints):
+
+            # determine if point is inside or outside of each face, and distance from each face
+            for j in range(0, nVertices):
+
+                # define the vector from the point of interest to the first point of the face
+                pa = np.array([vertices[j, 0]-points[i, 0], vertices[j, 1]-points[i, 1]])
+
+                # find perpendicular distance from point to current surface (vector projection)
+                d_vec = np.vdot(pa, unit_normals[j])*unit_normals[j]
+
+                # calculate the sign of perpendicular distance from point to current face (+ is inside, - is outside)
+                face_distance[i, j] = np.vdot(d_vec, unit_normals[j])
+
+            # check if the point is inside the convex hull by checking the sign of the distance
+            if np.all(face_distance[i] >= 0):
+                inside[i] = 1.0
+
+        return face_distance, inside
+
 
 if __name__ == "__main__":
+    import matplotlib.pyplot as plt
+
+    AmaliaLocationsAndHull = loadmat('Amalia_locAndHull.mat')
+    print AmaliaLocationsAndHull.keys()
+    turbineX = AmaliaLocationsAndHull['turbineX'].flatten()
+    turbineY = AmaliaLocationsAndHull['turbineY'].flatten()
+
+    print turbineX.size
+
+    nTurbines = len(turbineX)
+    locations = np.zeros([nTurbines, 2])
+    for i in range(0, nTurbines):
+        locations[i] = np.array([turbineX[i], turbineY[i]])
+
+    # get boundary information
+    vertices, unit_normals = calculate_boundary(locations)
+
+    print vertices, unit_normals
+
+    # define point of interest
+    resolution = 100
+    x = np.linspace(min(turbineX), max(turbineX), resolution)
+    y = np.linspace(min(turbineY), max(turbineY), resolution)
+    xx, yy = np.meshgrid(x, y)
+    xx = xx.flatten()
+    yy = yy.flatten()
+    nPoints = len(xx)
+    p = np.zeros([nPoints, 2])
+    for i in range(0, nPoints):
+        p[i] = np.array([xx[i], yy[i]])
+
+    # calculate distance from each point to each face
+    face_distance, inside = calculate_distance(p, vertices, unit_normals, return_bool=True)
+
+    print inside.shape
+    # reshape arrays for plotting
+    xx = np.reshape(xx, (resolution, resolution))
+    yy = np.reshape(yy, (resolution, resolution))
+    inside = np.reshape(inside, (resolution, resolution))
+
+    # plot points colored based on inside/outside of hull
+    plt.figure()
+    plt.pcolor(xx, yy, inside)
+    plt.plot(turbineX, turbineY, 'ow')
+    plt.show()
 
     # top = Problem()
     #
@@ -987,21 +1235,21 @@ if __name__ == "__main__":
     # print(root.p.unknowns['output1'])
     # top.check_partial_derivatives()
 
-    top = Problem()
-
-    root = top.root = Group()
-
-    root.add('p1', IndepVarComp('x', np.array([0, 3])))
-    root.add('p2', IndepVarComp('y', np.array([1, 0])))
-    root.add('p', SpacingComp(nTurbines=2))
-
-    root.connect('p1.x', 'p.turbineX')
-    root.connect('p2.y', 'p.turbineY')
-
-    top.setup()
-    top.run()
-
-    # print(root.p.unknowns['output0'])
-    # print(root.p.unknowns['output1'])
-    top.check_partial_derivatives()
+    # top = Problem()
+    #
+    # root = top.root = Group()
+    #
+    # root.add('p1', IndepVarComp('x', np.array([0, 3])))
+    # root.add('p2', IndepVarComp('y', np.array([1, 0])))
+    # root.add('p', SpacingComp(nTurbines=2))
+    #
+    # root.connect('p1.x', 'p.turbineX')
+    # root.connect('p2.y', 'p.turbineY')
+    #
+    # top.setup()
+    # top.run()
+    #
+    # # print(root.p.unknowns['output0'])
+    # # print(root.p.unknowns['output1'])
+    # top.check_partial_derivatives()
 

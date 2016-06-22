@@ -28,7 +28,7 @@ resolution = 75
 rotorDiameter = 126.4
 rotorArea = np.pi*rotorDiameter*rotorDiameter/4.0
 axialInduction = 1.0/3.0 # used only for initialization
-generator_efficiency = 0.944
+generatorEfficiency = 0.944
 hub_height = 90.0
 NREL5MWCPCT = pickle.load(open('NREL5MWCPCT_dict.p'))
 datasize = NREL5MWCPCT['CP'].size
@@ -44,10 +44,11 @@ prob.setup()
 prob['gen_params:windSpeedToCPCT_CP'] = NREL5MWCPCT['CP']
 prob['gen_params:windSpeedToCPCT_CT'] = NREL5MWCPCT['CT']
 prob['gen_params:windSpeedToCPCT_wind_speed'] = NREL5MWCPCT['wind_speed']
+prob['floris_params:cos_spread'] = 1E12
 prob['axialInduction'] = np.array([axialInduction, axialInduction])
 prob['rotorDiameter'] = np.array([rotorDiameter, rotorDiameter])
 prob['hubHeight'] = np.array([hub_height, hub_height])
-prob['generator_efficiency'] = np.array([generator_efficiency, generator_efficiency])
+prob['generatorEfficiency'] = np.array([generatorEfficiency, generatorEfficiency])
 prob['turbineX'] = turbineXinit
 prob['turbineY'] = turbineYinit
 
@@ -189,11 +190,8 @@ for pos2 in posrange:
     prob['wsPositionX'] = np.copy(positionF[0])
     prob['wsPositionY'] = np.copy(positionF[1])
     prob['wsPositionZ'] = np.copy(positionF[2])
-    print "CUT: "
     prob.run()
-    print "CUT END"
     velocities_cut.append(np.array(prob['wsArray0']))
-    print prob['wsArray0'][len(prob['wsArray0'])/2]
 
 # plot powers
 FLORISpower = np.array(FLORISpower)
@@ -218,8 +216,11 @@ axes1 = list(axes[0])+list(axes[2])
 axes2 = list(axes[1])+list(axes[3])
 
 for i in range(len(posrange)):
+    print velocities[i].shape
     vel = velocities[i].flatten()
+    print vel.shape
     vel = vel.reshape(len(y), len(x))
+    print vel.shape
     ax1 = axes1[i]
     im = ax1.pcolormesh(x, y, vel, cmap='coolwarm', vmin=vmin, vmax=vmax)
     ax1.set_aspect('equal')
@@ -230,6 +231,7 @@ for i in range(len(posrange)):
 
     vel = velocities_cut[i].flatten()
     vel = vel.reshape(len(z_cut), len(y_cut))
+    print vel.shape
     ax2 = axes2[i]
     im = ax2.pcolormesh(y_cut, z_cut, vel, cmap='coolwarm', vmin=vmin, vmax=vmax)
     ax2.set_aspect('equal')

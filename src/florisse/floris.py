@@ -1,7 +1,10 @@
 import numpy as np
 
-from openmdao.api import Group, Component, Problem, IndepVarComp, ParamComp, ParallelGroup
-from openmdao.api import NLGaussSeidel, ScipyGMRES\
+from openmdao.api import Group, Component, Problem, IndepVarComp, ParallelGroup
+from openmdao.api import NLGaussSeidel, ScipyGMRES
+from openmdao.core.mpi_wrap import MPI
+if MPI:
+    from openmdao.api import PetscKSP
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
@@ -10,10 +13,6 @@ from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP
 from florisse import config
 import _floris
 import _florisDiscontinuous
-
-# import _florisHubSmooth as _floris
-
-import mpi4py as mpi
 
 
 def add_floris_parameters(openmdao_comp, use_rotor_components=False):
@@ -67,7 +66,7 @@ def add_floris_parameters(openmdao_comp, use_rotor_components=False):
     openmdao_comp.add_param('floris_params:bU', 1.66 if not use_rotor_components else 1.3, pass_by_obj=True,
                             desc='zone decay adjustment parameter dependent yaw')
     # added
-    openmdao_comp.add_param('floris_params:cos_spread', 1E12 if not use_rotor_components else 2.0, pass_by_obj=True,
+    openmdao_comp.add_param('floris_params:cos_spread', 2.0, pass_by_obj=True,
                             desc='spread of cosine smoothing factor (multiple of sum of wake and rotor radii)')
     openmdao_comp.add_param('floris_params:keCorrArray', 0.0, pass_by_obj=True,
                             desc='multiplies the ke value by 1+keCorrArray*(sum of rotors relative overlap with '
@@ -161,7 +160,7 @@ def add_floris_params_IndepVarComps(openmdao_object, use_rotor_components=False)
 
     # ## flags
     openmdao_object.add('fp07', IndepVarComp('floris_params:adjustInitialWakeDiamToYaw',
-                                             False if not use_rotor_components else True, pass_by_obj=True,
+                                             False, pass_by_obj=True,
                                              desc='if True then initial wake diameter will be set to '
                                                   'rotorDiameter*cos(yaw)'),
                         promotes=['*'])
@@ -367,14 +366,17 @@ class Floris(Component):
                                                adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, wsPositionXYZw,
                                                shearCoefficientAlpha, shearZh) #TODO
         else:
+
              # call to fortran code to obtain output values
             wtVelocity, wsArray, wakeCentersYT, wakeCentersZT, wakeDiametersT, wakeOverlapTRel = \
                 _florisDiscontinuous.floris(turbineXw, turbineYw, turbineZ, yawDeg, rotorDiameter, Vinf,
                                                            Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                                           MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                           MU, aU, bU, initialWakeAngle, keCorrCT,
                                                            Region2CT, keCorrArray, useWakeAngle,
                                                            adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
                                                            wsPositionXYZw) #TODO
+
+
 
         # pass outputs to self
         unknowns['wtVelocity%i' % self.direction_id] = wtVelocity
@@ -510,7 +512,7 @@ class Floris(Component):
         nDirs = nTurbines
 
         # define input array to direct differentiation
-        velocitiesTurbinesb = np.eye(nDirs, nTurbines)
+        wtVelocityb = np.eye(nDirs, nTurbines)
 
         # call to fortran code to obtain output values
         turbineXwb, turbineYwb, turbineZb, yawDegb, rotorDiameterb, Ctb, axialInductionb = \
@@ -519,7 +521,7 @@ class Floris(Component):
                                              MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                              Region2CT, keCorrArray, useWakeAngle,
                                              adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
-                                             velocitiesTurbinesb) #TODO
+                                             wtVelocityb)
 
         # initialize Jacobian dict
         J = {}
@@ -558,9 +560,14 @@ class RotorSolveGroup(Group):
 
         super(RotorSolveGroup, self).__init__()
 
+        from openmdao.core.mpi_wrap import MPI
+
         # set up iterative solvers
         epsilon = 1E-6
-        self.ln_solver = ScipyGMRES()
+        if MPI:
+            self.ln_solver = PetscKSP()
+        else:
+            self.ln_solver = ScipyGMRES()
         self.nl_solver = NLGaussSeidel()
         self.ln_solver.options['atol'] = epsilon
 
@@ -578,7 +585,7 @@ class RotorSolveGroup(Group):
                            if (nSamples == 0) else
                            ['floris_params:*', 'wind_speed', 'wind_direction', 'axialInduction',
                             'turbineX', 'turbineY', 'turbineZ', 'rotorDiameter', 'yaw%i' % direction_id,
-                            'wtVelocity%i' % direction_id, 'wakeCentersYT', 'wakeCentersZT', 'wakeDiametersT', 
+                            'wtVelocity%i' % direction_id, 'wakeCentersYT', 'wakeCentersZT', 'wakeDiametersT',
                             'wakeOverlapTRel', 'wsPositionX', 'wsPositionY', 'wsPositionZ',
                             'wsArray%i' % direction_id])) #TODO
         self.connect('CtCp.Ct_out', 'floris.Ct')
@@ -672,13 +679,13 @@ class AEPGroup(Group):
         #self.add('dv13', IndepVarComp('turbineZ', np.zeros(nTurbines), units='m'), promotes=['*']) #TODO
         #self.add('dv5', IndepVarComp('turbineH1', 0., units='m'), promotes=['*'])
         #self.add('dv6', IndepVarComp('turbineH2', 0., units='m'), promotes=['*'])
-        
+
 
         # add vars to be seen by MPI and gradient calculations
-        self.add('dv7', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
-        self.add('dv8', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
-        self.add('dv9', IndepVarComp('generatorEfficiency', np.zeros(nTurbines)), promotes=['*']) #TODO
-        self.add('dv10', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
+        self.add('dv5', IndepVarComp('rotorDiameter', np.zeros(nTurbines), units='m'), promotes=['*'])
+        self.add('dv6', IndepVarComp('axialInduction', np.zeros(nTurbines)), promotes=['*'])
+        self.add('dv7', IndepVarComp('generatorEfficiency', np.zeros(nTurbines)), promotes=['*'])
+        self.add('dv8', IndepVarComp('air_density', val=1.1716, units='kg/(m*m*m)'), promotes=['*'])
 
         # add variable tree IndepVarComps
         add_floris_params_IndepVarComps(self, use_rotor_components=use_rotor_components)
@@ -706,7 +713,7 @@ class AEPGroup(Group):
                                   'wtPower%i' % direction_id, 'dir_power%i' % direction_id]
                                  if (nSamples == 0) else
                                  ['gen_params:*', 'floris_params:*', 'air_density',
-                                  'axialInduction', 'generatorEfficiency', 'turbineX', 'turbineY', 'turbineZ', 
+                                  'axialInduction', 'generatorEfficiency', 'turbineX', 'turbineY', 'turbineZ',
                                   'yaw%i' % direction_id, 'rotorDiameter', 'wsPositionX', 'wsPositionY',
                                   'wsPositionZ', 'wtVelocity%i' % direction_id,
                                   'wtPower%i' % direction_id, 'dir_power%i' % direction_id, 'wsArray%i' % direction_id])) #TODO
@@ -912,7 +919,7 @@ if __name__ == "__main__":
 #             print "wind speed at turbines %s [m/s]" % wtVelocity
 #             print "rotor area %d" % (np.pi*rotorDiameter[0]*rotorDiameter[0]/4.0)
 #             print "rho %s" % rho
-#             print "generator_efficiency %s" % generator_efficiency
+#             print "generatorEfficiency %s" % generatorEfficiency
 #             print "powers turbines %s [kW]" % wt_power
 #
 #     def linearize(self):
