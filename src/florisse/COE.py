@@ -3,7 +3,7 @@ from math import pi
 import time
 from openmdao.api import Group, Component, Problem, ScipyGMRES
 from florisse.floris import AEPGroup
-
+from commonse.environment import PowerWind, LogWind
 
 class COEComponent(Component):
     """
@@ -18,7 +18,7 @@ class COEComponent(Component):
         self.fd_options['step_size'] = 1.0e-6
         self.fd_options['step_type'] = 'relative'
         self.fd_options['force_fd'] = True
-        
+
 
         self.add_param('turbineZ', np.zeros(nTurbines), units='m',
                        desc='z coordinates of turbines')
@@ -51,7 +51,7 @@ class COEComponent(Component):
         overheadCostMultiplier = 0.0
         transportMultiplier = 0.0
 
-        rotor_cost = 1505102.53 
+        rotor_cost = 1505102.53
         nacelle_cost = 3000270.
 
         #windpactMassSlope = 0.397251147546925
@@ -59,10 +59,10 @@ class COEComponent(Component):
 
         tower_mass_coeff = 19.828
         tower_mass_exp = 2.0282
-        
-        
+
+
         #twrCostEscalator  = 1.5944
-        #twrCostCoeff      = 1.5 # $/kg   
+        #twrCostCoeff      = 1.5 # $/kg
 
         tower_mass_cost_coefficient = 3.08 #$/kg
 
@@ -73,16 +73,13 @@ class COEComponent(Component):
             #tower_cost[i] = mass*twrCostEscalator*twrCostCoeff
             # tower_cost = 1390588.80 # to change
             tower_cost[i] = tower_mass_cost_coefficient*mass #new cost from Katherine
-            
+
 
         parts_cost_farm = nTurbines*(rotor_cost + nacelle_cost) + np.sum(tower_cost) #parts cost for the entire wind farm
         turbine_multiplier = (1 + transportMultiplier + profitMultiplier) * (1+overheadCostMultiplier+assemblyCostMultiplier)
         turbine_cost = turbine_multiplier * parts_cost_farm
 
         unknowns['COE'] = (fixed_charge_rate*(turbine_cost+bos)/AEP + 0.0122*(1-tax_rate))*1E8
-
-
-
 
 
 class getTurbineZ(Component):
@@ -93,8 +90,9 @@ class getTurbineZ(Component):
 
         self.add_param('turbineH1', 0.0, units='m', desc='Turbine height 1')
         self.add_param('turbineH2', 0.0, units='m', desc='Turbine height 2')
-        self.add_param('nTurbsH1', 1, desc='The number of turbines of height 1')
-        self.add_param('nTurbsH2', 1, desc='The number of turbines of height 2')
+        #self.add_param('nTurbsH1', 1, desc='The number of turbines of height 1')
+        #self.add_param('nTurbsH2', 1, desc='The number of turbines of height 2')
+        self.add_param('H1_H2', np.zeros(nTurbines), desc='An array indicating which turbines are of each height: 0 indicates H1, 1 indicates H2')
 
         self.add_output('turbineZ', np.zeros(nTurbines), units='m', desc='The array of turbine heights')
 
@@ -102,10 +100,20 @@ class getTurbineZ(Component):
     def solve_nonlinear(self, params, unknowns, resids):
         turbineH1 = params['turbineH1']
         turbineH2 = params['turbineH2']
-        nTurbsH1 = params['nTurbsH1']
-        nTurbsH2 = params['nTurbsH2']
+        H1_H2 = params['H1_H2']
+        nTurbines = len(H1_H2)
+        #nTurbsH1 = params['nTurbsH1']
+        #nTurbsH2 = params['nTurbsH2']
 
-        unknowns['turbineZ'] = np.hstack([np.ones(nTurbsH1)*turbineH1, np.ones(nTurbsH2)*turbineH2])
+        turbineZ = np.array([])
+        for i in range(nTurbines):
+            if H1_H2[i] == 0:
+                turbineZ = np.append(turbineZ, turbineH1)
+            elif H1_H2[i] == 1:
+                turbineZ = np.append(turbineZ, turbineH2)
+        #unknowns['turbineZ'] = np.hstack([np.ones(nTurbsH1)*turbineH1, np.ones(nTurbsH2)*turbineH2])
+        unknowns['turbineZ'] = turbineZ
+
 
     def linearize(self, params, unknowns, resids):
         turbineH1 = params['turbineH1']
@@ -133,14 +141,76 @@ class AEPobj(Component):
         self.fd_options['step_size'] = 1.0e-6
         self.fd_options['step_type'] = 'relative'
         self.fd_options['force_fd'] = True
-        
+
         self.add_param('AEP', 0.0, desc='AEP of the wind farm')
 
         self.add_output('maxAEP', 0.0, desc='negative AEP')
-        
+
     def solve_nonlinear(self, params, unknowns, resids):
         unknowns['maxAEP'] = -1*params['AEP']
-        
+
+
+class getUeffintegrate(Component):
+    """
+    Integrate across the turbine to get effective wind speed
+    """
+    def __init__(self, nPoints, nDirections):
+
+        super(getUeffintegrate, self).__init__()
+
+        self.fd_options['form'] = 'forward'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+        self.fd_options['force_fd'] = True
+
+        # inputs
+        self.add_param('rotorDiameter', 126.4, units='m', desc='rotor diameter of each turbine')
+        for i in range(nDirections):
+            self.add_param('windSpeedsH1_%s'%i, np.zeros(nPoints), units='m/s', desc='The measured wind speed from each direction along the height of the rotor')
+            self.add_param('windSpeedsH2_%s'%i, np.zeros(nPoints), units='m/s', desc='The measured wind speed from each direction along the height of the rotor')
+
+        # outputs
+        self.add_output('UeffH1', np.zeros(nDirections), units='m/s', desc='The effective wind speed on turbine with height H1 from each direction')
+        self.add_output('UeffH2', np.zeros(nDirections), units='m/s', desc='The effective wind speed on turbine with height H2 from each direction')
+
+
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        # rename variables
+        r = params['rotorDiameter']/2.
+        # SH1 = params['windSpeedsH1']
+        # SH2 = params['windSpeedsH2']
+
+        A = np.pi*r**2
+
+        nPoints = len(params['windSpeedsH1_0'])
+        nDirections = len(unknowns['UeffH1'])
+
+        x = np.linspace(0,2*r, nPoints)
+        U1 = np.zeros(nDirections)
+        U2 = np.zeros(nDirections)
+        dz = r/nPoints
+        dAsum = 0
+
+        for i in range(nDirections):
+            for j in range(nPoints):
+                if x[j] < r:
+                    l = x[j]
+                else:
+                    l = x[j]-r
+                a = 2*np.sqrt(r**2-l**2)
+                dA = a*2*dz
+                if j == 0 or j == nPoints-1:
+                    dA = dA/2
+                U1[i] += dA*(params['windSpeedsH1_%s'%i][j])
+                U2[i] += dA*(params['windSpeedsH2_%s'%i][j])
+                dAsum += dA
+
+
+        print '**************************************************** ', dAsum/(A*nDirections)
+        unknowns['UeffH1'] = U1/A
+        unknowns['UeffH2'] = U2/A
 
 
 if __name__=="__main__":
@@ -156,7 +226,7 @@ if __name__=="__main__":
     xpoints, ypoints = np.meshgrid(points, points)
     turbineX = np.ndarray.flatten(xpoints)
     turbineY = np.ndarray.flatten(ypoints)
-    
+
 
     # initialize input variable arrays
     nTurbs = turbineX.size
@@ -182,26 +252,29 @@ if __name__=="__main__":
     wind_speed = 8.0        # m/s
     air_density = 1.1716    # kg/m^3
     # wind_direction = 240    # deg (N = 0 deg., using direction FROM, as in met-mast data)
-    
+
     turbineH1 = 100
     turbineH2 = 1000
     nTurbsH1 = nTurbs/2
     nTurbsH2 = nTurbs-nTurbsH1
-    rotorDiameter = np.ones(nTurbs)*126.4 
+    H1_H2 = np.array([0,1,0,1,0,1,0,1,0], dtype=int)
+    print H1_H2
+    rotorDiameter = np.ones(nTurbs)*126.4
     nDirections = 50
     wind_frequency = 1./nDirections    # probability of wind in this direction at this speed
 
     # set up problem
     prob = Problem()
     root = prob.root = Group()
-    
+
 
     root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
     root.add('AEPGroup', AEPGroup(nTurbs, nDirections=nDirections,
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
     root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
-    
+    root.add('getUeff', getUeffintegrate(5,3))
+
     #root.ln_solver = ScipyGMRES()
 
     # initialize problem
@@ -209,8 +282,9 @@ if __name__=="__main__":
 
     prob['turbineH1'] = turbineH1
     prob['turbineH2'] = turbineH2
-    prob['nTurbsH1'] = nTurbsH1
-    prob['nTurbsH2'] = nTurbsH2
+    #prob['nTurbsH1'] = nTurbsH1
+    #prob['nTurbsH2'] = nTurbsH2
+    prob['H1_H2'] = H1_H2
 
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
@@ -235,9 +309,9 @@ if __name__=="__main__":
     prob.run()
     toc = time.time()
 
-    first = prob['COE']
+    COE5 = prob['COE']
+    AEP5 = prob['AEP']
 
-    print 'turbineZ: ', prob['turbineZ']
-    print 'AEP: ', prob['AEP']
-    print 'COE: ', prob['COE']    
-    
+    print 'turbineZ5: ', prob['turbineZ']
+    print 'AEP5: ', prob['AEP']
+    print 'COE5: ', prob['COE']
