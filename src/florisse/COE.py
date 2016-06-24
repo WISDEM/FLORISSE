@@ -118,13 +118,26 @@ class getTurbineZ(Component):
     def linearize(self, params, unknowns, resids):
         turbineH1 = params['turbineH1']
         turbineH2 = params['turbineH2']
-        nTurbsH1 = params['nTurbsH1']
-        nTurbsH2 = params['nTurbsH2']
+        H1_H2 = params['H1_H2']
+        nTurbs = len(H1_H2)
+
 
         J = {}
 
-        J['turbineZ', 'turbineH1'] = np.hstack([np.ones(nTurbsH1), np.zeros(nTurbsH2)])
-        J['turbineZ', 'turbineH2'] = np.hstack([np.zeros(nTurbsH1), np.ones(nTurbsH2)])
+        J['turbineZ', 'turbineH1'] = np.array([])
+        for i in range(nTurbs):
+            if H1_H2[i] == 0:
+                J['turbineZ', 'turbineH1'] = np.append(J['turbineZ', 'turbineH1'], 1)
+            else:
+                J['turbineZ', 'turbineH1'] = np.append(J['turbineZ', 'turbineH1'], 0)
+
+        J['turbineZ', 'turbineH2'] = np.array([])
+        for i in range(nTurbs):
+            if H1_H2[i] == 0:
+                J['turbineZ', 'turbineH2'] = np.append(J['turbineZ', 'turbineH2'], 0)
+            else:
+                J['turbineZ', 'turbineH2'] = np.append(J['turbineZ', 'turbineH2'], 1)
+
         return J
 
 
@@ -187,28 +200,32 @@ class getUeffintegrate(Component):
         nPoints = len(params['windSpeedsH1_0'])
         nDirections = len(unknowns['UeffH1'])
 
-        x = np.linspace(0,2*r, nPoints)
+        z = np.linspace(0,2*r, nPoints)
         U1 = np.zeros(nDirections)
         U2 = np.zeros(nDirections)
         dz = r/nPoints
         dAsum = 0
 
+        dz = z[1]-z[0]
+
         for i in range(nDirections):
-            for j in range(nPoints):
-                if x[j] < r:
-                    l = x[j]
+            for j in range(1, nPoints):
+                if z[j-1] < r:
+                    lb = z[j-1]
                 else:
-                    l = x[j]-r
-                a = 2*np.sqrt(r**2-l**2)
-                dA = a*2*dz
-                if j == 0 or j == nPoints-1:
-                    dA = dA/2
-                U1[i] += dA*(params['windSpeedsH1_%s'%i][j])
-                U2[i] += dA*(params['windSpeedsH2_%s'%i][j])
+                    lb = z[j-1]-r
+                if z[j] < r:
+                    lt = z[j]
+                else:
+                    lt = z[j]-r
+                ab = 2*np.sqrt(r**2-lb**2)
+                at = 2*np.sqrt(r**2-lt**2)
+                dA = dz/2.*(ab+at)
+
+                U1[i] += dz/2.*(params['windSpeedsH1_%s'%i][j-1]*ab+params['windSpeedsH1_%s'%i][j]*at)
+                U2[i] += dz/2.*(params['windSpeedsH2_%s'%i][j-1]*ab+params['windSpeedsH2_%s'%i][j]*at)
                 dAsum += dA
 
-
-        print '**************************************************** ', dAsum/(A*nDirections)
         unknowns['UeffH1'] = U1/A
         unknowns['UeffH2'] = U2/A
 
@@ -273,7 +290,7 @@ if __name__=="__main__":
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
     root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
-    root.add('getUeff', getUeffintegrate(5,3))
+    root.add('getUeff', getUeffintegrate(10,11))
 
     #root.ln_solver = ScipyGMRES()
 

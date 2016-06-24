@@ -28,11 +28,11 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         for i in range(0, nTurbines):
             locations[i] = np.array([turbineX[i], turbineY[i]])
 
-        print locations
+        # print locations
         boundaryVertices, boundaryNormals = calculate_boundary(locations)
         nVertices = len(boundaryNormals)
 
-        
+
         minSpacing = 2.
 
         # initialize input variable arrays
@@ -104,6 +104,7 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
         self.nDirections = nDirections
 
         # print self.J
+        
 
     def testObj(self):
 
@@ -328,6 +329,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
         self.nDirections = nDirections
 
         # print self.J
+
 
     def testObj(self):
 
