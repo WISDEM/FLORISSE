@@ -44,7 +44,7 @@ class WindFrame(Component):
         self.nSamples = nSamples
 
         # flow property variables
-        self.add_param('wind_speed', val=8.0, units='m/s', desc='free stream wind velocity')
+        self.add_param('wind_speed', np.ones(nTurbines)*8.0, units='m/s', desc='free stream wind velocity') #TODO change to an array
         self.add_param('wind_direction', val=270.0, units='deg',
                        desc='wind direction using direction from, in deg. cw from north as in meteorological data')
 
@@ -556,6 +556,59 @@ class DeMUX(Component):
         for i in range(0, self.nElements):
             exec("unknowns['output%i'] = params['Array'][%i]" % (i, i))
 
+    def linearize(self, params, unknowns, resids):
+
+        # initialize gradient calculation array
+        doutput_dArray = np.eye(self.nElements)
+
+        # intialize Jacobian dict
+        J = {}
+
+        # calculate the gradients and populate the Jacobian dict
+        for i in range(0, self.nElements):
+            J['output%i' % i, 'Array'] = np.reshape(doutput_dArray[i, :], (1, self.nElements))
+
+        return J
+
+
+class DeMUXArrays(Component):
+    """ split a given array of arrays into separate arrays """
+
+    def __init__(self, nElements, nArrays, units=None):
+
+        super(DeMUXArrays, self).__init__()
+
+        # set finite difference options (fd used for testing only)
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-5
+        self.fd_options['step_type'] = 'relative'
+
+        # initialize necessary class attributes
+        self.nElements = nElements
+        self.nArrays = nArrays
+
+        # define input
+        if units is None:
+            self.add_param('Array', np.zeros((nArrays, nElements)), desc='ndArray of arrays')
+        else:
+            self.add_param('Array', np.zeros((nArrays, nElements)), units=units, desc='ndArray of arrays')
+
+        # define outputs
+        if units is None:
+            for i in range(0, nArrays):
+                self.add_output('output%i' % i, np.zeros(nElements), desc='scalar output')
+        else:
+            for i in range(0, nElements):
+                self.add_output('output%i' % i, np.zeros(nElements), units=units, desc='scalar output')
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        # assign elements of the input array to outputs
+        for i in range(0, self.nArrays):
+            exec("unknowns['output%i'] = params['Array'][%i][:]" % (i, i))
+
+
+    #TODO need to do linearize still
     def linearize(self, params, unknowns, resids):
 
         # initialize gradient calculation array
@@ -1252,4 +1305,3 @@ if __name__ == "__main__":
     # # print(root.p.unknowns['output0'])
     # # print(root.p.unknowns['output1'])
     # top.check_partial_derivatives()
-

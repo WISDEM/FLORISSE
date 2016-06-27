@@ -6,7 +6,6 @@
 ! turbines are place within 1E-15 * rotor diameter of one another, which is extremely 
 ! unlikely during optimization if the user does not explicitly place them there.
 
-! Anywhere marked with TODO has been added/modified for FLORIS 3D
     
 subroutine Hermite_Spline(x, x0, x1, y0, dy0, y1, dy1, y)
     !    This function produces the y and dy values for a hermite cubic spline
@@ -68,7 +67,7 @@ end subroutine Hermite_Spline
 
 
 subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiameter, wakeDiameters, &
-                            wakeCentersYT, wakeCentersZT, wakeOverlapTRel_mat) !TODO
+                            wakeCentersYT, wakeCentersZT, wakeOverlapTRel_mat)
 !    calculate overlap of rotors and wake zones (wake zone location defined by wake 
 !    center and wake diameter)
 !   turbineX,turbineY is x,y-location of center of rotor
@@ -84,9 +83,9 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiamet
     
     ! in
     integer, intent(in) :: nTurbines
-    real(dp), dimension(nTurbines), intent(in) :: turbineX, turbineY, turbineZ, rotorDiameter !TODO
+    real(dp), dimension(nTurbines), intent(in) :: turbineX, turbineY, turbineZ, rotorDiameter
     real(dp), dimension(nTurbines, nTurbines, 3), intent(in) :: wakeDiameters
-    real(dp), dimension(nTurbines, nTurbines), intent(in) :: wakeCentersYT, wakeCentersZT !TODO
+    real(dp), dimension(nTurbines, nTurbines), intent(in) :: wakeCentersYT, wakeCentersZT
     
     ! out    
     real(dp), dimension(nTurbines, nTurbines, 3), intent(out) :: wakeOverlapTRel_mat
@@ -103,7 +102,7 @@ subroutine calcOverlapAreas(nTurbines, turbineX, turbineY, turbineZ, rotorDiamet
     do turb = 1, nTurbines
         do turbI = 1, nTurbines
             if (turbineX(turbI) > turbineX(turb)) then
-                OVdYd = sqrt((wakeCentersYT(turbI, turb)-turbineY(turbI))**2+(wakeCentersZT(turbI, turb)-turbineZ(turbI))**2)     ! distance between wake center and rotor center !TODO
+                OVdYd = sqrt((wakeCentersYT(turbI, turb)-turbineY(turbI))**2+(wakeCentersZT(turbI, turb)-turbineZ(turbI))**2)     ! distance between wake center and rotor center
                 OVr = rotorDiameter(turbI)/2                        ! rotor diameter
                 do zone = 1, 3
                     OVRR = wakeDiameters(turbI, turb, zone)/2.0_dp        ! wake diameter
@@ -217,7 +216,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
                           & adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, &
                           & wsPositionXYZw, shearCoefficientAlpha, shearZh, &
                           & wtVelocity, wsArray, &
-                          & wakeCentersYT_vec, wakeCentersZT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec) !TODO
+                          & wakeCentersYT_vec, wakeCentersZT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec) 
     
     ! independent variables: yawDeg Ct turbineXw turbineYw turbineZ  rotorDiameter a_in    
     ! dependent variables: wtVelocity
@@ -231,8 +230,8 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     integer, intent(in) :: nTurbines
     integer :: nSamples
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
-    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray
-    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw, turbineZ !TODO
+    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, keCorrArray !TODO move Vinf to len(nTurbines)
+    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw, turbineZ, Vinf
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter
     real(dp), dimension(3), intent(in) :: me, MU
     real(dp), intent(in) :: aU, bU, shearCoefficientAlpha, shearZh
@@ -257,10 +256,10 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     real(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
     real(dp) :: wakeDiameter0
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
-    real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat, wakeCentersZT_mat !TODO
+    real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat, wakeCentersZT_mat 
     ! visualization
     real(dp), dimension(nSamples, nTurbines, 3) :: wakeDiameters
-    real(dp), dimension(nSamples, nTurbines) :: wakeCentersY, wakeCentersZ !TODO
+    real(dp), dimension(nSamples, nTurbines) :: wakeCentersY, wakeCentersZ 
     
     ! local (Wake overlap)
     real(dp) :: rmax
@@ -277,7 +276,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     real(dp), dimension(nTurbines), intent(out) :: wtVelocity
     
     ! test out
-    real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec, wakeCentersZT_vec !TODO
+    real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec, wakeCentersZT_vec 
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeDiametersT_vec    
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeOverlapTRel_vec
     
@@ -302,7 +301,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
        
     ! calculate locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
-    wakeCentersZT_mat = 0.0_dp !TODO
+    wakeCentersZT_mat = 0.0_dp
     wakeCentersY = 0.0_dp
     wakeCentersZ = 0.0_dp
     
@@ -321,7 +320,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
                 factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
 
                 !THESE ARE THE Z CALCULATIONS
-                wakeCentersZT_mat(turbI, turb) = turbineZ(turb) !TODO
+                wakeCentersZT_mat(turbI, turb) = turbineZ(turb)
 
                 !THESE ARE THE Y CALCULATIONS
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
@@ -515,7 +514,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     
     ! calculate relative overlap
     call calcOverlapAreas(nTurbines, turbineXw, turbineYw, turbineZ, rotorDiameter, &
-                          & wakeDiametersT_mat, wakeCentersYT_mat, wakeCentersZT_mat, wakeOverlapTRel_mat) !TODO
+                          & wakeDiametersT_mat, wakeCentersYT_mat, wakeCentersZT_mat, wakeOverlapTRel_mat) 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
@@ -635,7 +634,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
                                      = wakeCentersYT_mat(turbI, :)
 
         wakeCentersZT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
-                                 = wakeCentersZT_mat(turbI, :) !TODO
+                                 = wakeCentersZT_mat(turbI, :)
                                      
         ! wake diameters
         wakeDiametersT_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
