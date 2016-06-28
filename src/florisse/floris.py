@@ -238,6 +238,7 @@ class Floris(Component):
         self.nTurbines = nTurbines
         self.verbose = verbose
         self.nSamples = nSamples
+        self.use_rotor_components = use_rotor_components
 
         self.fd_options['form'] = 'central'
         self.fd_options['step_size'] = 1.0e-6
@@ -526,6 +527,9 @@ class Floris(Component):
         J['wtVelocity%i' % direction_id, 'Ct'] = Ctb
         J['wtVelocity%i' % direction_id, 'axialInduction'] = axialInductionb
 
+        if self.use_rotor_components:
+            J['wtVelocity%i' % direction_id, 'wtVelocity%i' % direction_id] = 1.0
+
         return J
 
 
@@ -731,6 +735,7 @@ class AEPGroup(Group):
             self.add('y%i' % direction_id, IndepVarComp('yaw%i' % direction_id, np.zeros(nTurbines), units='deg'), promotes=['*'])
             self.connect('windDirectionsDeMUX.output%i' % direction_id, 'direction_group%i.wind_direction' % direction_id)
             self.connect('windSpeedsDeMUX.output%i' % direction_id, 'direction_group%i.wind_speed' % direction_id)
+            self.connect('dir_power%i' % direction_id, 'powerMUX.input%i' % direction_id)
             self.connect('dir_power%i' % direction_id, 'powerMUX.input%i' % direction_id)
         self.connect('powerMUX.Array', 'dirPowers')
 
