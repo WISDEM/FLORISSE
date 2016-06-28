@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from commonse.environment import PowerWind, LogWind
 import matplotlib.pyplot as plt
 from openmdao.api import Problem, Group
+import time
 
 if __name__=='__main__':
 
@@ -100,6 +101,7 @@ if __name__=='__main__':
     nIntegrationPoints = 100
 
     """get Ueff for H1 and H2"""
+    start = time.time()
     prob = Problem()
     root = prob.root = Group()
 
@@ -117,7 +119,7 @@ if __name__=='__main__':
 
     UH1 = prob['U.UeffH1']
     UH2 = prob['U.UeffH2']
-
+    print 'Time to get Ueff: ', time.time() - start
     """assign the correct wind speed to each turbine"""
     windSpeeds = np.zeros((nTurbs, nDirections))
     for i in range(nTurbs):
@@ -165,3 +167,5 @@ if __name__=='__main__':
     print prob['turbineZ']
     print prob['AEP']
     print prob['COE']
+
+    print 'Time to run one iteration: ', time.time()-start

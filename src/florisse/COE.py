@@ -220,9 +220,9 @@ class getUeffintegrate(Component):
             Usum1 = 0.
             Usum2 = 0.
             Asum = 0
-            for i in range(nPoints+1):
+            for i in range(nPoints):
                 dz = D/nPoints
-                if i == 0 or i == nPoints:
+                if i == 0 or i == nPoints-1:
                     dz = dz/2.
                 if z1 < turbineH1:
                     a1 = 2*np.sqrt(r**2-(turbineH1-z1)**2)
@@ -230,12 +230,14 @@ class getUeffintegrate(Component):
                     a1 = D
                 else:
                     a1 = 2*np.sqrt(r**2-(z1-turbineH1)**2)
+
                 if z1+dz < turbineH1:
                     a2 = 2*np.sqrt(r**2-(turbineH1-(z1+dz))**2)
                 elif z1+dz == turbineH1:
                     a2 = D
-                else:
+                elif z1+dz > turbineH1:
                     a2 = 2*np.sqrt(r**2-(z1+dz-turbineH1)**2)
+
                 if wind == 'PowerWind':
                     U1b = PowWind(Uref[j], z1, zref, z0, shearExp)
                     U1t = PowWind(Uref[j], z1+dz, zref, z0, shearExp)

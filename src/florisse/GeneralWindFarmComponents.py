@@ -44,7 +44,7 @@ class WindFrame(Component):
         self.nSamples = nSamples
 
         # flow property variables
-        self.add_param('wind_speed', np.ones(nTurbines)*8.0, units='m/s', desc='free stream wind velocity') #TODO change to an array
+        # self.add_param('wind_speed', np.ones(nTurbines)*8.0, units='m/s', desc='free stream wind velocity') #TODO change to an array
         self.add_param('wind_direction', val=270.0, units='deg',
                        desc='wind direction using direction from, in deg. cw from north as in meteorological data')
 

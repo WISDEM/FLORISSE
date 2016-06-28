@@ -519,7 +519,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
     ! initialize velocities in full flow field (optional)
-    wsArray = Vinf
+    ! wsArray = Vinf TODO MAY NEED TO FIX THIS?
     
     ! apply shear profile to visualization
 !     wsArray = wsArray*(velZ/shearZh)**shearCoefficientAlpha
