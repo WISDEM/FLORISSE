@@ -9,8 +9,6 @@ from openmdao.api import Group
 if __name__=="__main__":
 
     # --- tower setup ------
-    from commonse.environment import PowerWind
-    from commonse.environment import LogWind
 
     # --- geometry ----
     z_paramH1 = np.array([0.0, 43.8, 87.6])
@@ -158,10 +156,8 @@ if __name__=="__main__":
 
     """
 
-
-
     # initialize input variable arrays
-    nRows = 3
+    nRows = 2
     nTurbs = nRows**2
     #turbineZ = np.array([100,100,100,100,100,200,200,200,200])
     rotorDiameter = np.zeros(nTurbs)
@@ -256,17 +252,13 @@ if __name__=="__main__":
     xpoints, ypoints = np.meshgrid(points, points)
     turbineX = np.ndarray.flatten(xpoints)
     turbineY = np.ndarray.flatten(ypoints)
-    nIntegrationPoints = 10000
+    nIntegrationPoints = 100
     # set up problem
     prob = Problem()
     root = prob.root = Group()
 
 
     root.add('getTurbineZ', getTurbineZ(nTurbs), promotes=['*'])
-    for i in range(nDirections):
-        root.add('H1PowerWind_%s'%i, PowerWind(nIntegrationPoints))
-    for i in range(nDirections):
-        root.add('H2PowerWind_%s'%i, PowerWind(nIntegrationPoints))
     root.add('getUeff', getUeffintegrate(nIntegrationPoints,nDirections))
     root.add('AEPGroup', AEPGroup(nTurbs, nDirections=nDirections,
                 use_rotor_components=False, datasize=0, differentiable=True,
@@ -274,9 +266,9 @@ if __name__=="__main__":
     root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
     root.add('TowerSE_H1', TowerSE(nPoints, nFull, nK, nMass, nPL, nDEL, wind=wind))
 
-    for i in range(nDirections):
-        root.connect('H1PowerWind_%s.U'%i, 'getUeff.windSpeedsH1_%s'%i)
-        root.connect('H2PowerWind_%s.U'%i, 'getUeff.windSpeedsH2_%s'%i)
+    root.connect('getUeff.H1','turbineH1')
+    root.connect('getUeff.H2','turbineH2')
+    root.connect('getUeff.windSpeeds', 'windSpeeds')
 
     #root.connect('windSpeeds', )
     # initialize problem
@@ -284,13 +276,10 @@ if __name__=="__main__":
 
     prob['turbineH1'] = turbineH1
     prob['turbineH2'] = turbineH2
-    #prob['nTurbsH1'] = nTurbsH1
-    #prob['nTurbsH2'] = nTurbsH2
     prob['H1_H2'] = H1_H2
 
     prob['turbineX'] = turbineX
     prob['turbineY'] = turbineY
-    # prob['turbineZ'] = turbineZ
     prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
@@ -306,16 +295,10 @@ if __name__=="__main__":
     prob['floris_params:cos_spread'] = 1E12         # turns off cosine spread (just needs to be very large)
 
     # Wind Data
-    for i in range(nDirections):
-        prob['H1PowerWind_%s.Uref'%i] = windSpeeds[i]
-        prob['H1PowerWind_%s.zref'%i] = 87.6
-        prob['H1PowerWind_%s.z'%i] = np.linspace(prob['turbineH1']-rotorDiameter[0]/2, prob['turbineH1']+rotorDiameter[0]/2, nIntegrationPoints)
-
-        prob['H2PowerWind_%s.Uref'%i] = windSpeeds[i]
-        prob['H2PowerWind_%s.zref'%i] = 87.6
-        prob['H2PowerWind_%s.z'%i] = np.linspace(prob['turbineH2']-rotorDiameter[0]/2, prob['turbineH2']+rotorDiameter[0]/2, nIntegrationPoints)
-
     prob['getUeff.rotorDiameter'] = 126.4
+    prob['getUeff.nPoints'] = nIntegrationPoints
+    prob['getUeff.zref'] = 90
+    prob['getUeff.z0'] = 0
 
 
     """**********************************************************************"""

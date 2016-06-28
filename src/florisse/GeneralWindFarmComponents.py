@@ -624,6 +624,64 @@ class DeMUXArrays(Component):
         return J
 
 
+
+
+
+class organizeWindSpeeds(Component):
+    """ split wind speeds to connect to direction groups """
+
+    def __init__(self, nTurbines, nDirections, units=None):
+
+        super(organizeWindSpeeds, self).__init__()
+
+        # set finite difference options (fd used for testing only)
+        self.fd_options['form'] = 'central'
+        self.fd_options['step_size'] = 1.0e-5
+        self.fd_options['step_type'] = 'relative'
+
+        # define input
+        if units is None:
+            self.add_param('windSpeeds', np.zeros((nTurbines, nDirections)), desc='ndArray of scalars')
+        else:
+            self.add_param('windSpeeds', np.zeros((nTurbines, nDirections)), units=units, desc='ndArray of scalars')
+
+        # define outputs
+        if units is None:
+            for i in range(0, nDirections):
+                self.add_output('output%i' % i, np.zeros(nTurbines), desc='scalar output')
+        else:
+            for i in range(0, nDirections):
+                self.add_output('output%i' % i, np.zeros(nTurbines), units=units, desc='scalar output')
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        nDirections = np.shape(params['windSpeeds'])[1]
+        nTurbines = np.shape(params['windSpeeds'])[0]
+
+        # assign elements of the input array to outputs
+        for direction_id in range(nDirections):
+            for turbine_id in range(nTurbines):
+                unknowns['output%i'%direction_id][turbine_id] = params['windSpeeds'][turbine_id][direction_id]
+
+    #TODO need to do linearize
+    def linearize(self, params, unknowns, resids):
+
+        # initialize gradient calculation array
+        doutput_dArray = np.eye(self.nElements)
+
+        # intialize Jacobian dict
+        J = {}
+
+        # calculate the gradients and populate the Jacobian dict
+        for i in range(0, self.nElements):
+            J['output%i' % i, 'Array'] = np.reshape(doutput_dArray[i, :], (1, self.nElements))
+
+        return J
+
+
+
+
+
 # ---- if you know wind speed to power and thrust, you can use these tools ----------------
 class CPCT_Interpolate_Gradients(Component):
 
