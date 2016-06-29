@@ -624,9 +624,6 @@ class DeMUXArrays(Component):
         return J
 
 
-
-
-
 class organizeWindSpeeds(Component):
     """ split wind speeds to connect to direction groups """
 
@@ -1244,6 +1241,104 @@ def calculate_distance(points, vertices, unit_normals, return_bool=False):
                 inside[i] = 1.0
 
         return face_distance, inside
+
+
+class getUeffintegrate(Component):
+    """
+    Integrate across the turbine to get effective wind speed
+    """
+    def __init__(self, nDirections, nTurbines):
+
+        super(getUeffintegrate, self).__init__()
+
+        self.fd_options['form'] = 'forward'
+        self.fd_options['step_size'] = 1.0e-6
+        self.fd_options['step_type'] = 'relative'
+        self.fd_options['force_fd'] = True
+
+        self.nDirections = nDirections
+        self.nTurbines = nTurbines
+
+        # inputs
+        self.add_param('nIntegrationPoints', 5, desc='number of integration points')
+        self.add_param('rotorDiameter', np.zeros(nTurbines), units='m', desc='rotor diameter of each turbine')
+        self.add_param('turbineZ', np.zeros(nTurbines), units='m', desc='the hub height of each turbine')
+        self.add_param('wind', 'PowerWind', desc='Wind shear calculation method')
+        self.add_param('Uref', np.zeros(nDirections), units='m/s', desc='refenence wind speed for each direction')
+        self.add_param('zref', 90, units='m', desc='height at which Uref was measured')
+        self.add_param('z_roughness', 0.01, units='m', desc='ground roughness height')
+        self.add_param('z0', 0, units='m', desc='height of ground')
+        self.add_param('shearExp', 0.2, desc='PowerWind exponent')
+
+        # outputs
+        self.add_output('windSpeeds', np.zeros((nTurbines, nDirections)), units='m/s', desc='Free stream wind speed on each turbine from each direction')
+
+
+    def solve_nonlinear(self, params, unknowns, resids):
+
+        nTurbines = self.nTurbines
+        nDirections = self.nDirections
+
+        D = params['rotorDiameter']
+        r = D/2.
+
+        nPoints = params['nIntegrationPoints']
+        wind = params['wind']
+        Uref = params['Uref']
+        zref = params['zref']
+        z_roughness = params['z_roughness']
+        z0 = params['z0']
+        shearExp = params['shearExp']
+        turbineZ = params['turbineZ']
+
+
+        for turbine_id in range(nTurbines):
+            turbZ = turbineZ[turbine_id]
+            Ueff = np.zeros(nDirections)
+            rTurb = r[turbine_id]
+            for direction_id in range(nDirections):
+                z = turbZ-rTurb
+                Usum = 0.
+                Asum = 0.
+                for point_id in range(nPoints):
+                    dz = D[turbine_id]/nPoints
+                    if point_id == 0 or point_id == nPoints-1:
+                        dz = dz/2.
+
+                    if z < turbZ:
+                        a1 = 2*np.sqrt(rTurb**2-(turbZ-z)**2)
+                    elif z == turbZ:
+                        a1 = 2*rTurb
+                    else:
+                        a1 = 2*np.sqrt(rTurb**2-(z-turbZ)**2)
+
+                    if z+dz < turbZ:
+                        a2 = 2*np.sqrt(rTurb**2-(turbZ-(z+dz))**2)
+                    elif z+dz == turbZ:
+                        a2 = 2*rTurb
+                    elif z+dz > turbZ:
+                        a2 = 2*np.sqrt(rTurb**2-(z+dz-turbZ)**2)
+
+                    if wind == 'PowerWind':
+                        Ub = PowWind(Uref[direction_id], z, zref, z0, shearExp)
+                        Ut = PowWind(Uref[direction_id], z+dz, zref, z0, shearExp)
+                    if wind == 'LogWind':
+                        Ub = LnWind(Uref[direction_id], z, z0, z_roughness, zref)
+                        Ut = LnWind(Uref[direction_id], z, z0, z_roughness, zref)
+
+                    Usum += dz/2.*(a1*Ub+a2*Ut)
+                    Asum += dz/2.*(a1+a2)
+                    z += dz
+                Ueff[direction_id] = Usum/Asum
+
+            unknowns['windSpeeds'][turbine_id][:] = Ueff
+
+
+def PowWind(uref, z, zref, z0, a):
+    return uref*((z-z0)/(zref-z0))**a
+
+def LnWind(uref, z, z0, z_roughness, zref):
+    return uref*log((z-z0)/z_roughness)/log((zref-z0)/z_roughness)
 
 
 if __name__ == "__main__":

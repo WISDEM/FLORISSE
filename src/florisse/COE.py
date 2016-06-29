@@ -164,7 +164,7 @@ class AEPobj(Component):
         unknowns['maxAEP'] = -1*params['AEP']
 
 
-class getUeffintegrate(Component):
+class getUeffintegrateU1_U2(Component):
     """
     Integrate across the turbine to get effective wind speed
     """
@@ -220,9 +220,9 @@ class getUeffintegrate(Component):
             Usum1 = 0.
             Usum2 = 0.
             Asum = 0
-            for i in range(nPoints):
+            for i in range(nPoints+1):
                 dz = D/nPoints
-                if i == 0 or i == nPoints-1:
+                if i == 0 or i == nPoints:
                     dz = dz/2.
                 if z1 < turbineH1:
                     a1 = 2*np.sqrt(r**2-(turbineH1-z1)**2)
@@ -230,14 +230,12 @@ class getUeffintegrate(Component):
                     a1 = D
                 else:
                     a1 = 2*np.sqrt(r**2-(z1-turbineH1)**2)
-
                 if z1+dz < turbineH1:
                     a2 = 2*np.sqrt(r**2-(turbineH1-(z1+dz))**2)
                 elif z1+dz == turbineH1:
                     a2 = D
-                elif z1+dz > turbineH1:
+                else:
                     a2 = 2*np.sqrt(r**2-(z1+dz-turbineH1)**2)
-
                 if wind == 'PowerWind':
                     U1b = PowWind(Uref[j], z1, zref, z0, shearExp)
                     U1t = PowWind(Uref[j], z1+dz, zref, z0, shearExp)
@@ -258,20 +256,6 @@ class getUeffintegrate(Component):
             UeffH2[j] = Usum2/Asum
         unknowns['UeffH1'] = UeffH1
         unknowns['UeffH2'] = UeffH2
-
-
-
-
-
-
-
-def PowWind(uref, z, zref, z0, a):
-    return uref*((z-z0)/(zref-z0))**a
-
-def LnWind(uref, z, z0, z_roughness, zref):
-    return uref*log((z-z0)/z_roughness)/log((zref-z0)/z_roughness)
-
-
 
 
 if __name__=="__main__":
@@ -397,23 +381,33 @@ if __name__=="__main__":
     nIntegrationPoints = 100
     turbineH1 = 75
     turbineH2 = 90
+    nTurbines = 15
+    turbineZ = np.ones(nTurbines)*75.
+    rotorDiameter = np.ones(nTurbines)*126.4
     wind = 'PowerWind'
 
     prob = Problem()
     root = prob.root = Group()
 
-    root.add('p', getUeffintegrate(nDirections))
-
+    root.add('p', getUeffintegrate(nDirections, nTurbines))
     prob.setup()
 
-    prob['p.turbineH1'] = turbineH1
-    prob['p.turbineH2'] = turbineH2
-    prob['p.nIntegrationPoints'] = 5000
+    prob['p.rotorDiameter'] = rotorDiameter
+    prob['p.turbineZ'] = turbineZ
+    prob['p.nIntegrationPoints'] = 100
     prob['p.Uref'] = windSpeeds
     prob['p.wind'] = wind
 
+    start = time.time()
     prob.run()
+    print 'Time to run: ', time.time() - start
 
+    #print 'Uref: ', windSpeeds
+    #print 'WindSpeeds: ', prob['p.Ueff']
+    #print np.shape(prob['p.Ueff'])
+
+
+    """
     ref1 = prob['p.UeffH1']
     ref2 = prob['p.UeffH2']
 
@@ -488,3 +482,4 @@ if __name__=="__main__":
     plt.figure(3)
     plt.plot(y,times)
     plt.show()
+    """

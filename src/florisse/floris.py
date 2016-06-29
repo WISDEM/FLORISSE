@@ -8,7 +8,7 @@ if MPI:
 
 from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     DeMUXArrays, CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
-    CPCT_Interpolate_Gradients, organizeWindSpeeds
+    CPCT_Interpolate_Gradients, organizeWindSpeeds, getUeffintegrate
 
 from florisse import config
 import _floris
@@ -670,7 +670,7 @@ class AEPGroup(Group):
 
         # add necessary inputs for group
         self.add('dv0', IndepVarComp('windDirections', np.zeros(nDirections), units=direction_units), promotes=['*'])
-        self.add('dv1', IndepVarComp('windSpeeds', np.zeros((nTurbines, nDirections)), units=wind_speed_units), promotes=['*'])
+        self.add('dv1', IndepVarComp('Ueff', np.zeros(nDirections), units=wind_speed_units), promotes=['*'])
         self.add('dv2', IndepVarComp('windFrequencies', np.ones(nDirections)), promotes=['*'])
         self.add('dv3', IndepVarComp('turbineX', np.zeros(nTurbines), units='m'), promotes=['*'])
         self.add('dv4', IndepVarComp('turbineY', np.zeros(nTurbines), units='m'), promotes=['*'])
@@ -699,7 +699,9 @@ class AEPGroup(Group):
         #self.add('windSpeedsDeMUX', DeMUXArrays(nTurbines, nDirections, units=wind_speed_units))
         #for i in range(nTurbines):
         #    self.add('windSpeedsDeMUX%i'%i, DeMUX(nDirections, units=wind_speed_units))
-        self.add('organizeWindSpeeds', organizeWindSpeeds(nTurbines, nDirections, units=wind_speed_units))
+        self.add('getUeff', getUeffintegrate(nDirections, nTurbines), promotes=['*'])
+        self.add('organizeWindSpeeds', organizeWindSpeeds(nTurbines, nDirections, units=wind_speed_units),
+                                                            promotes=['windSpeeds'])
 
         pg = self.add('all_directions', ParallelGroup(), promotes=['*'])
         if use_rotor_components:
@@ -742,7 +744,7 @@ class AEPGroup(Group):
 
         # connect components
         self.connect('windDirections', 'windDirectionsDeMUX.Array')
-        self.connect('windSpeeds', 'organizeWindSpeeds.windSpeeds')
+        #self.connect('windSpeeds', 'organizeWindSpeeds.windSpeeds')
         for direction_id in np.arange(0, nDirections):
             self.add('y%i' % direction_id, IndepVarComp('yaw%i' % direction_id, np.zeros(nTurbines), units='deg'), promotes=['*'])
             self.connect('windDirectionsDeMUX.output%i' % direction_id, 'direction_group%i.wind_direction' % direction_id)

@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from commonse.environment import PowerWind, LogWind
 import matplotlib.pyplot as plt
-from openmdao.api import Problem, Group
+from openmdao.api import Problem, Group, IndepVarComp
 import time
 
 if __name__=='__main__':
@@ -48,8 +48,6 @@ if __name__=='__main__':
         H1_H2 = np.append(H1_H2, 1)
     if len(H1_H2) < nTurbs:
         H1_H2 = np.append(H1_H2, 0)
-    print H1_H2
-
 
     """Define wind flow"""
     air_density = 1.1716    # kg/m^3
@@ -99,36 +97,111 @@ if __name__=='__main__':
     nDirections = len(windDirections)
 
     nIntegrationPoints = 100
+    wind = 'PowerWind'
 
-    """get Ueff for H1 and H2"""
-    start = time.time()
-    prob = Problem()
-    root = prob.root = Group()
+    """Define tower structural properties"""
+    # --- geometry ----
+    z_paramH1 = np.array([0.0, turbineH1/2., turbineH1])
+    z_paramH2 = np.array([0.0, turbineH2/2., turbineH2])
+    d_param = np.array([6.0, 4.935, 3.87]) # not going to modify this right now
+    t_param = [0.027*1.3, 0.023*1.3, 0.019*1.3] # not going to modify this right now
+    n = 15
+    z_fullH1 = np.linspace(0.0, turbineH1, n)
+    z_fullH2 = np.linspace(0.0, turbineH2, n)
+    L_reinforced = 30.0*np.ones(n)  # [m] buckling length
+    #yaw = 0.0
 
-    root.add('U', getUeffintegrate(nDirections))
+    # --- material props ---
+    E = 210e9*np.ones(n)
+    G = 80.8e9*np.ones(n)
+    rho = 8500.0*np.ones(n)
+    sigma_y = 450.0e6*np.ones(n)
 
-    prob.setup()
+    # --- spring reaction data.  Use float('inf') for rigid constraints. ---
+    kidx = np.array([0], dtype=int)  # applied at base
+    kx = np.array([float('inf')])
+    ky = np.array([float('inf')])
+    kz = np.array([float('inf')])
+    ktx = np.array([float('inf')])
+    kty = np.array([float('inf')])
+    ktz = np.array([float('inf')])
+    nK = len(kidx)
 
-    prob['U.turbineH1'] = turbineH1
-    prob['U.turbineH2'] = turbineH2
-    prob['U.wind'] = 'PowerWind'
-    prob['U.nIntegrationPoints'] = nIntegrationPoints
-    prob['U.Uref'] = windSpeeds
+    # --- extra mass ----
+    midx = np.array([n-1], dtype=int)  # RNA mass at top
+    m = np.array([285598.8])
+    mIxx = np.array([1.14930678e+08])
+    mIyy = np.array([2.20354030e+07])
+    mIzz = np.array([1.87597425e+07])
+    mIxy = np.array([0.00000000e+00])
+    mIxz = np.array([5.03710467e+05])
+    mIyz = np.array([0.00000000e+00])
+    mrhox = np.array([-1.13197635])
+    mrhoy = np.array([0.])
+    mrhoz = np.array([0.50875268])
+    nMass = len(midx)
+    addGravityLoadForExtraMass = True
+    # -----------
 
-    prob.run()
+    # --- wind ---
+    wind_zref = 90.0
+    wind_z0 = 0.0
+    shearExp = 0.2
+    # ---------------
 
-    UH1 = prob['U.UeffH1']
-    UH2 = prob['U.UeffH2']
-    print 'Time to get Ueff: ', time.time() - start
-    """assign the correct wind speed to each turbine"""
-    windSpeeds = np.zeros((nTurbs, nDirections))
-    for i in range(nTurbs):
-        if H1_H2[i] == 0:
-            windSpeeds[i] = UH1
-        if H1_H2[i] == 1:
-            windSpeeds[i] = UH2
+    # if addGravityLoadForExtraMass=True be sure not to double count by adding those force here also
+    # # --- loading case 1: max Thrust ---
+    wind_Uref1 = 11.73732
+    plidx1 = np.array([n-1], dtype=int)  # at  top
+    Fx1 = np.array([1284744.19620519])
+    Fy1 = np.array([0.])
+    Fz1 = np.array([-2914124.84400512])
+    Mxx1 = np.array([3963732.76208099])
+    Myy1 = np.array([-2275104.79420872])
+    Mzz1 = np.array([-346781.68192839])
+    nPL = len(plidx1)
+    # # ---------------
 
-    print np.shape(windSpeeds)
+    # # --- loading case 2: max wind speed ---
+    wind_Uref2 = 70.0
+    plidx2 = np.array([n-1], dtype=int)  # at  top
+    Fx2 = np.array([930198.60063279])
+    Fy2 = np.array([0.])
+    Fz2 = np.array([-2883106.12368949])
+    Mxx2 = np.array([-1683669.22411597])
+    Myy2 = np.array([-2522475.34625363])
+    Mzz2 = np.array([147301.97023764])
+    # # ---------------
+
+    # --- safety factors ---
+    gamma_f = 1.35
+    gamma_m = 1.3
+    gamma_n = 1.0
+    gamma_b = 1.1
+    # ---------------
+
+    # --- fatigue ---
+    z_DEL = np.array([0.000, 1.327, 3.982, 6.636, 9.291, 11.945, 14.600, 17.255, 19.909, 22.564, 25.218, 27.873, 30.527, 33.182, 35.836, 38.491, 41.145, 43.800, 46.455, 49.109, 51.764, 54.418, 57.073, 59.727, 62.382, 65.036, 67.691, 70.345, 73.000, 75.655, 78.309, 80.964, 83.618, 86.273, 87.600])
+    M_DEL = 1e3*np.array([8.2940E+003, 8.1518E+003, 7.8831E+003, 7.6099E+003, 7.3359E+003, 7.0577E+003, 6.7821E+003, 6.5119E+003, 6.2391E+003, 5.9707E+003, 5.7070E+003, 5.4500E+003, 5.2015E+003, 4.9588E+003, 4.7202E+003, 4.4884E+003, 4.2577E+003, 4.0246E+003, 3.7942E+003, 3.5664E+003, 3.3406E+003, 3.1184E+003, 2.8977E+003, 2.6811E+003, 2.4719E+003, 2.2663E+003, 2.0673E+003, 1.8769E+003, 1.7017E+003, 1.5479E+003, 1.4207E+003, 1.3304E+003, 1.2780E+003, 1.2673E+003, 1.2761E+003])
+    nDEL = len(z_DEL)
+    gamma_fatigue = 1.35*1.3*1.0
+    life = 20.0
+    m_SN = 4
+    # ---------------
+
+
+    # --- constraints ---
+    min_d_to_t = 120.0
+    min_taper = 0.4
+    # ---------------
+
+    # # V_max = 80.0  # tip speed
+    # # D = 126.0
+    # # .freq1p = V_max / (D/2) / (2*pi)  # convert to Hz
+
+    nPoints = len(z_paramH1)
+    nFull = len(z_fullH1)
+    wind = 'PowerWind'
 
     """set up the problem for COE"""
     prob = Problem()
@@ -139,6 +212,8 @@ if __name__=='__main__':
                 use_rotor_components=False, datasize=0, differentiable=True,
                 optimizingLayout=False, nSamples=0), promotes=['*'])
     root.add('COEComponent', COEComponent(nTurbs), promotes=['*'])
+    #root.add('TowerH1', TowerSE())
+    #root.add('TowerH2', TowerSE())
 
     prob.setup()
 
@@ -151,16 +226,19 @@ if __name__=='__main__':
     prob['yaw0'] = yaw
 
     # assign values to constant inputs (not design variables)
+    prob['nIntegrationPoints'] = nIntegrationPoints
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generatorEfficiency'] = generatorEfficiency
-    prob['windSpeeds'] = np.array([windSpeeds])
     prob['air_density'] = air_density
     prob['windDirections'] = np.array([windDirections])
     prob['windFrequencies'] = np.array([windFrequencies])
+    prob['Uref'] = windSpeeds
     prob['Ct_in'] = Ct
     prob['Cp_in'] = Cp
-    prob['floris_params:cos_spread'] = 1E12         # turns off cosine spread (just needs to be very large)
+    prob['floris_params:cos_spread'] = 1E12
+    prob['zref'] = wind_zref
+    prob['z0'] = wind_z0       # turns off cosine spread (just needs to be very large)
 
     prob.run()
 
@@ -168,4 +246,4 @@ if __name__=='__main__':
     print prob['AEP']
     print prob['COE']
 
-    print 'Time to run one iteration: ', time.time()-start
+    # print 'Time to run one iteration: ', time.time()-start
