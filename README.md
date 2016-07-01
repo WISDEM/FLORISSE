@@ -49,7 +49,7 @@ README for FLORIS in OpenMDAOv1.5+
     mingw  
     python 2.7.x  
     numpy  
-    openmdao >= v01.5  
+    openmdao >= v01.5 
 ### run the following commands from src\florisse:  
     $ gfortran -c adBuffer.f  
     $ gcc -c adStack.c  
@@ -57,8 +57,10 @@ README for FLORIS in OpenMDAOv1.5+
         (most likely your path is C:\python27\Scripts\f2py.py)  
 ### if you get an error in the line "as=b['args']" try to update numpy 
     ($ pip install numpy --upgrade)  
+### from top repo directory run 
+	python setup.py install
 ### run the example using  
-    $ python test\example_call.py  
+    $ python test\exampleCall.py  
         
 
 ## Installation instructions Marylou  
