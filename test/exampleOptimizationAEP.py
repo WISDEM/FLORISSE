@@ -59,6 +59,7 @@ if __name__ == "__main__":
     # initialize input variable arrays
     nTurbs = turbineX.size
     rotorDiameter = np.zeros(nTurbs)
+    ratedPower = np.zeros(nTurbs)
     axialInduction = np.zeros(nTurbs)
     Ct = np.zeros(nTurbs)
     Cp = np.zeros(nTurbs)
@@ -74,6 +75,7 @@ if __name__ == "__main__":
         Cp[turbI] = 0.7737/0.944 * 4.0 * 1.0/3.0 * np.power((1 - 1.0/3.0), 2)
         generatorEfficiency[turbI] = 0.944
         yaw[turbI] = 0.     # deg.
+        ratedPower[turbI] = 5000.0  # rated power of each turbine in kW
 
     # Define flow properties
     wind_speed = 8.0        # m/s
@@ -124,6 +126,7 @@ if __name__ == "__main__":
     prob['rotorDiameter'] = rotorDiameter
     prob['axialInduction'] = axialInduction
     prob['generatorEfficiency'] = generatorEfficiency
+    prob['ratedPower'] = ratedPower
     prob['windSpeeds'] = windSpeeds
     prob['air_density'] = air_density
     prob['windDirections'] = windDirections

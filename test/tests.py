@@ -555,8 +555,8 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
         config.BV = True
 
         nTurbines = 4
-        self.rtol = 1E-10
-        self.atol = 1E-10
+        self.rtol = 1E-4
+        self.atol = 1E-8
 
         np.random.seed(seed=100)
 

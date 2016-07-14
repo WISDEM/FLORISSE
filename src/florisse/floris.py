@@ -636,7 +636,7 @@ class DirectionGroup(Group):
         self.add('powerComp', WindDirectionPower(nTurbines=nTurbines, direction_id=direction_id, differentiable=True,
                                                  use_rotor_components=use_rotor_components),
                  promotes=['air_density', 'generatorEfficiency', 'rotorDiameter',
-                           'wtVelocity%i' % direction_id,
+                           'wtVelocity%i' % direction_id, 'ratedPower',
                            'wtPower%i' % direction_id, 'dir_power%i' % direction_id])
 
         if use_rotor_components:
@@ -697,12 +697,12 @@ class AEPGroup(Group):
                        DirectionGroup(nTurbines=nTurbines, direction_id=direction_id,
                                       use_rotor_components=use_rotor_components, datasize=datasize,
                                       differentiable=differentiable, add_IdepVarComps=False, nSamples=nSamples),
-                       promotes=(['gen_params:*', 'floris_params:*', 'air_density',
+                       promotes=(['gen_params:*', 'floris_params:*', 'air_density', 'ratedPower',
                                   'axialInduction', 'generatorEfficiency', 'turbineX', 'turbineY', 'hubHeight',
                                   'yaw%i' % direction_id, 'rotorDiameter', 'wtVelocity%i' % direction_id,
                                   'wtPower%i' % direction_id, 'dir_power%i' % direction_id]
                                  if (nSamples == 0) else
-                                 ['gen_params:*', 'floris_params:*', 'air_density',
+                                 ['gen_params:*', 'floris_params:*', 'air_density', 'ratedPower',
                                   'axialInduction', 'generatorEfficiency', 'turbineX', 'turbineY', 'hubHeight',
                                   'yaw%i' % direction_id, 'rotorDiameter', 'wsPositionX', 'wsPositionY',
                                   'wsPositionZ', 'wtVelocity%i' % direction_id,
@@ -714,12 +714,14 @@ class AEPGroup(Group):
                        DirectionGroup(nTurbines=nTurbines, direction_id=direction_id,
                                       use_rotor_components=use_rotor_components, datasize=datasize,
                                       differentiable=differentiable, add_IdepVarComps=False, nSamples=nSamples),
-                       promotes=(['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'axialInduction',
+                       promotes=(['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density',  'ratedPower',
+                                  'axialInduction',
                                   'generatorEfficiency', 'turbineX', 'turbineY', 'yaw%i' % direction_id, 'rotorDiameter',
                                   'hubHeight', 'wtVelocity%i' % direction_id, 'wtPower%i' % direction_id,
                                   'dir_power%i' % direction_id]
                                  if (nSamples == 0) else
-                                 ['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'axialInduction',
+                                 ['Ct_in', 'Cp_in', 'gen_params:*', 'floris_params:*', 'air_density', 'ratedPower',
+                                  'axialInduction',
                                   'generatorEfficiency', 'turbineX', 'turbineY', 'yaw%i' % direction_id, 'rotorDiameter',
                                   'hubHeight',  'wsPositionX', 'wsPositionY', 'wsPositionZ',
                                   'wtVelocity%i' % direction_id, 'wtPower%i' % direction_id,

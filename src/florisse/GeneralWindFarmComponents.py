@@ -809,7 +809,7 @@ class WindDirectionPower(Component):
         self.add_param('wtVelocity%i' % direction_id, np.zeros(nTurbines), units='m/s',
                        desc='effective hub velocity for each turbine')
 
-        self.add_param('rated_power', np.ones(nTurbines)*5000., units='kW',
+        self.add_param('ratedPower', np.ones(nTurbines)*5000., units='kW',
                        desc='rated power for each turbine', pass_by_obj=True)
 
         # outputs
@@ -823,7 +823,7 @@ class WindDirectionPower(Component):
         direction_id = self.direction_id
         nTurbines = self.nTurbines
         wtVelocity = self.params['wtVelocity%i' % direction_id]
-        rated_power = params['rated_power']
+        ratedPower = params['ratedPower']
         air_density = params['air_density']
         rotorArea = 0.25*np.pi*np.power(params['rotorDiameter'], 2)
         Cp = params['Cp']
@@ -835,17 +835,17 @@ class WindDirectionPower(Component):
         # adjust units from W to kW
         wtPower /= 1000.0
 
-        # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
+        # rated_velocity = np.power(1000.*ratedPower/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
         #
         # dwt_power_dvelocitiesTurbines = np.eye(nTurbines)*generator_efficiency*(1.5*air_density*rotorArea*Cp *
         #                                                                         np.power(wtVelocity, 2))
         # dwt_power_dvelocitiesTurbines /= 1000.
 
         # adjust wt power based on rated power
-        if not use_rotor_components and np.any(wtPower) >= np.any(rated_power):
+        if not use_rotor_components and np.any(wtPower) >= np.any(ratedPower):
             for i in range(0, nTurbines):
-                if wtPower[i] >= rated_power[i]:
-                    wtPower[i] = rated_power[i]
+                if wtPower[i] >= ratedPower[i]:
+                    wtPower[i] = ratedPower[i]
 
 
         # if np.any(rated_velocity+1.) >= np.any(wtVelocity) >= np.any(rated_velocity-1.) and not \
@@ -863,7 +863,7 @@ class WindDirectionPower(Component):
         # if np.any(wtVelocity) >= np.any(rated_velocity+1.) and not use_rotor_components:
         #     for i in range(0, nTurbines):
         #         if wtVelocity[i] >= rated_velocity[i]+1.:
-        #             wtPower = rated_power
+        #             wtPower = ratedPower
         #             dwt_power_dvelocitiesTurbines[i][i] = 0.0
 
 
@@ -891,7 +891,7 @@ class WindDirectionPower(Component):
         rotorArea = 0.25*np.pi*np.power(rotorDiameter, 2)
         Cp = params['Cp']
         generatorEfficiency = params['generatorEfficiency']
-        rated_power = params['rated_power']
+        ratedPower = params['ratedPower']
         wtPower = unknowns['wtPower%i' % direction_id]
 
         # calcuate initial gradient values
@@ -907,7 +907,7 @@ class WindDirectionPower(Component):
         dwtPower_dCp /= 1000.
         dwtPower_drotorDiameter /= 1000.
 
-        # rated_velocity = np.power(1000.*rated_power/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
+        # rated_velocity = np.power(1000.*ratedPower/(generator_efficiency*(0.5*air_density*rotorArea*Cp)), 1./3.)
 
         # if np.any(rated_velocity+1.) >= np.any(wtVelocity) >= np.any(rated_velocity-1.) and not \
         #         use_rotor_components:
@@ -920,9 +920,9 @@ class WindDirectionPower(Component):
         #                                                              deriv_spline_start_power, spline_end_power, 0.0)
 
         # set gradients for turbines above rated power to zero
-        if np.any(wtPower) >= np.any(rated_power) and not use_rotor_components:
+        if np.any(wtPower) >= np.any(ratedPower) and not use_rotor_components:
             for i in range(0, nTurbines):
-                if wtPower[i] >= rated_power[i]:
+                if wtPower[i] >= ratedPower[i]:
                     dwtPower_dwtVelocity[i][i] = 0.0
                     dwtPower_dCp[i][i] = 0.0
                     dwtPower_drotorDiameter[i][i] = 0.0
