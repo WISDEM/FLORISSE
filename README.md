@@ -21,7 +21,7 @@ Copyright (c) NREL. All rights reserved.
 
   2) Place contents of zip-file in folder called GSL in the EEOver directory, such that EEOver/GSL/lib, EEOver/GSL/include, EEOver/GSL/bin are there.
   
-- Go into EEOver and build this part of the code: run "python setup.py build_ext --inplace" or "python setupWindows.py build_ext --inplace"
+- Go into EEOver and build this part of the code: run "python setup.py build_ext --inplace" for Linux or "python setupWindows.py build_ext --inplace" for Windows
 - Test EEOver by calling "python callEE.py"
 
 -- EXAMPLES
