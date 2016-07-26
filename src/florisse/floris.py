@@ -558,13 +558,19 @@ class RotorSolveGroup(Group):
         from openmdao.core.mpi_wrap import MPI
 
         # set up iterative solvers
-        epsilon = 1E-6
+        epsilon = 1E-12
         if MPI:
             self.ln_solver = PetscKSP()
+            self.ln_solver.options['rtol'] = epsilon
         else:
             self.ln_solver = ScipyGMRES()
-        self.nl_solver = NLGaussSeidel()
         self.ln_solver.options['atol'] = epsilon
+        # self.ln_solver.options['iprint'] = True
+
+        self.nl_solver = NLGaussSeidel()
+        self.nl_solver.options['atol'] = epsilon
+        self.nl_solver.options['rtol'] = epsilon
+
 
         self.add('CtCp', CPCT_Interpolate_Gradients_Smooth(nTurbines, direction_id=direction_id, datasize=datasize),
                  promotes=['gen_params:*', 'yaw%i' % direction_id,
