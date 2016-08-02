@@ -13,7 +13,7 @@ setup(
     name='FLORISSE',
     version='0.0.0',
     description='differentiable floris wake model with cosine factor',
-    install_requires=['openmdao>=1.5','akima>=1.0.0'],
+    install_requires=['openmdao>=1.7','akima>=1.0.0'],
     package_dir={'': 'src'},
     ext_modules=[module1, module2],
     dependency_links=['https://github.com/andrewning/akima/tarball/master#egg=akima'],

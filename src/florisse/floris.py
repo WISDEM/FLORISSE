@@ -240,13 +240,13 @@ class Floris(Component):
         self.nSamples = nSamples
         self.use_rotor_components = use_rotor_components
 
-        self.fd_options['form'] = 'central'
-        self.fd_options['step_size'] = 1.0e-6
-        self.fd_options['step_type'] = 'relative'
+        self.deriv_options['form'] = 'central'
+        self.deriv_options['step_size'] = 1.0e-6
+        self.deriv_options['step_calc'] = 'relative'
 
         if not differentiable:
-            self.fd_options['force_fd'] = True
-            self.fd_options['form'] = 'forward'
+            self.deriv_options['force_fd'] = True
+            self.deriv_options['form'] = 'forward'
         else:
             self.add_param('cosFac', np.zeros(3*nTurbines*nTurbines),
                            desc='cosine factor similar to Jensen 1983')
