@@ -199,7 +199,8 @@ class floris_wcent_wdiam(Component):
                 displacement = (wakeAngleInit*(15.0*(factor**4.0)+(wakeAngleInit**2.0))/
                 ((30.0*kd*(factor**5.0))/rotorDiameter[turb]))- \
                 (wakeAngleInit*rotorDiameter[turb]*(15.0+(wakeAngleInit**2.0))/(30.0*kd)) # yaw-induced wake center displacement
-                
+                if not useWakeAngle:
+                    displacement += bd*deltax
                 wakeCentersYT_mat[turbI, turb] = wakeCentersYT_mat[turbI, turb] + displacement
                 
         # adjust k_e to C_T, adjusted to yaw
