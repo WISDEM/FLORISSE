@@ -1,51 +1,86 @@
----------------------------------------
-  WISDEM FLORISSE 'release version'
----------------------------------------
+FLORISSE
+======== 
 
-This version is intended to provide a ''lean'' version of the WISDEM FLORISSE
-model, based on the OpenMDAO model structure. We will be adding more features
-and examples in the near future.
+Implementation of the FLOw Redirection and Induction in Steady-state (FLORIS) wind farm wake model for WISDEM, written in Python.
 
--- Installation / requirements --
+Created by Pieter Gebraad and Paul Fleming. Copyright (c) NREL. All rights reserved. 
 
-This release version of WISDEM FLORIS-SE requires OpenMDAO 0.13 to be 
-installed.  OpenMDAO 0.13 can be downloaded at:
-  http://openmdao.org/downloads/archive/
-This version of FLORISSE is not compatible with earlier or later versions
-of OpenMDAO.
+REQUIRED PYTHON LIBRARIES:
+- OpenMDAO
+- Numpy
+- WISDEM/akima
+
+-For a description of the FLORIS model refer to: P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, “Wind plant power optimization through yaw control using a parametric model for wake effects—a CFD simulation study,” in Wind Energy, 2014, DOI: 10.1002/we.1822.
 
 
--- Example scripts --
 
-The example script FLORISvsSOWFA.py gives an example of a FLORIS-SE run
-with some default parameter settings, and compares the result to the 
-SOWFA power results as  obtained in the paper:
+=======
+README for FLORIS in OpenMDAOv1.5+
 
-P. Fleming, P. Gebraad, S. Lee, J.W. van Wingerden, K. Johnson, M. Churchfield,
-J. Michalakes, P. Spalart, and P. Moriarty.Simulation comparison of wake
-mitigation control strategies for a two-turbine case. Wind Energy, 2014.
+# Installation instructions MAC
+##  system requirements  
+    gfortran  
+    gcc  
+    python 2.7.x  
+    numpy  
+    openmdao >= v1.5  
+### from top repo directory run  
+    $ python setup.py install --record installedfiles.txt  
+### uninstall with  
+    $ cat installedfiles.txt | xargs rm -r  
 
-In addition to Python packages already required by OpenMDAO (Numpy, Scipy,
-Matplotlib) this example requires the Pickle package.
+## Alternative Installation instructions MAC  
+### system requirements  
+    gfortran  
+    gcc  
+    python 2.7.x  
+    numpy  
+    openmdao >= v1.5  
+### run the following commands from src/florisse:  
+    $ gfortran -c adBuffer.f  
+    $ gcc -c adStack.c  
+    $ f2py -c --opt=-O2 -m _floris floris.f90 adBuffer.o adStack.o  
+    
+    
+## Installation instructions Windows  
+### system requirements  
+    gfortran  
+    gcc  
+    mingw  
+    python 2.7.x  
+    numpy  
+    openmdao >= v01.5 
+### run the following commands from src\florisse:  
+    $ gfortran -c adBuffer.f  
+    $ gcc -c adStack.c  
+    $ python \your\path\to\f2py.py -c --opt=-O2 --compiler=mingw32 --fcompiler=gfortran -m _floris floris.f90 adBuffer.o adStack.o  
+        (most likely your path is C:\python27\Scripts\f2py.py)  
+### if you get an error in the line "as=b['args']" try to update numpy 
+    ($ pip install numpy --upgrade)  
+### from top repo directory run 
+	python setup.py install
+### run the example using  
+    $ python test\exampleCall.py  
+        
 
-
--- More information on the model --
-
-Relevant papers on the FLORIS model are:
-
-P.M.O. Gebraad, F.W. Teeuwisse, J.W. van Wingerden, P.A. Fleming, S.D. Ruben,
-J.R. Marden, and L.Y. Pao.
-"Wind plant power optimization through yaw control using a parametric model 
-for wake effects - a CFD simulation study."
-Wind Energy, 2014.
-
-.. which gives a description of the model and its parameters.
-
-Pieter M.O. Gebraad, Jared J. Thomas, Andrew Ning, Paul A. Fleming, and Katherine
-Dykes.
-"Maximization of the annual energy production of wind power plants by optimization 
-of layout and yaw-based wake control"
-Pre-publication
-
-.. which gives a description of the rotor coupling included in this version of
-FLORISSE.
+## Installation instructions Marylou  
+### module dependencies ($ module load <module name>)(purge all modules first)  
+    petsc/3.6.3  
+    python2/7  
+    compiler_gnu/4.9.2  
+    mpi/openmpi-1.8.4_gnu-4.9.2  
+### python dependencies ($ pip install --user <package name>)  
+    openmdao >= v1.5 (use a clone of the repo and {$ pip install --user -e .} from top level of 
+              acquired repo)  
+    mpi4py  
+    petsc4py      
+### compiler FLORIS (clone with ssh on Marylou)  
+    $ cd src/florisse  
+    $ gcc -fPIC -c adStack.c  
+    $ gfortran -fPIC -c adBuffer.f  
+    $ f2py -c --opt=-O2 -m _floris floris.f90 adBuffer.o adStack.o  
+### test installation (from within src/florisse)  
+    $ python test/tests.py  
+    $ python test/exampleCall.py  
+    $ python test/exampleOptimizationAEP.py 2  
+    $ mpirun -np 4 python test/exampleOptimizationAEP.py 2  
