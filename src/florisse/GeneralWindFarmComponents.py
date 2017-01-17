@@ -195,7 +195,11 @@ class AdjustCtCpYaw(Component):
 
         # calculate new CP values, if desired
         if not CPcorrected:
-            unknowns['Cp_out'] = Cp * np.cos(yaw) ** pP
+            #print('Yaw = ', yaw, 'np.cos(yaw) = ', np.cos(yaw), 'Cp out ', Cp*np.cos(yaw)**pP)
+            if yaw <= np.pi/2:
+	        unknowns['Cp_out'] = Cp * np.cos(yaw) ** pP
+            else:
+                unknowns['Cp_out'] = np.array([0.])
         else:
             unknowns['Cp_out'] = Cp
 
