@@ -16,8 +16,8 @@ if __name__ == "__main__":
     #turbineX = np.array([1164.7, 947.2,  1682.4, 1464.9, 1982.6, 2200.1])
     #turbineY = np.array([1024.7, 1335.3, 1387.2, 1697.8, 2060.3, 1749.7])
 
-    turbineX = np.array([0.])
-    turbineY = np.array([0.])
+    turbineX = np.array([0., 0.])
+    turbineY = np.array([0., 0.])
 
     # initialize input variable arrays
     nTurbs = turbineX.size
@@ -82,7 +82,7 @@ if __name__ == "__main__":
 
     yawAngles = np.linspace(0,100,101)
     for i in range(len(yawAngles)):
-        prob['yaw0'] = yawAngles[i]
+        prob['yaw0'] = np.ones(turbineX.size) * yawAngles[i]
         prob.run()
         print('Turbine Yaw = ', prob['yaw0'],'Turbine Power = ', prob['wtPower0'])
 
