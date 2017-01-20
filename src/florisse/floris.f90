@@ -544,7 +544,10 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
             deltax = turbineXw(turbI) - turbineXw(turb)
             
             if (useaUbU) then
-                mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
+                if (dabs(aU*pi/180.0_dp + bU*yaw(turb)) < 85.0_dp*pi/180.0_dp) then
+                        mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
+                else
+                        mmU = MU/cos(85.0_dp*pi/180.0_dp)
             end if
             
             if (deltax > 0 .and. turbI /= turb) then
