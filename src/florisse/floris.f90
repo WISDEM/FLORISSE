@@ -592,7 +592,6 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
            if (dabs(aU*pi/180.0_dp + bU*yaw(turb)) < 85.0_dp*pi/180.0_dp) then
                    mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
            else
-                   write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb)) 
                    mmU = MU/cos(85.0_dp*pi/180.0_dp)
            end if
        else
