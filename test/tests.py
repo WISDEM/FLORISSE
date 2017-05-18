@@ -554,7 +554,7 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
         config.floris_single_component = True
         config.BV = True
 
-        nTurbines = 2
+        nTurbines = 4
         self.rtol = 1E-4
         self.atol = 1E-8
 
