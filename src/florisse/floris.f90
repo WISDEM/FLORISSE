@@ -428,7 +428,11 @@ subroutine floris(nTurbines, turbineXw, turbineYw, yawDeg, &
                 wakeOverlap(2) = wakeOverlap(2)-wakeOverlap(1)
 
             end if
-			print *, wakeOverlap
+            
+            wakeOverlap = wakeOverlap/((pi*rotorDiameter(turbI) &
+                                                       *rotorDiameter(turbI))/4.0_dp)
+                                                       
+! 			print *, wakeOverlap
 			! removed array effect option
             !s = sum(wakeOverlap(1) + wakeOverlap(2))
             keArray = ke(turb) !*(1+s*keCorrArray)
