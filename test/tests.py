@@ -43,10 +43,10 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
         # Define flow properties
         nDirections = 50.0
-        windSpeeds = np.random.rand(nDirections)*20        # m/s
+        windSpeeds = np.random.rand(int(nDirections))*20        # m/s
         air_density = 1.1716    # kg/m^3
-        windDirections = np.random.rand(nDirections)*360.0
-        windFrequencies = np.random.rand(nDirections)
+        windDirections = np.random.rand(int(nDirections))*360.0
+        windFrequencies = np.random.rand(int(nDirections))
 
         # set up problem
         # prob = Problem(root=OptAEP(nTurbines, nDirections=1))
@@ -72,8 +72,8 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
 
         # add constraints
-        prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)))
-        prob.driver.add_constraint('boundaryDistances', lower=np.zeros(nVertices*nTurbines), scaler=1.0)
+        prob.driver.add_constraint('sc', lower=np.zeros(int(((nTurbines-1.)*nTurbines/2.))))
+        prob.driver.add_constraint('boundaryDistances', lower=np.zeros(int(nVertices*nTurbines)), scaler=1.0)
 
 
         # initialize problem
@@ -148,10 +148,10 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
 
         # Define flow properties
         nDirections = 50.0
-        windSpeeds = np.random.rand(nDirections)*20        # m/s
+        windSpeeds = np.random.rand(int(nDirections))*20        # m/s
         air_density = 1.1716    # kg/m^3
-        windDirections = np.random.rand(nDirections)*360.0
-        windFrequencies = np.random.rand(nDirections)
+        windDirections = np.random.rand(int(nDirections))*360.0
+        windFrequencies = np.random.rand(int(nDirections))
 
         # set up problem
         # prob = Problem(root=OptAEP(nTurbines, nDirections=1))
@@ -177,7 +177,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
         # add constraints
-        prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)))
+        prob.driver.add_constraint('sc', lower=np.zeros(int(((nTurbines-1.)*nTurbines/2.))))
 
         # initialize problem
         prob.setup()
@@ -554,7 +554,7 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
         config.floris_single_component = True
         config.BV = True
 
-        nTurbines = 4
+        nTurbines = 2
         self.rtol = 1E-4
         self.atol = 1E-8
 

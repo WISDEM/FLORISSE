@@ -342,7 +342,7 @@ class SpacingComp(Component):
                        desc='y coordinates of turbines in wind dir. ref. frame')
 
         # Explicitly size output array
-        self.add_output('wtSeparationSquared', val=np.zeros((nTurbines-1.)*nTurbines/2.),
+        self.add_output('wtSeparationSquared', val=np.zeros(int((nTurbines-1.)*nTurbines/2.)),
                         desc='spacing of all turbines in the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -351,7 +351,7 @@ class SpacingComp(Component):
         turbineX = params['turbineX']
         turbineY = params['turbineY']
         nTurbines = turbineX.size
-        separation_squared = np.zeros((nTurbines-1.)*nTurbines/2.)
+        separation_squared = np.zeros(int((nTurbines-1.)*nTurbines/2.))
 
         k = 0
         for i in range(0, nTurbines):
@@ -370,7 +370,7 @@ class SpacingComp(Component):
         nTurbines = turbineX.size
 
         # initialize gradient calculation array
-        dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
+        dS = np.zeros((int((nTurbines-1.)*nTurbines/2.), int(2*nTurbines)))
 
         # set turbine pair counter to zero
         k = 0
