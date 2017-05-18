@@ -244,9 +244,6 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
     real(dp) :: deltax
     Integer :: turb, turbI, zone
     real(dp), parameter :: pi = 3.141592653589793_dp
-    ! visualization
-    Integer :: loc
-    real(dp), dimension(nSamples) :: velX, velY, velZ
     
     
     
@@ -255,12 +252,288 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
     real(dp) :: wakeAngleInit, zeroloc
     real(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
     real(dp) :: wakeDiameter0
+    real(dp), dimension(3) :: wakeDiameters
+    real(dp) :: wakeCenterY
+    
+    ! local (Wake overlap)
+    real(dp) :: rmax
+    real(dp), dimension(3) :: wakeOverlap
+
+    ! local (Velocity)
+    real(dp), dimension(nTurbines) :: a
+    real(do) :: keArray
+    real(dp), dimension(3) :: mmU
+    real(dp) :: s, cosFac, wakeEffCoeff, wakeEffCoeffPerZone
+    
+    ! model out
+    real(dp), dimension(nTurbines), intent(out) :: wtVelocity
+    
+    intrinsic cos, atan, max
+    
+    yaw = yawDeg*pi/180.0_dp
+
+    wtVelocity = Vinf
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+    spline_bound = 1.0_dp
+       
+    ! calculate y-locations of wake centers in wind ref. frame
+    wakeCenterY = 0.0_dp
+
+    !adjust k_e to C_T, adjusted to yaw
+    ke = ke_in + keCorrCT*(Ct-Region2CT)
+
+    ! initialize axial induction values
+    if (axialIndProvided) then
+        a = a_in
+    else
+        call CTtoAxialInd(Ct, nTurbines, a)
+    end if
+    
+    do turbI = 1, nTurbines ! downstream turbines
+
+        wakeEffCoeff = 0.0_dp
+
+        do turb = 1, nTurbines  ! upstream turbines
+
+            ! turbine separation
+            deltax = turbineXw(turbI) - turbineXw(turb)
+
+            wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
+
+            if (useWakeAngle) then
+                wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
+            end if
+
+            if (adjustInitialWakeDiamToYaw) then
+                wakeDiameter0 = rotorDiameter(turb)*cos(yaw(turb))
+            else
+                wakeDiameter0 = rotorDiameter(turb)
+            end if
+
+            ! wake center calculations at each turbine
+            
+            if (turbineXw(turb) < turbineXw(turbI)) then
+                factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
+                wakeCenterY = turbineYw(turb)
+                
+                displacement = wakeAngleInit*(wakeAngleInit* &
+                                                 & wakeAngleInit + 15.0_dp*factor*factor* &
+                                                 factor*factor)/((30.0_dp*kd/ & 
+                                                 rotorDiameter(turb))*(factor*factor* &
+                                                 & factor*factor*factor))
+                                                 
+                displacement = displacement - wakeAngleInit*(wakeAngleInit* &
+                                              & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
+                                              rotorDiameter(turb))
+
+                wakeCenterY = wakeCenterY + initialWakeDisplacement + displacement
+  
+                if (useWakeAngle .eqv. .false.) then
+                    wakeCenterY = wakeCenterY + bd*(deltax)
+                end if
+                
+            end if
+
+            !!!!!!!!!!!!!!!!!!!!!! calculate the wake diameter of each wake at each turbine !!!!!!!!!!!!!!!!!!!!!!!
+
+            ! x position of interest
+            x = turbineXw(turbI)
+
+            wakeDiameters = 0.0_dp
+
+            zone = 1
+
+            ! define centerpoint of spline
+            zeroloc = turbineXw(turb) - wakeDiameter0/(2.0_dp*ke(turb)*me(zone))
+
+            if (zeroloc + spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then ! check this
+                wakeDiameters(zone) = 0.0_dp
+
+            else if (zeroloc - spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then !check this
+
+                !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                ! position of upwind point
+                x1 = zeroloc - spline_bound*rotorDiameter(turb)
+
+                ! diameter of upwind point
+                y1 = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*(x1 - turbineXw(turb))
+
+                ! slope at upwind point
+                dy1 = 2.0_dp*ke(turb)*me(zone)
+
+                ! position of downwind point
+                x2 = zeroloc+spline_bound*rotorDiameter(turb)
+
+                ! diameter at downwind point
+                y2 = 0.0_dp
+
+                ! slope at downwind point
+                dy2 = 0.0_dp
+
+                ! solve for the wake zone diameter and its derivative w.r.t. the downwind
+                ! location at the point of interest
+                call Hermite_Spline(x, x1, x2, y1, dy1, y2, dy2, wakeDiameters(zone))
+
+            else if (turbineXw(turb) < turbineXw(turbI)) then
+                wakeDiameters(zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax
+            end if
+
+
+            if (turbineXw(turb) < turbineXw(turbI)) then
+                zone = 2
+                wakeDiameters(zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
+                zone = 3
+                wakeDiameters(zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
+            end if
+
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Overlap !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if (turbineX(turbI) > turbineX(turb)) then
+                OVdYd = wakeCenterY-turbineY(turbI)    ! distance between wake center and rotor center
+                OVr = rotorDiameter(turbI)/2                        ! rotor diameter
+                do zone = 1, 3
+                    OVRR = wakeDiameters(zone)/2.0_dp        ! wake diameter
+                    OVdYd = abs(OVdYd)
+                    if (OVdYd >= 0.0_dp + tol) then
+                        ! calculate the distance from the wake center to the vertical line between
+                        ! the two circle intersection points
+                        OVL = (-OVr*OVr+OVRR*OVRR+OVdYd*OVdYd)/(2.0_dp*OVdYd)
+                    else
+                        OVL = 0.0_dp
+                    end if
+
+                    OVz = OVRR*OVRR-OVL*OVL
+
+                    ! Finish calculating the distance from the intersection line to the outer edge of the wake zone
+                    if (OVz > 0.0_dp + tol) then
+                        OVz = sqrt(OVz)
+                    else
+                        OVz = 0.0_dp
+                    end if
+
+                    if (OVdYd < (OVr+OVRR)) then ! if the rotor overlaps the wake zone
+
+                        if (OVL < OVRR .and. (OVdYd-OVL) < OVr) then
+                            wakeOverlap(zone) = OVRR*OVRR*dacos(OVL/OVRR) + OVr*OVr*dacos((OVdYd-OVL)/OVr) - OVdYd*OVz
+                        else if (OVRR > OVr) then
+                            wakeOverlap(zone) = pi*OVr*OVr
+                        else
+                            wakeOverlap(zone) = pi*OVRR*OVRR
+                        end if
+                    else
+                        wakeOverlap(zone) = 0.0_dp
+                    end if
+
+                end do
+
+                wakeOverlap(3) = wakeOverlap(3)-wakeOverlap(2)
+                wakeOverlap(2) = wakeOverlap(2)-wakeOverlap(1)
+
+            end if
+
+            s = sum(wakeOverlap(1) + wakeOverlap(2))
+            keArray = ke(turb)*(1+s*keCorrArray)
+
+            wakeEffCoeffPerZone = 0.0_dp
+
+            if (useaUbU) then
+                if (dabs(aU*pi/180.0_dp + bU*yaw(turb)) < 85.0_dp*pi/180.0_dp) then
+                        mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
+                else
+                        write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb))
+                        mmU = MU/cos(85.0_dp*pi/180.0_dp)
+                end if
+            end if
+
+            ! find overlap-area weighted effect of each wake zone
+            if (deltax > 0 .and. turbI /= turb) then
+                do zone = 1, 3
+
+                    rmax = cos_spread*0.5_dp*(wakeDiameters(3) + rotorDiameter(turbI))
+                    cosFac = 0.5_dp*(1.0_dp + cos(pi*dabs(wakeCenterY &
+                                     & - turbineYw(turbI))/rmax))
+
+                    if (useaUbU) then
+                        wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
+                        (((cosFac*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray &
+                        *mmU(zone)*deltax))**2)*wakeOverlap(zone)
+                    else
+                        wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
+                        (((cosFac*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray &
+                        *MU(zone)*deltax))**2)*wakeOverlap(zone)
+                    end if
+
+                end do
+                wakeEffCoeff = wakeEffCoeff + (a(turb)*wakeEffCoeffPerZone)**2
+            end if
+
+        end do
+
+        ! find effective wind speeds at downstream turbines
+
+        wakeEffCoeff = 1.0_dp - 2.0_dp*sqrt(wakeEffCoeff)
+
+        ! multiply the inflow speed with the wake coefficients to find effective wind speed at turbine
+        wtVelocity(turbI) = wtVelocity(turbI)*wakeEffCoeff
+        
+    end do
+
+end subroutine floris
+
+
+subroutine floris_visualize(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
+                          & rotorDiameter, hubHeight, Vinf, Ct, a_in, ke_in, kd, me, &
+                          & initialWakeDisplacement, bd, MU, aU, bU, initialWakeAngle, &
+                          & cos_spread, keCorrCT, Region2CT, keCorrArray, useWakeAngle, &
+                          & adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, &
+                          & wsPositionXYZw, shearCoefficientAlpha, shearZh, &
+                          & wtVelocity, wsArray, &
+                          & wakeCentersYT_vec, wakeDiametersT_vec, wakeOverlapTRel_vec)
+
+    ! independent variables: yawDeg Ct turbineXw turbineYw rotorDiameter a_in
+    ! dependent variables: wtVelocity
+
+    implicit none
+
+    ! define precision to be the standard for a double precision ! on local system
+    integer, parameter :: dp = kind(0.d0)
+
+    ! in
+    integer, intent(in) :: nTurbines
+    integer :: nSamples
+    real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
+    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray
+    real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw
+    real(dp), dimension(nTurbines), intent(in) :: rotorDiameter, hubHeight
+    real(dp), dimension(3), intent(in) :: me, MU
+    real(dp), intent(in) :: aU, bU, shearCoefficientAlpha, shearZh
+    logical, intent(in) :: useWakeAngle, adjustInitialWakeDiamToYaw, axialIndProvided, &
+                           & useaUbU
+    real(dp), dimension(3, nSamples), intent(in) :: wsPositionXYZw
+
+    ! local (General)
+    real(dp), dimension(nTurbines) :: ke, yaw
+    real(dp) :: deltax
+    Integer :: turb, turbI, zone
+    real(dp), parameter :: pi = 3.141592653589793_dp
+    ! visualization
+    Integer :: loc
+    real(dp), dimension(nSamples) :: velX, velY, velZ
+
+
+
+    ! local (Wake centers and diameters)
+    real(dp) :: spline_bound ! in rotor diameters
+    real(dp) :: wakeAngleInit, zeroloc
+    real(dp) :: factor, displacement, x, x1, x2, y1, y2, dy1, dy2
+    real(dp) :: wakeDiameter0
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeDiametersT_mat
     real(dp), dimension(nTurbines, nTurbines) :: wakeCentersYT_mat
     ! visualization
     real(dp), dimension(nSamples, nTurbines, 3) :: wakeDiameters
     real(dp), dimension(nSamples, nTurbines) :: wakeCentersY, wakeCentersZ
-    
+
     ! local (Wake overlap)
     real(dp) :: rmax
     real(dp), dimension(nTurbines, nTurbines, 3) :: wakeOverlapTRel_mat
@@ -271,60 +544,60 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
     real(dp) :: s, cosFac, wakeEffCoeff, wakeEffCoeffPerZone
     ! visualization
     real(dp) :: deltay, deltaz, radiusLoc, axialIndAndNearRotor, reductionFactor
-    
+
     ! model out
     real(dp), dimension(nTurbines), intent(out) :: wtVelocity
-    
+
     ! test out
     real(dp), dimension(nTurbines*nTurbines), intent(out) :: wakeCentersYT_vec
-    real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeDiametersT_vec    
+    real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeDiametersT_vec
     real(dp), dimension(3*nTurbines*nTurbines), intent(out) :: wakeOverlapTRel_vec
-    
+
     ! visualization out
     real(dp), dimension(nSamples), intent(out) :: wsArray
-    
+
     intrinsic cos, atan, max
-    
+
     if (nSamples == 1) then
         nSamples = 0
     end if
-    
+
     yaw = yawDeg*pi/180.0_dp
-    
+
     velX(:) = wsPositionXYZw(1, :)
     velY(:) = wsPositionXYZw(2, :)
     velZ(:) = wsPositionXYZw(3, :)
-        
-            
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Centers and Diameters !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     spline_bound = 1.0_dp
-       
+
     ! calculate y-locations of wake centers in wind ref. frame
     wakeCentersYT_mat = 0.0_dp
     wakeCentersY = 0.0_dp
     wakeCentersZ = 0.0_dp
-    
+
     do turb = 1, nTurbines
         wakeAngleInit = 0.5_dp*sin(yaw(turb))*Ct(turb)
-        
+
         if (useWakeAngle) then
             wakeAngleInit = wakeAngleInit + initialWakeAngle*pi/180.0_dp
         end if
-        
+
         ! wake center calculations at each turbine
-        do turbI = 1, nTurbines            
-            
+        do turbI = 1, nTurbines
+
             if (turbineXw(turb) < turbineXw(turbI)) then
                 deltax = turbineXw(turbI) - turbineXw(turb)
                 factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
                 wakeCentersYT_mat(turbI, turb) = turbineYw(turb)
-                
+
                 displacement = wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp*factor*factor* &
-                                                 factor*factor)/((30.0_dp*kd/ & 
+                                                 factor*factor)/((30.0_dp*kd/ &
                                                  rotorDiameter(turb))*(factor*factor* &
                                                  & factor*factor*factor))
-                                                 
+
                 displacement = displacement - &
                                                  & wakeAngleInit*(wakeAngleInit* &
                                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
@@ -332,29 +605,29 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
 
                 wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb)+ &
                                                  & initialWakeDisplacement + displacement
-  
+
                 if (useWakeAngle .eqv. .false.) then
                     wakeCentersYT_mat(turbI, turb) = wakeCentersYT_mat(turbI, turb) + bd*(deltax)
                 end if
-                
+
             end if
 
         end do
-        
+
         ! wake center calculations at each sample point
-        do loc = 1, nSamples            
-            
+        do loc = 1, nSamples
+
             if (turbineXw(turb) < velX(loc)) then
                 deltax = velX(loc) - turbineXw(turb)
                 factor = (2.0_dp*kd*deltax/rotorDiameter(turb)) + 1.0_dp
                 wakeCentersY(loc, turb) = turbineYw(turb)
-                
+
                 displacement = wakeAngleInit*(wakeAngleInit* &
                                  & wakeAngleInit + 15.0_dp*factor*factor* &
-                                 factor*factor)/((30.0_dp*kd/ & 
+                                 factor*factor)/((30.0_dp*kd/ &
                                  rotorDiameter(turb))*(factor*factor* &
                                  & factor*factor*factor))
-                                                 
+
                 displacement = displacement - &
                                  & wakeAngleInit*(wakeAngleInit* &
                                  & wakeAngleInit + 15.0_dp)/(30.0_dp*kd/ &
@@ -362,253 +635,296 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
 
                 wakeCentersY(loc, turb) = wakeCentersY(loc, turb)+ &
                                           & initialWakeDisplacement + displacement
-  
+
                 if (useWakeAngle .eqv. .false.) then
                     wakeCentersY(loc, turb) = wakeCentersY(loc, turb) + bd*(deltax)
                 end if
-                
+
                 wakeCentersZ(loc, turb) = hubHeight(turb)
-                
+
             end if
 
         end do
-        
+
     end do
-    
+
     !adjust k_e to C_T, adjusted to yaw
     ke = ke_in + keCorrCT*(Ct-Region2CT)
-    
+
     ! calculate wake diameters
     wakeDiametersT_mat = 0.0_dp
 
     do turb = 1, nTurbines
-        
+
         if (adjustInitialWakeDiamToYaw) then
             wakeDiameter0 = rotorDiameter(turb)*cos(yaw(turb))
         else
-            wakeDiameter0 = rotorDiameter(turb)        
+            wakeDiameter0 = rotorDiameter(turb)
         end if
-        
+
         ! calculate the wake diameter of each wake at each turbine
         do turbI = 1, nTurbines
-        
+
             ! turbine separation
-            deltax = turbineXw(turbI) - turbineXw(turb)            
-            
+            deltax = turbineXw(turbI) - turbineXw(turb)
+
             ! x position of interest
-            x = turbineXw(turbI)                         
-              
+            x = turbineXw(turbI)
+
             zone = 1
-            
+
             ! define centerpoint of spline
             zeroloc = turbineXw(turb) - wakeDiameter0/(2.0_dp*ke(turb)*me(zone))
-            
+
             if (zeroloc + spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then ! check this
                 wakeDiametersT_mat(turbI, turb, zone) = 0.0_dp
-            
+
             else if (zeroloc - spline_bound*rotorDiameter(turb) < turbineXw(turbI)) then !check this
-                               
+
                 !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
-                
+
                 ! position of upwind point
                 x1 = zeroloc - spline_bound*rotorDiameter(turb)
-                
+
                 ! diameter of upwind point
                 y1 = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*(x1 - turbineXw(turb))
-                                
+
                 ! slope at upwind point
                 dy1 = 2.0_dp*ke(turb)*me(zone)
-                
+
                 ! position of downwind point
-                x2 = zeroloc+spline_bound*rotorDiameter(turb)             
+                x2 = zeroloc+spline_bound*rotorDiameter(turb)
 
                 ! diameter at downwind point
                 y2 = 0.0_dp
-                
+
                 ! slope at downwind point
                 dy2 = 0.0_dp
-                
+
                 ! solve for the wake zone diameter and its derivative w.r.t. the downwind
                 ! location at the point of interest
                 call Hermite_Spline(x, x1, x2, y1, dy1, y2, dy2, wakeDiametersT_mat(turbI, turb, zone))
-            
+
             else if (turbineXw(turb) < turbineXw(turbI)) then
-                wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax            
+                wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*deltax
             end if
-            
-                        
+
+
             if (turbineXw(turb) < turbineXw(turbI)) then
                 zone = 2
-                wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax                   
+                wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
                 zone = 3
                 wakeDiametersT_mat(turbI, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
-            end if      
-            
+            end if
+
         end do
-        
+
         ! calculate the wake diameter of each wake at each sample point
         do loc = 1, nSamples
-        
+
             ! turbine separation
-            deltax = velX(loc) - turbineXw(turb)            
-            
+            deltax = velX(loc) - turbineXw(turb)
+
             ! x position of interest
-            x = velX(loc)                         
-              
+            x = velX(loc)
+
             zone = 1
-            
+
             ! define centerpoint of spline
             zeroloc = turbineXw(turb) - wakeDiameter0/(2.0_dp*ke(turb)*me(zone))
-            
+
             if (zeroloc + spline_bound*rotorDiameter(turb) < velX(loc)) then ! check this
                 wakeDiameters(loc, turb, zone) = 0.0_dp
-            
+
             else if (zeroloc - spline_bound*rotorDiameter(turb) < velX(loc)) then !check this
-                               
+
                 !!!!!!!!!!!!!!!!!!!!!! calculate spline values !!!!!!!!!!!!!!!!!!!!!!!!!!
-                
+
                 ! position of upwind point
                 x1 = zeroloc - spline_bound*rotorDiameter(turb)
-                
+
                 ! diameter of upwind point
                 y1 = wakeDiameter0+2.0_dp*ke(turb)*me(zone)*(x1 - turbineXw(turb))
-                                
+
                 ! slope at upwind point
                 dy1 = 2.0_dp*ke(turb)*me(zone)
-                
+
                 ! position of downwind point
-                x2 = zeroloc+spline_bound*rotorDiameter(turb)             
+                x2 = zeroloc+spline_bound*rotorDiameter(turb)
 
                 ! diameter at downwind point
                 y2 = 0.0_dp
-                
+
                 ! slope at downwind point
                 dy2 = 0.0_dp
-                
+
                 ! solve for the wake zone diameter and its derivative w.r.t. the downwind
                 ! location at the point of interest
                 call Hermite_Spline(x, x1, x2, y1, dy1, y2, dy2, wakeDiameters(loc, turb, zone))
-            
+
             else if (turbineXw(turb) < velX(loc)) then
-                wakeDiameters(loc, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax            
+                wakeDiameters(loc, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
             end if
-            
-                        
+
+
             if (turbineXw(turb) < velX(loc)) then
                 zone = 2
-                wakeDiameters(loc, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax                   
+                wakeDiameters(loc, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
                 zone = 3
                 wakeDiameters(loc, turb, zone) = wakeDiameter0 + 2.0_dp*ke(turb)*me(zone)*deltax
-            end if      
-            
+            end if
+
         end do
     end do
-    
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Wake Overlap !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
+
     ! calculate relative overlap
-    call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, &
-                          & wakeDiametersT_mat, wakeCentersYT_mat, wakeOverlapTRel_mat)
+    !call calcOverlapAreas(nTurbines, turbineXw, turbineYw, rotorDiameter, &
+    !                      & wakeDiametersT_mat, wakeCentersYT_mat, wakeOverlapTRel_mat)
+
+    if (turbineX(turbI) > turbineX(turb)) then
+        OVdYd = wakeCenters(turbI, turb)-turbineY(turbI)    ! distance between wake center and rotor center
+        OVr = rotorDiameter(turbI)/2                        ! rotor diameter
+        do zone = 1, 3
+            OVRR = wakeDiameters(turbI, turb, zone)/2.0_dp        ! wake diameter
+            OVdYd = abs(OVdYd)
+            if (OVdYd >= 0.0_dp + tol) then
+                ! calculate the distance from the wake center to the vertical line between
+                ! the two circle intersection points
+                OVL = (-OVr*OVr+OVRR*OVRR+OVdYd*OVdYd)/(2.0_dp*OVdYd)
+            else
+                OVL = 0.0_dp
+            end if
+
+            OVz = OVRR*OVRR-OVL*OVL
+
+            ! Finish calculating the distance from the intersection line to the outer edge of the wake zone
+            if (OVz > 0.0_dp + tol) then
+                OVz = sqrt(OVz)
+            else
+                OVz = 0.0_dp
+            end if
+
+            if (OVdYd < (OVr+OVRR)) then ! if the rotor overlaps the wake zone
+
+                if (OVL < OVRR .and. (OVdYd-OVL) < OVr) then
+                    wakeOverlap(turbI, turb, zone) = OVRR*OVRR*dacos(OVL/OVRR) + OVr*OVr*dacos((OVdYd-OVL)/OVr) - OVdYd*OVz
+                else if (OVRR > OVr) then
+                    wakeOverlap(turbI, turb, zone) = pi*OVr*OVr
+                else
+                    wakeOverlap(turbI, turb, zone) = pi*OVRR*OVRR
+                end if
+            else
+                wakeOverlap(turbI, turb, zone) = 0.0_dp
+            end if
+
+        end do
+
+        wakeOverlap(turbI, turb, 3) = wakeOverlap(turbI, turb, 3)-wakeOverlap(turbI, turb, 2)
+        wakeOverlap(turbI, turb, 2) = wakeOverlap(turbI, turb, 2)-wakeOverlap(turbI, turb, 1)
+
+    end if
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Velocity !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
     ! initialize velocities in full flow field (optional)
     wsArray = Vinf
-    
+
     ! apply shear profile to visualization
 !     wsArray = wsArray*(velZ/shearZh)**shearCoefficientAlpha
 !     print *, wsArray
-    ! initialize axial induction values    
+    ! initialize axial induction values
     if (axialIndProvided) then
         a = a_in
     else
         call CTtoAxialInd(Ct, nTurbines, a)
     end if
-    
+
     ! adjust ke to Ct as adjusted to yaw
     ke = ke_in + keCorrCT*(Ct-Region2CT)
 
     do turb = 1, nTurbines
         s = sum(wakeOverlapTRel_mat(turb, :, 1) + wakeOverlapTRel_mat(turb, :, 2))
-        keArray(turb) = ke(turb)*(1+s*keCorrArray) 
+        keArray(turb) = ke(turb)*(1+s*keCorrArray)
     end do
-    
+
     ! find effective wind speeds at downstream turbines
     wtVelocity = Vinf
     do turbI = 1, nTurbines
         wakeEffCoeff = 0.0_dp
-        
+
         ! find overlap-area weighted effect of each wake zone
         do turb = 1, nTurbines
             wakeEffCoeffPerZone = 0.0_dp
             deltax = turbineXw(turbI) - turbineXw(turb)
-            
+
             if (useaUbU) then
                 if (dabs(aU*pi/180.0_dp + bU*yaw(turb)) < 85.0_dp*pi/180.0_dp) then
                         mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
                 else
-                        write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb)) 
+                        write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb))
                         mmU = MU/cos(85.0_dp*pi/180.0_dp)
                 end if
             end if
-            
+
             if (deltax > 0 .and. turbI /= turb) then
                 do zone = 1, 3
-                
+
                     rmax = cos_spread*0.5_dp*(wakeDiametersT_mat(turbI, turb, 3) + rotorDiameter(turbI))
                     cosFac = 0.5_dp*(1.0_dp + cos(pi*dabs(wakeCentersYT_mat(turbI, turb) &
                                      & - turbineYw(turbI))/rmax))
-                                
+
                     if (useaUbU) then
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
                         (((cosFac*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *mmU(zone)*deltax))**2)*wakeOverlapTRel_mat(turbI, turb, zone)   
+                        *mmU(zone)*deltax))**2)*wakeOverlapTRel_mat(turbI, turb, zone)
                     else
                         wakeEffCoeffPerZone = wakeEffCoeffPerZone + &
                         (((cosFac*rotorDiameter(turb))/(rotorDiameter(turb)+2.0_dp*keArray(turb) &
-                        *MU(zone)*deltax))**2)*wakeOverlapTRel_mat(turbI, turb, zone)   
-                    end if                     
-                            
+                        *MU(zone)*deltax))**2)*wakeOverlapTRel_mat(turbI, turb, zone)
+                    end if
+
                 end do
                 wakeEffCoeff = wakeEffCoeff + (a(turb)*wakeEffCoeffPerZone)**2
             end if
         end do
         wakeEffCoeff = 1.0_dp - 2.0_dp*sqrt(wakeEffCoeff)
-        
-        ! multiply the inflow speed with the wake coefficients to find effective wind 
+
+        ! multiply the inflow speed with the wake coefficients to find effective wind
         ! speed at turbine
         wtVelocity(turbI) = wtVelocity(turbI)*wakeEffCoeff
     end do
-    
+
     ! calculate the velocity at the sample points
     do turb = 1, nTurbines
-    
+
        ! if (useaUbU) then
        !     mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
        ! else
        !     mmu = MU
-       ! end if  
+       ! end if
        if (useaUbU) then
            if (dabs(aU*pi/180.0_dp + bU*yaw(turb)) < 85.0_dp*pi/180.0_dp) then
                    mmU = MU/cos(aU*pi/180.0_dp + bU*yaw(turb))
            else
-                   write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb)) 
+                   write(*,*)"Made it here...",MU/cos(aU*pi/180.0_dp +bU*yaw(turb))
                    mmU = MU/cos(85.0_dp*pi/180.0_dp)
            end if
        else
            mmu = MU
-       end if  
+       end if
 
         do loc = 1, nSamples
             deltax = velX(loc) - turbineXw(turb)
             deltay = velY(loc) - wakeCentersY(loc, turb)
             deltaz = velZ(loc) - wakeCentersZ(loc, turb)
-            radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)            
+            radiusLoc = sqrt(deltay*deltay+deltaz*deltaz)
             axialIndAndNearRotor = 2.0_dp*a(turb)
-            
+
             rmax = cos_spread*0.5_dp*(wakeDiameters(loc, turb, 3) + rotorDiameter(turb))
             cosFac = 0.5_dp*(1.0_dp + cos(pi*radiusLoc/rmax))
-            
+
             if (deltax > 0 .and. radiusLoc < wakeDiameters(loc, turb, 1)/2.0_dp) then   ! check if in zone 1
                 reductionFactor = axialIndAndNearRotor*&
                                   & (cosFac*rotorDiameter(turb)/(rotorDiameter(turb)+2.0_dp* &
@@ -627,33 +943,33 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
 !                                   & (rotorDiameter(turb)))/pi)
             else
                 reductionFactor = 0.0_dp
-            end if    
-            
+            end if
+
             wsArray(loc) = wsArray(loc)*(1.0_dp-reductionFactor)
-            
+
         end do
-        
+
     end do
-    
+
 !     print *, "wsArray: ", wsArray
 !     print *, "hubHeight: ", hubHeight
 !     print *, "velZ: ", velZ
 !     print *, wsArray
-        
+
     ! pack desired matrices into vectors for output
     do turbI = 1, nTurbines
         ! wake centers
         wakeCentersYT_vec(nTurbines*(turbI-1)+1:nTurbines*(turbI-1)+nTurbines) &
                                      = wakeCentersYT_mat(turbI, :)
-                                     
+
         ! wake diameters
         wakeDiametersT_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
                                  = wakeDiametersT_mat(turbI, :, 1)
         wakeDiametersT_vec(3*nTurbines*(turbI-1)+nTurbines+1:3*nTurbines*(turbI-1) &
                                    +2*nTurbines) = wakeDiametersT_mat(turbI, :, 2)
         wakeDiametersT_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:nTurbines*(turbI-1) &
-                                   +3*nTurbines) = wakeDiametersT_mat(turbI, :, 3) 
-        
+                                   +3*nTurbines) = wakeDiametersT_mat(turbI, :, 3)
+
         ! relative wake overlap
         wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+1:3*nTurbines*(turbI-1)+nTurbines) &
                              = wakeOverlapTRel_mat(turbI, :, 1)
@@ -661,11 +977,11 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, yawDeg, &
                                +2*nTurbines) = wakeOverlapTRel_mat(turbI, :, 2)
         wakeOverlapTRel_vec(3*nTurbines*(turbI-1)+2*nTurbines+1:3*nTurbines*(turbI-1) &
                                +3*nTurbines) = wakeOverlapTRel_mat(turbI, :, 3)
-        
-       
+
+
     end do
-    
-end subroutine floris
+
+end subroutine floris_visualize
 
 
 
