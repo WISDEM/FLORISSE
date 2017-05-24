@@ -395,8 +395,8 @@ class Floris(Component):
         # unknowns['wakeCentersYT'] = wakeCentersYT
         # unknowns['wakeDiametersT'] = wakeDiametersT
         # unknowns['wakeOverlapTRel'] = wakeOverlapTRel
-        # if self.nSamples > 0:
-        #     unknowns['wsArray%i' % self.direction_id] = wsArray
+        if self.nSamples > 0:
+            unknowns['wsArray%i' % self.direction_id] = wsArray
 
     def apply_nonlinear(self, params, unknowns, resids):
 
