@@ -21,7 +21,7 @@ config.floris_single_component = True
 # Load steady-state power data from SOWFA 
 ICOWESdata = loadmat('YawPosResults.mat')
 
-# visualization: define resolution
+# visualization: define resolutiongit
 resolution = 75
 
 # Define turbine characteristics
@@ -216,11 +216,11 @@ axes1 = list(axes[0])+list(axes[2])
 axes2 = list(axes[1])+list(axes[3])
 
 for i in range(len(posrange)):
-    print velocities[i].shape
+    # print velocities[i].shape
     vel = velocities[i].flatten()
-    print vel.shape
+    # print vel.shape
     vel = vel.reshape(len(y), len(x))
-    print vel.shape
+    # print vel.shape
     ax1 = axes1[i]
     im = ax1.pcolormesh(x, y, vel, cmap='coolwarm', vmin=vmin, vmax=vmax)
     ax1.set_aspect('equal')
@@ -231,7 +231,7 @@ for i in range(len(posrange)):
 
     vel = velocities_cut[i].flatten()
     vel = vel.reshape(len(z_cut), len(y_cut))
-    print vel.shape
+    # print vel.shape
     ax2 = axes2[i]
     im = ax2.pcolormesh(y_cut, z_cut, vel, cmap='coolwarm', vmin=vmin, vmax=vmax)
     ax2.set_aspect('equal')

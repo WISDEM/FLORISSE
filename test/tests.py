@@ -43,10 +43,10 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
 
         # Define flow properties
         nDirections = 50.0
-        windSpeeds = np.random.rand(nDirections)*20        # m/s
+        windSpeeds = np.random.rand(int(nDirections))*20        # m/s
         air_density = 1.1716    # kg/m^3
-        windDirections = np.random.rand(nDirections)*360.0
-        windFrequencies = np.random.rand(nDirections)
+        windDirections = np.random.rand(int(nDirections))*360.0
+        windFrequencies = np.random.rand(int(nDirections))
 
         # set up problem
         # prob = Problem(root=OptAEP(nTurbines, nDirections=1))
@@ -72,8 +72,8 @@ class TotalDerivTestsFlorisAEPOpt(unittest.TestCase):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1.0)
 
         # add constraints
-        prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)))
-        prob.driver.add_constraint('boundaryDistances', lower=np.zeros(nVertices*nTurbines), scaler=1.0)
+        prob.driver.add_constraint('sc', lower=np.zeros(int(((nTurbines-1.)*nTurbines/2.))))
+        prob.driver.add_constraint('boundaryDistances', lower=np.zeros(int(nVertices*nTurbines)), scaler=1.0)
 
 
         # initialize problem
@@ -148,10 +148,10 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
 
         # Define flow properties
         nDirections = 50.0
-        windSpeeds = np.random.rand(nDirections)*20        # m/s
+        windSpeeds = np.random.rand(int(nDirections))*20        # m/s
         air_density = 1.1716    # kg/m^3
-        windDirections = np.random.rand(nDirections)*360.0
-        windFrequencies = np.random.rand(nDirections)
+        windDirections = np.random.rand(int(nDirections))*360.0
+        windFrequencies = np.random.rand(int(nDirections))
 
         # set up problem
         # prob = Problem(root=OptAEP(nTurbines, nDirections=1))
@@ -177,7 +177,7 @@ class TotalDerivTestsFlorisAEPOptRotor(unittest.TestCase):
             prob.driver.add_desvar('yaw%i' % direction_id, lower=-30.0, upper=30.0, scaler=1E-1)
 
         # add constraints
-        prob.driver.add_constraint('sc', lower=np.zeros(((nTurbines-1.)*nTurbines/2.)))
+        prob.driver.add_constraint('sc', lower=np.zeros(int(((nTurbines-1.)*nTurbines/2.))))
 
         # initialize problem
         prob.setup()
@@ -560,22 +560,33 @@ class GradientTestsFlorisUnifiedBV(unittest.TestCase):
 
         np.random.seed(seed=100)
 
-        turbineX = np.random.rand(nTurbines)*3000.
-        turbineY = np.random.rand(nTurbines)*3000.
 
+        turbineX = np.array([163.21482537, 83.10815528, 127.55277225, 53.32839696])
+        turbineY = np.array([231.9619298, 6.25584808, 190.94470478, 224.41164762, ])
+        # print turbineY*3000
         # initialize input variable arrays
-        rotorDiameter = np.ones(nTurbines)*np.random.random()*150.
-        axialInduction = np.ones(nTurbines)*np.random.random()*(1./3.)
-        Ct = np.ones(nTurbines)*np.random.random()
-        Cp = np.ones(nTurbines)*np.random.random()
-        generatorEfficiency = np.ones(nTurbines)*np.random.random()
-        yaw = np.random.rand(nTurbines)*60. - 30.
+        rotorDiameter = np.ones(nTurbines) * 120.50598845
+        # print "rotorDiameter ", rotorDiameter
+        axialInduction = np.ones(nTurbines) * 0.19169778
+        # print "axialInduction ", axialInduction
+        Ct = np.ones(nTurbines) * 0.89132195
+        # print "Ct ", Ct
+        Cp = np.ones(nTurbines) * 0.20920212
+        # print "Cp ", Cp
+        generatorEfficiency = np.ones(nTurbines) * 0.18532822
+        # print "generatorEfficiency ", generatorEfficiency
+        yaw = np.array([-23.49738657, -16.81815044, 28.71742708, 18.70098895])
+        # print "yaw ", yaw
 
         # Define flow properties
-        wind_speed = np.random.random()*20.       # m/s
-        air_density = 1.1716    # kg/m^3
-        wind_direction = np.random.random()*360    # deg (N = 0 deg., using direction FROM, as in met-mast data)
-        wind_frequency = np.random.random()    # probability of wind in given direction
+        wind_speed = 3.43882025465  # m/s
+        # print "wind_speed ", wind_speed
+        air_density = 1.1716  # kg/m^3
+        # print "air_density ", air_density
+        wind_direction = 0.5 * 293.840909541  # deg (N = 0 deg., using direction FROM, as in met-mast data)
+        # print "wind_direction ", wind_direction
+        wind_frequency = 0.274073747042  # probability of wind in given direction
+        # print "wind_frequency ", wind_frequency
 
         # set up problem
         prob = Problem(root=AEPGroup(nTurbines=nTurbines, use_rotor_components=False))
