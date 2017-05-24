@@ -355,7 +355,7 @@ class Floris(Component):
             print "yaw of turbines %s" % yawDeg
 
         if self.differentiable:
-            if nSamples == 0:
+            if self.nSamples == 0:
                 # call to fortran code to obtain output values
                 # wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
                 #     _floris.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
