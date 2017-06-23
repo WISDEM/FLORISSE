@@ -1,7 +1,7 @@
 # Notes on the FLORIS toolbox
 -------------------------------
 
-This FLORIS model is designed to provide a computationally inexpensive, controls-oriented model of the steady-state wake characteristics in a wind farm.  This can be used for online optimization.  This version of FLORIS implements a Jensen, original FLORIS (Gebraad et. al. 2016), and Gaussian wake model.  Literature on the Gaussian model can be found in the following papers:
+This FLORIS model is designed to provide a computationally inexpensive, controls-oriented model of the steady-state wake characteristics in a wind farm.  This can be used for online optimization.  This version of FLORIS implements a 3D version of the Jensen, original FLORIS (Gebraad et. al. 2016), and Gaussian wake model.  Literature on the Gaussian model can be found in the following papers:
 
 1. Niayifar, A. and Porté-Agel, F.: A new 15 analytical model for wind farm power prediction, in: Journal of Physics: Conference Series, vol. 625, p. 012039, IOP Publishing, 2015.
 
