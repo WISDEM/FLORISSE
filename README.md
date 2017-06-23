@@ -1,86 +1,38 @@
-FLORISSE
-======== 
+# Notes on the FLORIS toolbox
+-------------------------------
 
-Implementation of the FLOw Redirection and Induction in Steady-state (FLORIS) wind farm wake model for WISDEM, written in Python.
+This version of FLORIS implements a Gaussian wake model found in the following papers:
 
-Created by Pieter Gebraad and Paul Fleming. Copyright (c) NREL. All rights reserved. 
+1. Niayifar, A. and Porté-Agel, F.: A new 15 analytical model for wind farm power prediction, in: Journal of Physics: Conference Series, vol. 625, p. 012039, IOP Publishing, 2015.
 
-REQUIRED PYTHON LIBRARIES:
-- OpenMDAO
-- Numpy
-- WISDEM/akima
+2. Dilip, D. and Porté-Agel, F.: Wind Turbine Wake Mitigation through Blade Pitch Offset, Energies, 10, 757, 2017.
 
--For a description of the FLORIS model refer to: P. M. O. Gebraad, F. W. Teeuwisse, J.-W. van Wingerden, P. A. Fleming, S. D. Ruben, J. R. Marden, and L. Pao, â€œWind plant power optimization through yaw control using a parametric model for wake effectsâ€”a CFD simulation study,â€ in Wind Energy, 2014, DOI: 10.1002/we.1822.
+3. Abkar, M. and Porté-Agel, F.: Influence of atmospheric stability on wind-turbine wakes: A large-eddy simulation study, Physics of Fluids, 27, 035 104, 2015.
 
+4. Bastankhah, M. and Porté-Agel, F.: A new analytical model for wind-turbine wakes, Renewable Energy, 70, 116–123, 2014.
 
+5. Bastankhah, M. and Porté-Agel, 5 F.: Experimental and theoretical study of wind turbine wakes in yawed conditions, Journal of FluidMechanics, 806, 506–541, 2016.
 
-=======
-README for FLORIS in OpenMDAOv1.5+
+System Requirements:
+--------------------
+Python 3
+Numpy
+Scipy 
+Pandas
+Matplotlib
+Jupyter Notebooks
 
-# Installation instructions MAC
-##  system requirements  
-    gfortran  
-    gcc  
-    python 2.7.x  
-    numpy  
-    openmdao >= v1.5  
-### from top repo directory run  
-    $ python setup.py install --record installedfiles.txt  
-### uninstall with  
-    $ cat installedfiles.txt | xargs rm -r  
+To Run:
+--------
+Open RunGAUSS_3D.ipynb - this notebook contains 5 examples of how to use this FLORIS code:
+	1. Extract Velocity and Power information
+	2. Visualize the wind farm in the horizontal plane using different wake models
+	3. Wake steering optimization (objective of power maximization)
+	4. Thrust optimization (objective of power maximization)
+	5. Visualize Lidar module based on the University of Stuttgart scanning Lidar
+	6. Extract velocities at specified points in the field
 
-## Alternative Installation instructions MAC  
-### system requirements  
-    gfortran  
-    gcc  
-    python 2.7.x  
-    numpy  
-    openmdao >= v1.5  
-### run the following commands from src/florisse:  
-    $ gfortran -c adBuffer.f  
-    $ gcc -c adStack.c  
-    $ f2py -c --opt=-O2 -m _floris floris.f90 adBuffer.o adStack.o  
-    
-    
-## Installation instructions Windows  
-### system requirements  
-    gfortran  
-    gcc  
-    mingw  
-    python 2.7.x  
-    numpy  
-    openmdao >= v01.5 
-### run the following commands from src\florisse:  
-    $ gfortran -c adBuffer.f  
-    $ gcc -c adStack.c  
-    $ python \your\path\to\f2py.py -c --opt=-O2 --compiler=mingw32 --fcompiler=gfortran -m _floris floris.f90 adBuffer.o adStack.o  
-        (most likely your path is C:\python27\Scripts\f2py.py)  
-### if you get an error in the line "as=b['args']" try to update numpy 
-    ($ pip install numpy --upgrade)  
-### from top repo directory run 
-	python setup.py install
-### run the example using  
-    $ python test\exampleCall.py  
-        
+**Note: a detailed inputData dictionary is necessary to run the code.  This is detailed in RunGAUSS_3D.ipynb
 
-## Installation instructions Marylou  
-### module dependencies ($ module load <module name>)(purge all modules first)  
-    petsc/3.6.3  
-    python2/7  
-    compiler_gnu/4.9.2  
-    mpi/openmpi-1.8.4_gnu-4.9.2  
-### python dependencies ($ pip install --user <package name>)  
-    openmdao >= v1.5 (use a clone of the repo and {$ pip install --user -e .} from top level of 
-              acquired repo)  
-    mpi4py  
-    petsc4py      
-### compiler FLORIS (clone with ssh on Marylou)  
-    $ cd src/florisse  
-    $ gcc -fPIC -c adStack.c  
-    $ gfortran -fPIC -c adBuffer.f  
-    $ f2py -c --opt=-O2 -m _floris floris.f90 adBuffer.o adStack.o  
-### test installation (from within src/florisse)  
-    $ python test/tests.py  
-    $ python test/exampleCall.py  
-    $ python test/exampleOptimizationAEP.py 2  
-    $ mpirun -np 4 python test/exampleOptimizationAEP.py 2  
+ 
+
