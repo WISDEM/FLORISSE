@@ -7,6 +7,7 @@ import time
 from scipy.interpolate import griddata
 from scipy import interpolate
 from scipy.optimize import minimize
+import scipy.io
 import utilities
 import wakeModels
 import OptModules
@@ -77,48 +78,48 @@ def WakeModel(inputData):
 		X,Y,xTurb,yTurb 	= utilities.rotatedCoordinates(inputData,X,Y,Z)
 
 	# Stuttgart lidar specifics
-	elif inputData['Lidar']:
+	#elif inputData['Lidar']:
 
-		print('Lidar operating on Turbine', inputData['turbineLidar'])
+	#	print('Lidar operating on Turbine', inputData['turbineLidar'])
 
-		xLidar = inputData['xLidar']
-		yLidar = inputData['yLidar']
-		zLidar = inputData['zLidar']
+	#	xLidar = inputData['xLidar']
+	#	yLidar = inputData['yLidar']
+	#	zLidar = inputData['zLidar']
 
 		# generate compressed grid
-		X = []
-		Y = []
-		Z = []
-		xTurb, yTurb 	= utilities.rotatedCoordinates(inputData,X,Y,Z)
+	#	X = []
+	#	Y = []
+	#	Z = []
+	#	xTurb, yTurb 	= utilities.rotatedCoordinates(inputData,X,Y,Z)
 
-		cols = yLidar.columns
+	#	cols = yLidar.columns
 
-		numPts = len(np.unique(yLidar[cols[0]]))
-		numLocs = len(np.unique(xLidar))
+	#	numPts = len(np.unique(yLidar[cols[0]]))
+	#	numLocs = len(np.unique(xLidar))
 
-		X = np.zeros((numPts,numPts,numLocs+nTurbs))
-		Y = np.zeros((numPts,numPts,numLocs+nTurbs))
-		Z = np.zeros((numPts,numPts,numLocs+nTurbs))
+	#	X = np.zeros((numPts,numPts,numLocs+nTurbs))
+	#	Y = np.zeros((numPts,numPts,numLocs+nTurbs))
+	#	Z = np.zeros((numPts,numPts,numLocs+nTurbs))
 
-		for k in range(numLocs+nTurbs):
+	#	for k in range(numLocs+nTurbs):
 
-			if k < numLocs:
-				Xl = xTurb[idxLidar] + np.unique(xLidar)[k]
-				Yl = yTurb[idxLidar] + np.unique(yLidar[cols[k]])
-				Zl = zTurb[idxLidar] + np.unique(zLidar[cols[k]])
-			else:
-				Xl = xTurb[k-numLocs]
-				Yl = np.linspace(yTurb[k-numLocs]-(D[k-numLocs]/2), yTurb[k-numLocs]+(D[k-numLocs]/2), numPts)
-				Zl = np.linspace(zTurb[k-numLocs]-(D[k-numLocs]/2), zTurb[k-numLocs]+(D[k-numLocs]/2), numPts)
+	#		if k < numLocs:
+	#			Xl = xTurb[idxLidar] + np.unique(xLidar)[k]
+	#			Yl = yTurb[idxLidar] + np.unique(yLidar[cols[k]])
+	#			Zl = zTurb[idxLidar] + np.unique(zLidar[cols[k]])
+	#		else:
+	#			Xl = xTurb[k-numLocs]
+	#			Yl = np.linspace(yTurb[k-numLocs]-(D[k-numLocs]/2), yTurb[k-numLocs]+(D[k-numLocs]/2), numPts)
+	#			Zl = np.linspace(zTurb[k-numLocs]-(D[k-numLocs]/2), zTurb[k-numLocs]+(D[k-numLocs]/2), numPts)
 
-			for j in range(len(Zl)):
-				for i in range(len(Zl)):
-					X[i,j,k] = Xl
-					Y[i,j,k] = Yl[j]
-					Z[i,j,k] = Zl[i]
+	#		for j in range(len(Zl)):
+	#			for i in range(len(Zl)):
+	#				X[i,j,k] = Xl
+	#				Y[i,j,k] = Yl[j]
+	#				Z[i,j,k] = Zl[i]
 
 	# output generic points of the flow field - Ex: used for custom lidar model
-	elif inputData['points']:
+	elif inputData['points'] or inputData['Lidar']:
 
 		# generate compressed grid with individual x,y,z points
 		X = []
@@ -126,9 +127,16 @@ def WakeModel(inputData):
 		Z = []
 		xTurb, yTurb 	= utilities.rotatedCoordinates(inputData,X,Y,Z)
 
-		xPts = inputData['xPts']
-		yPts = inputData['yPts']
-		zPts = inputData['zPts']
+		if inputData['points']:
+			xPts = inputData['xPts']
+			yPts = inputData['yPts']
+			zPts = inputData['zPts']
+		elif inputData['Lidar']:		
+			x_W, y_W, z_W = utilities.getWindCoords(inputData)
+			xTraj,yTraj,zTraj = utilities.getPointsVLOS(x_W,y_W,z_W,inputData)
+			xPts = xTraj
+			yPts = yTraj
+			zPts = zTraj
 
 		Xt = np.concatenate([xTurb, xPts])
 		Yt = np.linspace(yTurb[0]-(D[0]/2), yTurb[0]+(D[0]/2), rotorPts)
@@ -214,7 +222,10 @@ def WakeModel(inputData):
 		
 		# compute effective wind speed at each turbine
 		# take the average across the rotor disk
-		Ueff[turbI] = utilities.avgVelocity(X,Y,Z,Ufield,xTurb[turbI],yTurb[turbI],zTurb[turbI],D[turbI],rotorPts,inputData,turbI)
+		if inputData['cutThrough']:
+			Ueff[turbI] = Uinf
+		else:
+			Ueff[turbI] = utilities.avgVelocity(X,Y,Z,Ufield,xTurb[turbI],yTurb[turbI],zTurb[turbI],D[turbI],rotorPts,inputData,turbI)
 
 		# adjust Cp/Ct based on local velocity (both tables were generated using FAST, Jonkman et. al. 2005)
 
@@ -333,15 +344,18 @@ def WakeModel(inputData):
 	# plot the flow field if specified
 	if inputData['visualizeHorizontal']:
 		utilities.visualizeHorizontal(xLen,yLen,zLen,Ufield,inputData)
-
+	elif inputData['cutThrough']:
+		utilities.visualizeCut(xLen,yLen,zLen,Ufield,inputData)
 	elif inputData['Lidar']:
-		utilities.visualizeLidar(xTurb[idxLidar],yTurb[idxLidar],X,Y,Z,Ufield,inputData)
+		Upts = utilities.outputUpts(inputData,X,Y,Z,Ufield)
+		vlos = utilities.VLOS(x_W,y_W,z_W,inputData,Upts)
+		#utilities.visualizeLidar(xTurb[idxLidar],yTurb[idxLidar],X,Y,Z,Ufield,inputData,vlos)
 		
 		
 	if inputData['outputFlowField']:
 		return Ueff,Ufield,xLen,yLen
 	elif inputData['Lidar']:
-		return Ueff,Ufield,X,Y,Z
+		return Ueff,Ufield,X,Y,Z,Upts,vlos
 	elif inputData['points']:
 		Upts = utilities.outputUpts(inputData,X,Y,Z,Ufield)
 		return Ueff, Upts
@@ -384,18 +398,24 @@ def windPlant(inputData):
 		outputData['yLen'] 	= yLen
 	# output lidar parameters
 	elif inputData['Lidar']:
-		Ueff,Ufield,X,Y,Z 		= WakeModel(inputData)
-		outputData['Ufield'] 	= Ufield
-		outputData['X']			= X
-		outputData['Y']			= Y
-		outputData['Z']			= Z
+		print(inputData['yawAngles'])
+		Ueff,Ufield,X,Y,Z,Upts,vlos	= WakeModel(inputData)
+		print(inputData['yawAngles'])
+		outputData['Ufield'] 		= Ufield
+		outputData['X']				= X
+		outputData['Y']				= Y
+		outputData['Z']				= Z
+		outputData['vlos']      	= vlos
+		outputData['Upts'] 			= Upts
 	# output velocities at specified points
 	elif inputData['points']:
 		Ueff,Upts 				= WakeModel(inputData)
 		outputData['Upts']		= Upts
 	# output effective velocities at each turbine
 	else:
-		Ueff 					= WakeModel(inputData)		
+		#print(inputData['yawAngles'])
+		Ueff 					= WakeModel(inputData)	
+		#print(inputData['yawAngles'])	
 
 	powerOut 				= utilities.computePower(Ueff,inputData)
 	outputData['powerOut'] 	= powerOut
@@ -436,7 +456,7 @@ def windPlant(inputData):
 
 		powerOpt = np.sum(outputData['powerOut'])
 		powerGain = 100*(powerOpt - power0)/power0
-		print('Power gain = ', powerGain)
+		print('Power gain = ', powerGain, '%')
 		if powerGain < 0.0:
 			outputData['bladePitch'] = 1.9*np.ones(len(inputData['turbineX']))
 			outputData['yawAngles'] = np.zeros(len(inputData['turbineX']))

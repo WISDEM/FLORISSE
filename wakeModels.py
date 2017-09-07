@@ -110,6 +110,8 @@ def GAUSS(X,Y,Z,xTurb,yTurb,zTurb,inputData,turbI,TI,Uloc):
 	u0 			= Uloc*np.sqrt(1-Ct)
 
 	# initial Gaussian wake expansion
+	#if (Uloc + u0) == 0:
+	#	print('here')
 	sigma_z0 	= D*0.5*np.sqrt( uR/(Uloc + u0) )
 	sigma_y0 	= sigma_z0*(np.cos((yaw)*np.pi/180.))*(np.cos(veer*np.pi/180.))
 

@@ -4,12 +4,12 @@ import numpy as np
 import time
 from scipy.interpolate import griddata
 from scipy.interpolate import interp1d
+import scipy.io
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import wakeModels
 import copy
 import time
-import numba as nb
 import pandas as pd
 
 #==================================================================FUNCTIONS============================================================================
@@ -101,7 +101,55 @@ def visualizeHorizontal(xLen,yLen,zLen,Ufield,inputData):
 	strTitle = 'Horizontal'
 	plt.title('Horizontal',fontsize=15)
 
-def visualizeLidar(xTurb,yTurb,X,Y,Z,Ufield,inputData):
+def visualizeCut(xLen,yLen,zLen,Ufield,inputData):
+
+
+	print('Plotting Flow Field Cut Through Slice at ', inputData['downLocs'], '...\n')
+
+	Uinf 			= inputData['windSpeed'][0]
+	windDirection 	= inputData['windDirection'][0]
+	tilt 			= -1*inputData['tilt']
+	yaw 			= inputData['yawAngles']
+	D 				= inputData['rotorDiameter']
+	HH 				= inputData['hubHeight']
+
+	xTurb 			= inputData['turbineX']
+	yTurb 			= inputData['turbineY']
+	zTurb 			= inputData['turbineZ']
+
+	# number of turbines
+	nTurbs = len(xTurb)
+
+	# rotation angle for the turbines the wind turbines
+	RotAng = -(windDirection -270.)*np.pi/180.
+
+	# plot horizontal flow field
+	plt.figure(figsize=(10,7))
+	plt.contourf(-yLen,zLen,Ufield[:,:,0],50,cmap='coolwarm',vmin=4.0,vmax=Uinf)
+	plt.colorbar()
+
+	# plot rotor 
+	yCirc = np.linspace(-D[0]/2,D[0]/2,100)
+	zCirc1 = np.sqrt( (D[0]/2)**2 - (yCirc-yTurb[0])**2 ) + zTurb[0]
+	zCirc2 = -np.sqrt( (D[0]/2)**2 - (yCirc-yTurb[0])**2 ) + zTurb[0]
+	plt.plot(yCirc,zCirc1,'k',linewidth=3)
+	plt.plot(yCirc,zCirc2,'k',linewidth=3)
+
+	#for i in range(len(xLen)):
+	#	for j in range(len(yLen)):
+	#		plt.plot(xLen[i],yLen[j],'k.',linewidth=3)
+
+	#plt.axis('equal')
+	plt.xlabel('y(m)',fontsize=15)
+	plt.ylabel('z(m)',fontsize=15)
+	strTitle = 'Cut Through Slice at ', inputData['downLocs'][0]/D[0],'D'
+	plt.title(strTitle,fontsize=15)
+	plt.xlim([-2*D[0],2*D[0]])
+	plt.ylim([0.0,2*HH[0]])
+	plt.axis('equal')
+	
+
+def visualizeLidar(xTurb,yTurb,X,Y,Z,Ufield,inputData,vlos):
 
 	# plot the output of the Stuttgart lidar model implemented
 
@@ -133,6 +181,7 @@ def visualizeLidar(xTurb,yTurb,X,Y,Z,Ufield,inputData):
 		# find the Ufield points that correspond to yPlot and zPlot
 		for ii in range(len(zPlot)):
 			for jj in range(len(yPlot)):
+				#print(xLocs[kk],yPlot[jj],zPlot[ii])
 				if X[ii,jj,kk] == xLocs[kk] and Y[ii,jj,kk] == yPlot[jj] and Z[ii,jj,kk] == zPlot[ii]:
 					Uplot[ii,jj] = Ufield[ii,jj,kk]
 
@@ -140,6 +189,212 @@ def visualizeLidar(xTurb,yTurb,X,Y,Z,Ufield,inputData):
 		plt.xlim([-60-yTurb,60-yTurb])
 		plt.ylim([40,160])
 		plt.colorbar()
+
+
+def getWindCoords(inputData):
+
+	Parameter = scipy.io.loadmat(inputData['LidarParams'])
+	Trajectory = scipy.io.loadmat(inputData['LidarTrajectory'])	
+
+	a = Parameter['Parameter'][0][0][0]['a'][0][0][0]
+	Yaw = Parameter['Parameter'][0][0][0]['YawAngle'][0][0][0]
+	Pitch = Parameter['Parameter'][0][0][0]['PitchAngle'][0][0][0]
+	Roll = Parameter['Parameter'][0][0][0]['RollAngle'][0][0][0]
+	PositionLinW = Parameter['Parameter'][0][0][0]['PositionLinI'][0][0][0]
+	
+	x_L = np.concatenate(Trajectory['Trajectory'][0][0]['x_L_AllDistances'])
+	y_L = np.concatenate(Trajectory['Trajectory'][0][0]['y_L_AllDistances'])
+	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances']) 
+
+	# yaw is a rotation around the z-axis
+	T_Yaw = [[np.cos(Yaw),-np.sin(Yaw), 0],
+	         [np.sin(Yaw), np.cos(Yaw), 0],
+	         [0,0,1]]
+
+	T_Pitch = [[np.cos(Yaw), 0, -np.sin(Yaw)],
+	           [0,1,0],
+	           [np.sin(Yaw), 0, np.cos(Yaw)]]
+
+	T_Roll = [[1,0,0],
+	          [0,np.cos(Roll),-np.sin(Roll)],
+	          [0,np.sin(Roll), np.cos(Roll)]]
+
+	T = np.dot(np.dot(T_Yaw,T_Pitch),T_Roll)
+
+	x_R = T[0,0]*x_L + T[0,1]*y_L + T[0,2]*z_L
+	y_R = T[1,0]*x_L + T[1,1]*y_L + T[1,2]*z_L
+	z_R = T[2,0]*x_L + T[2,1]*y_L + T[2,2]*z_L
+
+	#print(PositionLinW)
+
+	x_W = x_R + PositionLinW[0]
+	y_W = y_R + PositionLinW[1]
+	z_W = z_R + PositionLinW[2] + inputData['hubHeight'][inputData['turbineLidar']]
+
+	for i in range(len(x_W)):
+		if z_W[i] < 0:
+			z_W[i] = 0.01
+
+	return x_W, y_W, z_W
+
+def getPointsVLOS(x_W,y_W,z_W,inputData):
+
+	# retrieves the line of sight wind speed (vlos) from a wind field
+
+	# input: parameter, wind field
+	# output: v_los
+
+	#print(len(x_W))
+
+	Parameter = scipy.io.loadmat(inputData['LidarParams'])
+	Trajectory = scipy.io.loadmat(inputData['LidarTrajectory'])
+
+	a 			= Parameter['Parameter'][0][0][0]['a'][0][0][0]
+	nWeights 	= len(a)	
+	nDataPoints = len(x_W)
+
+	#nWeights = len(Parameter.Lidar.a)
+	x_L = np.concatenate(Trajectory['Trajectory'][0][0]['x_L_AllDistances'])
+	y_L = np.concatenate(Trajectory['Trajectory'][0][0]['y_L_AllDistances'])
+	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances']) 
+	#t    = Parameter.t
+
+	x_LW = np.zeros(nDataPoints)
+	y_LW = np.zeros(nDataPoints)
+	z_LW = np.zeros(nDataPoints)
+
+	# calculation of the normalized laser vector
+	LaserVector_Wx = [np.transpose(x_W)-np.transpose(x_LW)][0]
+	LaserVector_Wy = [np.transpose(y_W)-np.transpose(y_LW)][0]
+	LaserVector_Wz = [np.transpose(z_W)-np.transpose(z_LW)][0]
+
+	#print(np.transpose(x_W),np.transpose(x_LW))
+
+	#print(LaserVector_Wx)
+
+	# np.sqrt(x**2 + y**2 + z**2) -> xhat = x/Norm
+	NormedLaserVector_Wx = np.zeros(len(LaserVector_Wx))
+	NormedLaserVector_Wy = np.zeros(len(LaserVector_Wy))
+	NormedLaserVector_Wz = np.zeros(len(LaserVector_Wz))
+
+	#print(len(x_LW))
+	for i in range(nDataPoints):
+		NormLaserVector_W = np.sqrt( LaserVector_Wx[i]**2 + LaserVector_Wy[i]**2 + LaserVector_Wz[i]**2 )
+		#print(np.sqrt( LaserVector_Wx[i]**2 + LaserVector_Wy[i]**2 + LaserVector_Wz[i]**2 ))
+		#print(LaserVector_Wx[i],LaserVector_Wy[i],LaserVector_Wz[i],NormLaserVector_W)
+		if NormLaserVector_W == 0:
+			NormLaserVector_W = 1
+		NormedLaserVector_Wx[i] = LaserVector_Wx[i]/NormLaserVector_W
+		NormedLaserVector_Wy[i] = LaserVector_Wy[i]/NormLaserVector_W
+		NormedLaserVector_Wz[i] = LaserVector_Wz[i]/NormLaserVector_W
+
+	BackscatterNormedLaserVector_Wx = -NormedLaserVector_Wx
+	BackscatterNormedLaserVector_Wy = -NormedLaserVector_Wy
+	BackscatterNormedLaserVector_Wz = -NormedLaserVector_Wz
+
+	# Calculation of considered points in the laser beam
+	Points_WFx = np.zeros(nDataPoints*nWeights)
+	Points_WFy = np.zeros(nDataPoints*nWeights)
+	Points_WFz = np.zeros(nDataPoints*nWeights)
+	for i in range(nDataPoints):
+		#print(x_W[i]*np.ones(nWeights))
+		Points_WFx[i*nWeights:((i*nWeights)+nWeights)] = x_W[i]*np.ones(nWeights) + (a*BackscatterNormedLaserVector_Wx[i]*np.ones(nWeights))
+		Points_WFy[i*nWeights:((i*nWeights)+nWeights)] = y_W[i]*np.ones(nWeights) + (a*BackscatterNormedLaserVector_Wy[i]*np.ones(nWeights))
+		Points_WFz[i*nWeights:((i*nWeights)+nWeights)] = z_W[i]*np.ones(nWeights) + (a*BackscatterNormedLaserVector_Wz[i]*np.ones(nWeights))
+
+	return Points_WFx,Points_WFy,Points_WFz
+
+def VLOS(x_W,y_W,z_W,inputData,Upts):
+
+	#print(x_W)
+
+	Parameter = scipy.io.loadmat(inputData['LidarParams'])
+	Trajectory = scipy.io.loadmat(inputData['LidarTrajectory'])
+
+	a 			= Parameter['Parameter'][0][0][0]['a'][0][0][0]
+	nWeights 	= len(a)	
+	nDataPoints = len(x_W)
+	f_L_d 		= Parameter['Parameter'][0][0][0]['f_L_d'][0][0][0]
+
+	#nWeights = len(Parameter.Lidar.a)
+	x_L = np.concatenate(Trajectory['Trajectory'][0][0]['x_L_AllDistances'])
+	y_L = np.concatenate(Trajectory['Trajectory'][0][0]['y_L_AllDistances'])
+	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances']) 
+	#t    = Parameter.t
+
+	# origin of the lidar and the origin of the wind coordinate system 
+	x_LW = np.zeros(nDataPoints)
+	y_LW = np.zeros(nDataPoints)
+	z_LW = np.zeros(nDataPoints)
+
+	# calculation of the normalized laser vector (vector from the zero in the wind to the trajectory point in the wind)
+	# lidar in the wind does not need to be at zero
+	LaserVector_Wx = [np.transpose(x_W)-np.transpose(x_LW)][0]
+	LaserVector_Wy = [np.transpose(y_W)-np.transpose(y_LW)][0]
+	LaserVector_Wz = [np.transpose(z_W)-np.transpose(z_LW)][0]
+
+	NormedLaserVector_Wx = np.zeros(len(LaserVector_Wx))
+	NormedLaserVector_Wy = np.zeros(len(LaserVector_Wy))
+	NormedLaserVector_Wz = np.zeros(len(LaserVector_Wz))
+
+	for i in range(nDataPoints):
+		NormLaserVector_W = np.sqrt( LaserVector_Wx[i]**2 + LaserVector_Wy[i]**2 + LaserVector_Wz[i]**2 )
+		#print(LaserVector_Wx[i],LaserVector_Wy[i],LaserVector_Wz[i],NormLaserVector_W)
+		NormedLaserVector_Wx[i] = LaserVector_Wx[i]/NormLaserVector_W
+		NormedLaserVector_Wy[i] = LaserVector_Wy[i]/NormLaserVector_W
+		NormedLaserVector_Wz[i] = LaserVector_Wz[i]/NormLaserVector_W
+
+	BackscatterNormedLaserVector_Wx = NormedLaserVector_Wx
+	BackscatterNormedLaserVector_Wy = NormedLaserVector_Wy
+	BackscatterNormedLaserVector_Wz = NormedLaserVector_Wz
+
+	#inputData = FLORISInput(Points_WFx,Points_WFy,Points_WFz)
+	#print(np.shape(Upts))
+	u_W = Upts
+	v_W = np.zeros(nDataPoints*nWeights)
+	w_W = np.zeros(nDataPoints*nWeights) 
+
+	RelativeWindVector_W = [u_W,v_W,w_W]
+	BackScatterNormed_W  = [BackscatterNormedLaserVector_Wx,BackscatterNormedLaserVector_Wy,BackscatterNormedLaserVector_Wz]
+
+	for i in range(3):
+		tmp = BackScatterNormed_W[i]
+		for j in range(nDataPoints):
+			if j == 0:
+				tmp1 = tmp[j]*np.ones(nWeights)
+				#print(tmp1)
+			else:
+				#print(tmp[j]*np.ones(nWeights))
+				tmp1 = np.concatenate((tmp1,tmp[j]*np.ones(nWeights)))	
+		if i == 0:
+			BackscatterNormedLaserVector_Wx = tmp1	
+		elif i == 1:
+			BackscatterNormedLaserVector_Wy = tmp1
+		else:
+			BackscatterNormedLaserVector_Wz = tmp1
+
+	#print(BackscatterNormedLaserVector_Wy)
+
+	BackScatterNormed_W1 = [BackscatterNormedLaserVector_Wx,BackscatterNormedLaserVector_Wy,BackscatterNormedLaserVector_Wz]
+
+	#print(np.shape(RelativeWindVector_W[0]))
+	#print(np.shape(BackscatterNormedLaserVector_Wx))
+	#print(BackScatterNormed_W1)
+	vlos_d = np.multiply(RelativeWindVector_W,BackScatterNormed_W1)
+	#print(vlos_d.shape)
+	#print(f_L_d)
+	#vlos_d = np.zeros((3,len(RelativeWindVector_W[0])))
+	#for i in range(3):
+	#	for j in range(len(RelativeWindVector_W[0])):
+	#		vlos_d[i,j] = RelativeWindVector_W[i][j]*BackScatterNormed_W1[i][j]
+	v_los = np.zeros(nDataPoints)
+	#print(f_L_d)
+	for i in range(nDataPoints):
+		#print(i*nWeights,((i*nWeights)+nWeights))
+		#print(vlos_d[0,i*nWeights:((i*nWeights)+nWeights)])
+		v_los[i] = np.dot(vlos_d[0,i*nWeights:((i*nWeights)+nWeights)],f_L_d)
+
+	return v_los
 
 def rotatedCoordinates(inputData,X,Y,Z):
 
@@ -516,6 +771,7 @@ def initializeFlowField(X,Y,Z,inputData):
 		for j in range(X.shape[1]):
 			for k in range(X.shape[2]):
 				Ufield[i,j,k] = Uinf*(Z[i,j,k]/HH)**shear
+				#print(Z[i,j,k],Ufield[i,j,k])
 
 	return Ufield
 
@@ -540,14 +796,22 @@ def outputUpts(inputData,X,Y,Z,Ufield):
 
 	# compute the output velocity at the points specified in inputData
 
-	xPts = inputData['xPts']
-	yPts = inputData['yPts']
-	zPts = inputData['zPts']
+	if inputData['points']:
+		xPts = inputData['xPts']
+		yPts = inputData['yPts']
+		zPts = inputData['zPts']
+	elif inputData['Lidar']:
+		x_W, y_W, z_W = getWindCoords(inputData)
+		xTraj,yTraj,zTraj = getPointsVLOS(x_W,y_W,z_W,inputData)
+		xPts = xTraj
+		yPts = yTraj
+		zPts = zTraj
 
 	nSamplesX = X.shape[2]
 	nSamplesY = Y.shape[1]
 	nSamplesZ = Z.shape[0]
 
+	#print(np.shape(xPts))
 	Upts = np.zeros(len(xPts))
 	count = 0
 	#print(nSamplesX,nSamplesY,nSamplesZ)
@@ -562,6 +826,8 @@ def outputUpts(inputData,X,Y,Z,Ufield):
 							Upts[count] = Ufield[i,j,k]
 							count = count + 1
 						nextPt = 1
+
+	#print(np.shape(Upts))
 
 	return Upts
 
