@@ -204,7 +204,7 @@ def getWindCoords(inputData):
 	
 	x_L = np.concatenate(Trajectory['Trajectory'][0][0]['x_L_AllDistances'])
 	y_L = np.concatenate(Trajectory['Trajectory'][0][0]['y_L_AllDistances'])
-	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances']) 
+	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances'])
 
 	# yaw is a rotation around the z-axis
 	T_Yaw = [[np.cos(Yaw),-np.sin(Yaw), 0],
@@ -228,7 +228,7 @@ def getWindCoords(inputData):
 	#print(PositionLinW)
 
 	x_W = x_R + PositionLinW[0] + inputData['turbineX'][inputData['turbineLidar']]
-	y_W = -(y_R + PositionLinW[1]) + inputData['turbineY'][inputData['turbineLidar']]
+	y_W = y_R + PositionLinW[1] + inputData['turbineY'][inputData['turbineLidar']]
 	z_W = z_R + PositionLinW[2] + inputData['hubHeight'][inputData['turbineLidar']]
 
 	for i in range(len(x_W)):
@@ -255,20 +255,21 @@ def getPointsVLOS(x_W,y_W,z_W,inputData):
 	nWeights 	= len(a)	
 	nDataPoints = len(x_W)
 
-	#nWeights = len(Parameter.Lidar.a)
-	x_L = np.concatenate(Trajectory['Trajectory'][0][0]['x_L_AllDistances'])
-	y_L = np.concatenate(Trajectory['Trajectory'][0][0]['y_L_AllDistances'])
-	z_L = np.concatenate(Trajectory['Trajectory'][0][0]['z_L_AllDistances']) 
-	#t    = Parameter.t
+	#print(x_W)
 
-	x_LW = np.zeros(nDataPoints)
-	y_LW = np.zeros(nDataPoints)
-	z_LW = np.zeros(nDataPoints)
+	#x_LW = np.zeros(nDataPoints) 
+	#y_LW = np.zeros(nDataPoints)
+	#z_LW = np.zeros(nDataPoints)
+	x_LW = np.ones(nDataPoints)*inputData['turbineX'][inputData['turbineLidar']]
+	y_LW = np.ones(nDataPoints)*inputData['turbineY'][inputData['turbineLidar']]
+	z_LW = np.ones(nDataPoints)*inputData['hubHeight'][inputData['turbineLidar']]
 
 	# calculation of the normalized laser vector
 	LaserVector_Wx = [np.transpose(x_W)-np.transpose(x_LW)][0]
 	LaserVector_Wy = [np.transpose(y_W)-np.transpose(y_LW)][0]
 	LaserVector_Wz = [np.transpose(z_W)-np.transpose(z_LW)][0]
+
+	#print(LaserVector_Wx)
 
 	#print(np.transpose(x_W),np.transpose(x_LW))
 
@@ -304,6 +305,12 @@ def getPointsVLOS(x_W,y_W,z_W,inputData):
 		Points_WFy[i*nWeights:((i*nWeights)+nWeights)] = y_W[i]*np.ones(nWeights) + (a*BackscatterNormedLaserVector_Wy[i]*np.ones(nWeights))
 		Points_WFz[i*nWeights:((i*nWeights)+nWeights)] = z_W[i]*np.ones(nWeights) + (a*BackscatterNormedLaserVector_Wz[i]*np.ones(nWeights))
 
+	#print(Points_WFx)
+	#print(inputData['turbineX'][inputData['turbineLidar']])
+
+	Points_WFy = Points_WFy - inputData['turbineY'][inputData['turbineLidar']]
+	Points_WFy = inputData['turbineY'][inputData['turbineLidar']] - Points_WFy
+
 	return Points_WFx,Points_WFy,Points_WFz
 
 def VLOS(x_W,y_W,z_W,inputData,Upts):
@@ -325,9 +332,12 @@ def VLOS(x_W,y_W,z_W,inputData,Upts):
 	#t    = Parameter.t
 
 	# origin of the lidar and the origin of the wind coordinate system 
-	x_LW = np.zeros(nDataPoints)
-	y_LW = np.zeros(nDataPoints)
-	z_LW = np.zeros(nDataPoints)
+	#x_LW = np.zeros(nDataPoints)
+	#y_LW = np.zeros(nDataPoints)
+	#z_LW = np.zeros(nDataPoints)
+	x_LW = np.ones(nDataPoints)*inputData['turbineX'][inputData['turbineLidar']]
+	y_LW = np.ones(nDataPoints)*inputData['turbineY'][inputData['turbineLidar']]
+	z_LW = np.ones(nDataPoints)*inputData['hubHeight'][inputData['turbineLidar']]
 
 	# calculation of the normalized laser vector (vector from the zero in the wind to the trajectory point in the wind)
 	# lidar in the wind does not need to be at zero
