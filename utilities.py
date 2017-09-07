@@ -504,7 +504,10 @@ def avgVelocity(X,Y,Z,Ufield,xTurb,yTurb,zTurb,D,rotorPts,inputData,turbI):
 
 	interpEnd = time.time()
 
-	return np.mean(utmp)
+	if inputData['avgCube']:
+		return np.mean(utmp**3)**(1./3.)
+	else:
+		return np.mean(utmp)
 
 def combineWakes(inputData,Uinf,Ueff,Ufield,tmp):
 

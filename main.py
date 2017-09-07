@@ -398,9 +398,7 @@ def windPlant(inputData):
 		outputData['yLen'] 	= yLen
 	# output lidar parameters
 	elif inputData['Lidar']:
-		print(inputData['yawAngles'])
 		Ueff,Ufield,X,Y,Z,Upts,vlos	= WakeModel(inputData)
-		print(inputData['yawAngles'])
 		outputData['Ufield'] 		= Ufield
 		outputData['X']				= X
 		outputData['Y']				= Y
