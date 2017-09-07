@@ -235,7 +235,9 @@ def getWindCoords(inputData):
 		if z_W[i] < 0:
 			z_W[i] = 0.01
 
-	return x_W, y_W, z_W
+	#print(-y_W,y_W)
+
+	return x_W, -y_W, z_W
 
 def getPointsVLOS(x_W,y_W,z_W,inputData):
 
@@ -349,7 +351,6 @@ def VLOS(x_W,y_W,z_W,inputData,Upts):
 	BackscatterNormedLaserVector_Wz = NormedLaserVector_Wz
 
 	#inputData = FLORISInput(Points_WFx,Points_WFy,Points_WFz)
-	#print(np.shape(Upts))
 	u_W = Upts
 	v_W = np.zeros(nDataPoints*nWeights)
 	w_W = np.zeros(nDataPoints*nWeights) 
@@ -362,9 +363,7 @@ def VLOS(x_W,y_W,z_W,inputData,Upts):
 		for j in range(nDataPoints):
 			if j == 0:
 				tmp1 = tmp[j]*np.ones(nWeights)
-				#print(tmp1)
 			else:
-				#print(tmp[j]*np.ones(nWeights))
 				tmp1 = np.concatenate((tmp1,tmp[j]*np.ones(nWeights)))	
 		if i == 0:
 			BackscatterNormedLaserVector_Wx = tmp1	
@@ -377,21 +376,10 @@ def VLOS(x_W,y_W,z_W,inputData,Upts):
 
 	BackScatterNormed_W1 = [BackscatterNormedLaserVector_Wx,BackscatterNormedLaserVector_Wy,BackscatterNormedLaserVector_Wz]
 
-	#print(np.shape(RelativeWindVector_W[0]))
-	#print(np.shape(BackscatterNormedLaserVector_Wx))
-	#print(BackScatterNormed_W1)
 	vlos_d = np.multiply(RelativeWindVector_W,BackScatterNormed_W1)
-	#print(vlos_d.shape)
-	#print(f_L_d)
-	#vlos_d = np.zeros((3,len(RelativeWindVector_W[0])))
-	#for i in range(3):
-	#	for j in range(len(RelativeWindVector_W[0])):
-	#		vlos_d[i,j] = RelativeWindVector_W[i][j]*BackScatterNormed_W1[i][j]
 	v_los = np.zeros(nDataPoints)
-	#print(f_L_d)
+
 	for i in range(nDataPoints):
-		#print(i*nWeights,((i*nWeights)+nWeights))
-		#print(vlos_d[0,i*nWeights:((i*nWeights)+nWeights)])
 		v_los[i] = np.dot(vlos_d[0,i*nWeights:((i*nWeights)+nWeights)],f_L_d)
 
 	return v_los
