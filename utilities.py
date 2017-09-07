@@ -227,8 +227,8 @@ def getWindCoords(inputData):
 
 	#print(PositionLinW)
 
-	x_W = x_R + PositionLinW[0]
-	y_W = y_R + PositionLinW[1]
+	x_W = x_R + PositionLinW[0] + inputData['turbineX'][inputData['turbineLidar']]
+	y_W = y_R + PositionLinW[1] + inputData['turbineY'][inputData['turbineLidar']]
 	z_W = z_R + PositionLinW[2] + inputData['hubHeight'][inputData['turbineLidar']]
 
 	for i in range(len(x_W)):
