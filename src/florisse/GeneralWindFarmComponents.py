@@ -199,7 +199,7 @@ class AdjustCtCpYaw(Component):
             for i in range(len(yaw)):
                 if yaw[i] <= np.pi / 2 and yaw[i] >= -1 * np.pi / 2:
                    cps.append(Cp[i] * np.cos(yaw[i]) ** pP)
-                else: 
+                else:
                    cps.append(0.0)
             unknowns['Cp_out'] = np.array(cps)
         else:
@@ -342,7 +342,8 @@ class SpacingComp(Component):
                        desc='y coordinates of turbines in wind dir. ref. frame')
 
         # Explicitly size output array
-        self.add_output('wtSeparationSquared', val=np.zeros((nTurbines-1.)*nTurbines/2.),
+        self.add_output('wtSeparationSquared',
+                        val=np.zeros(int((nTurbines - 1.) * nTurbines/2.)),
                         desc='spacing of all turbines in the wind farm')
 
     def solve_nonlinear(self, params, unknowns, resids):
@@ -351,7 +352,7 @@ class SpacingComp(Component):
         turbineX = params['turbineX']
         turbineY = params['turbineY']
         nTurbines = turbineX.size
-        separation_squared = np.zeros((nTurbines-1.)*nTurbines/2.)
+        separation_squared = np.zeros(int((nTurbines - 1.) * nTurbines/2.))
 
         k = 0
         for i in range(0, nTurbines):
@@ -370,7 +371,7 @@ class SpacingComp(Component):
         nTurbines = turbineX.size
 
         # initialize gradient calculation array
-        dS = np.zeros(((nTurbines-1.)*nTurbines/2., 2*nTurbines))
+        dS = np.zeros((int((nTurbines - 1.) * nTurbines/2.), 2*nTurbines))
 
         # set turbine pair counter to zero
         k = 0
@@ -1258,4 +1259,3 @@ if __name__ == "__main__":
     # # print(root.p.unknowns['output0'])
     # # print(root.p.unknowns['output1'])
     # top.check_partial_derivatives()
-
