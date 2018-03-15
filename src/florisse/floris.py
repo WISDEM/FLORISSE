@@ -6,9 +6,10 @@ from openmdao.core.mpi_wrap import MPI
 if MPI:
     from openmdao.api import PetscKSP
 
-from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
+# moving content to higher-level repository
+'''from GeneralWindFarmComponents import WindFrame, AdjustCtCpYaw, MUX, WindFarmAEP, DeMUX, \
     CPCT_Interpolate_Gradients_Smooth, WindDirectionPower, add_gen_params_IdepVarComps, \
-    CPCT_Interpolate_Gradients
+    CPCT_Interpolate_Gradients'''
 
 from florisse import config
 import _floris
@@ -347,12 +348,12 @@ class Floris(Component):
             wsPositionXYZw = np.zeros([3, nSamples])
 
         # print option
-        if self.verbose:
-            np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
-            print "free-stream wind speed %s" % Vinf
-            print "axial induction of turbines %s" % axialInduction
-            print "C_T of turbines %s" % Ct
-            print "yaw of turbines %s" % yawDeg
+        #if self.verbose:
+        #    np.set_printoptions(formatter={'float': '{: 0.3f}'.format})
+        #    print "free-stream wind speed %s" % Vinf
+        #    print "axial induction of turbines %s" % axialInduction
+        #    print "C_T of turbines %s" % Ct
+        #    print "yaw of turbines %s" % yawDeg
 
         if self.differentiable:
             # call to fortran code to obtain output values
@@ -532,7 +533,7 @@ class Floris(Component):
 
         return J
 
-
+'''
 # Groups using FLORIS # TODO Make this group unnecessary and remove it
 class FlorisGroup(Group):
     """ Group containing all necessary components of the floris model """
@@ -864,20 +865,20 @@ if __name__ == "__main__":
         shifthigh[i] = step
         shiftlow = np.zeros_like(wakeOL)
         shiftlow[i] = -step
-        print shifthigh, shiftlow
+        print(shifthigh, shiftlow)
         top['y'] = wakeOL+shifthigh
-        print 'topy = ', top['y']
+        print('topy = ', top['y'])
         top.setup()
         top.run()
         high = top.root.p.unknowns['power']
         top.root.p.params['wakeOverlapTRel'] = wakeOL+shiftlow
-        print 'topy = ', top['y'], wakeOL+shiftlow
+        print('topy = ', top['y'], wakeOL+shiftlow)
         top.setup()
         top.run()
         low = top.root.p.unknowns['power']
-        print high, low
+        print(high, low)
         d_wakeOL[i] = (high-low)/(2*step)
-    print 'd_wakeOL: ', d_wakeOL
+    print('d_wakeOL: ', d_wakeOL)
 
 
 
@@ -924,3 +925,4 @@ if __name__ == "__main__":
 #     def linearize(self):
 #         J = {}
 #         return J
+'''
