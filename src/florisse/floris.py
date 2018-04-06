@@ -368,12 +368,12 @@ class Floris(Component):
         if self.differentiable:
             # call to fortran code to obtain output values
             wtVelocity, wsArray, wakeCentersYT, wakeCentersZT, wakeDiametersT, wakeOverlapTRel = \
-                _floris.floris(turbineXw, turbineYw, turbineZ, yawDeg, rotorDiameter, Vinf,
+                _floris.floris(turbineXw, turbineYw, turbineZ, yawDeg, rotorDiameter, Vinf, shearExp, zref, z0,
                                                Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                Region2CT, keCorrArray, useWakeAngle,
                                                adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, wsPositionXYZw,
-                                               shearCoefficientAlpha, shearZh, shearExp, zref, z0)
+                                               shearCoefficientAlpha, shearZh)
 
         else:
             # call to fortran code to obtain output values
@@ -448,8 +448,8 @@ class Floris(Component):
 
         if self.differentiable:
             # call to fortran code to obtain output values
-            wtVelocity, wsArray, wakeCentersYT, wakeDiametersT, wakeOverlapTRel = \
-                _floris.floris(turbineXw, turbineYw, yawDeg, rotorDiameter, hubHeight, Vinf,
+            wtVelocity, wsArray, wakeCentersYT, wakeCentersZT, wakeDiametersT, wakeOverlapTRel = \
+                _floris.floris(turbineXw, turbineYw, turbineZ, yawDeg, rotorDiameter, Vinf, shearExp, zref, z0,
                                                Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
                                                MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                Region2CT, keCorrArray, useWakeAngle,
