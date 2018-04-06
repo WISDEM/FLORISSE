@@ -216,7 +216,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
                           & adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, &
                           & wsPositionXYZw, shearCoefficientAlpha, shearZh, &
                           & wtVelocity, wsArray, wakeCentersYT_vec, wakeCentersZT_vec, &
-                          & wakeDiametersT_vec, wakeOverlapTRel_vec, shearExp, zref)
+                          & wakeDiametersT_vec, wakeOverlapTRel_vec, shearExp, zref, z0)
 
     ! independent variables: yawDeg Ct turbineXw turbineYw rotorDiameter a_in
     ! dependent variables: wtVelocity
@@ -230,7 +230,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
     integer, intent(in) :: nTurbines
     integer :: nSamples
     real(dp), intent(in) :: kd, initialWakeDisplacement, initialWakeAngle, ke_in
-    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray, shearExp, zref
+    real(dp), intent(in) :: keCorrCT, Region2CT, bd, cos_spread, Vinf, keCorrArray, shearExp, zref, z0
     real(dp), dimension(nTurbines), intent(in) :: yawDeg, Ct, a_in, turbineXw, turbineYw
     real(dp), dimension(nTurbines), intent(in) :: rotorDiameter, hubHeight
     real(dp), dimension(3), intent(in) :: me, MU
@@ -303,7 +303,7 @@ subroutine floris(nTurbines, nSamples, turbineXw, turbineYw, turbineZ, yawDeg, &
       ! check that the point of interest is above ground level
       if (turbineZ(turb) >= 0.0) then
           ! adjusted wind speed for wind shear if point is above ground
-          adjusted_wind_speed(turb) = Vinf*((turbineZ(turb))/(zref))**shearExp
+          adjusted_wind_speed(turb) = Vinf*((turbineZ(turb)-z0)/(zref-z0))**shearExp
       else
           ! if the point of interest is below ground, set the wind speed to 0.0
           adjusted_wind_speed(turb) = 0.0_dp

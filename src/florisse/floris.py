@@ -373,7 +373,7 @@ class Floris(Component):
                                                MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
                                                Region2CT, keCorrArray, useWakeAngle,
                                                adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU, wsPositionXYZw,
-                                               shearCoefficientAlpha, shearZh, shearExp, zref)
+                                               shearCoefficientAlpha, shearZh, shearExp, zref, z0)
 
         else:
             # call to fortran code to obtain output values
