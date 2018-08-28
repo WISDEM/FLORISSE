@@ -542,7 +542,7 @@ class Floris(Component):
         # collect values of the Jacobian
         J['wtVelocity%i' % direction_id, 'turbineXw'] = turbineXwb
         J['wtVelocity%i' % direction_id, 'turbineYw'] = turbineYwb
-        J['wtVelocity%i' % direction_id, 'turbineZ'] = turbineZb
+        J['wtVelocity%i' % direction_id, 'hubHeight'] = turbineZb
         J['wtVelocity%i' % direction_id, 'yaw%i' % direction_id] = yawDegb
         J['wtVelocity%i' % direction_id, 'rotorDiameter'] = rotorDiameterb
         J['wtVelocity%i' % direction_id, 'Vinf'] = Vinfb
