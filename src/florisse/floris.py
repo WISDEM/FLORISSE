@@ -398,6 +398,7 @@ class Floris(Component):
         # x and y positions w.r.t. the wind direction (wind dir. = +x)
         turbineXw = params['turbineXw']
         turbineYw = params['turbineYw']
+        turbineZ = params['hubHeight']
 
         # yaw wrt wind dir.
         yawDeg = params['yaw%i' % self.direction_id]
@@ -409,6 +410,9 @@ class Floris(Component):
         # air flow
         Vinf = params['wind_speed']
         Ct = params['Ct']
+        shearExp = params['floris_params:shearExp']
+        zref = params['floris_params:z_ref']
+        z0 = params['floris_params:z0']
 
         # wake deflection
         kd = params['floris_params:kd']
@@ -475,6 +479,7 @@ class Floris(Component):
         # x and y positions w.r.t. the wind dir. (wind dir. = +x)
         turbineXw = params['turbineXw']
         turbineYw = params['turbineYw']
+        turbineZ = params['hubHeight']
 
         # yaw wrt wind dir. (wind dir. = +x)
         yawDeg = params['yaw%i' % self.direction_id]
@@ -485,6 +490,9 @@ class Floris(Component):
         # air flow
         Vinf = params['wind_speed']
         Ct = params['Ct']
+        shearExp = params['floris_params:shearExp']
+        zref = params['floris_params:z_ref']
+        z0 = params['floris_params:z0']
 
         # wake deflection
         kd = params['floris_params:kd']
@@ -520,13 +528,13 @@ class Floris(Component):
         wtVelocityb = np.eye(nDirs, nTurbines)
 
         # call to fortran code to obtain output values
-        turbineXwb, turbineYwb, yawDegb, rotorDiameterb, Ctb, axialInductionb = \
-            _floris.floris_bv(turbineXw, turbineYw, yawDeg, rotorDiameter, Vinf,
-                                             Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
-                                             MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
-                                             Region2CT, keCorrArray, useWakeAngle,
-                                             adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
-                                             wtVelocityb)
+        turbineXwb, turbineYwb, turbineZb, yawDegb, rotorDiameterb, Vinfb, Ctb, axialInductionb = \
+                        _floris.floris_bv(turbineXw, turbineYw, turbineZ, yawDeg, rotorDiameter, Vinf, shearExp, zref, z0,
+                                                         Ct, axialInduction, ke, kd, me, initialWakeDisplacement, bd,
+                                                         MU, aU, bU, initialWakeAngle, cos_spread, keCorrCT,
+                                                         Region2CT, keCorrArray, useWakeAngle,
+                                                         adjustInitialWakeDiamToYaw, axialIndProvided, useaUbU,
+                                                         wtVelocityb)
 
         # initialize Jacobian dict
         J = {}
@@ -534,8 +542,10 @@ class Floris(Component):
         # collect values of the Jacobian
         J['wtVelocity%i' % direction_id, 'turbineXw'] = turbineXwb
         J['wtVelocity%i' % direction_id, 'turbineYw'] = turbineYwb
+        J['wtVelocity%i' % direction_id, 'hubHeight'] = turbineZb
         J['wtVelocity%i' % direction_id, 'yaw%i' % direction_id] = yawDegb
         J['wtVelocity%i' % direction_id, 'rotorDiameter'] = rotorDiameterb
+        J['wtVelocity%i' % direction_id, 'Vinf'] = Vinfb
         J['wtVelocity%i' % direction_id, 'Ct'] = Ctb
         J['wtVelocity%i' % direction_id, 'axialInduction'] = axialInductionb
 
