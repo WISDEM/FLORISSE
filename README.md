@@ -1,3 +1,13 @@
+
+DEPRECATED
+----------
+
+**THIS REPOSITORY IS DEPRECATED AND WILL BE DELETED AT THE END OF 2019. UNTIL THEN, IT WILL BE KEPT IN READ-ONLY MODE AND NO LONGER MAINTAINED.**
+
+The active FLORIS can be found at https://github.com/nrel/floris
+
+
+
 ---------------------------------------
   WISDEM FLORISSE 'release version'
 ---------------------------------------
